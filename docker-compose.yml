@@ -1,0 +1,51 @@
+services:
+
+  # ── product-service database ──────────────────────────────────────
+  product-db:
+    image: postgres:16-alpine
+    container_name: shopping-list-product-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PRODUCT_DB_NAME:-product_service_db}
+      POSTGRES_USER: ${PRODUCT_DB_USER:-product_user}
+      POSTGRES_PASSWORD: ${PRODUCT_DB_PASSWORD:-product_pass}
+    ports:
+      - "${PRODUCT_DB_PORT_OUT:-5434}:5432"
+    volumes:
+      - product-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PRODUCT_DB_USER:-product_user} -d ${PRODUCT_DB_NAME:-product_service_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shopping-list-net
+
+  # ── list-service database ─────────────────────────────────────────
+  list-db:
+    image: postgres:16-alpine
+    container_name: shopping-list-list-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${LIST_DB_NAME:-list_service_db}
+      POSTGRES_USER: ${LIST_DB_USER:-list_user}
+      POSTGRES_PASSWORD: ${LIST_DB_PASSWORD:-list_pass}
+    ports:
+      - "${LIST_DB_PORT_OUT:-5435}:5432"
+    volumes:
+      - list-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LIST_DB_USER:-list_user} -d ${LIST_DB_NAME:-list_service_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shopping-list-net
+
+networks:
+  shopping-list-net:
+    driver: bridge
+
+volumes:
+  product-db-data:
+  list-db-data:
