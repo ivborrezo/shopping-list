@@ -1,0 +1,114 @@
+# ==============================================================================
+# SHOPPINGLIST - ARCHIVO GITIGNORE GLOBAL DEL SISTEMA
+# Monorepo: Spring Boot (Java 21) | Node.js | React | Docker | AWS
+# ==============================================================================
+
+###-----------------------------------------------------------------------------
+### 1. ARCHIVOS PRIVADOS Y PREPARACIÓN DE ENTREVISTAS (Crítico)
+###-----------------------------------------------------------------------------
+# Carpeta local de aprendizaje, consolidación de patrones y notas de entrevistas
+patterns-notes/
+
+###-----------------------------------------------------------------------------
+### 2. IDES Y EDITORES DE CÓDIGO (JetBrains, VS Code, Eclipse, Cursor)
+###-----------------------------------------------------------------------------
+# JetBrains (IntelliJ IDEA, WebStorm, etc.)
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/resources/
+!**/src/test/resources/
+
+# Visual Studio Code y Cursor
+.vscode/
+.history/
+*.code-workspace
+
+# Eclipse
+.metadata/
+.classpath
+.project
+.settings/
+*.launch
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+###-----------------------------------------------------------------------------
+### 3. BACKEND CORE: JAVA Y SPRING BOOT (product-service, list-service, gateway...)
+###-----------------------------------------------------------------------------
+# Herramientas de construcción (Maven)
+target/
+*.jar
+*.class
+
+# Maven Wrapper: el jar SÍ debe ir al repo para que ./mvnw funcione
+# sin tener Maven instalado. Excepción explícita a *.jar de arriba.
+!.mvn/wrapper/maven-wrapper.jar
+
+# Herramientas de construcción (Gradle - por si se incluye a futuro)
+.gradle/
+build/
+
+# Archivos de logs locales de Spring Boot
+*.log
+logs/
+
+###-----------------------------------------------------------------------------
+### 4. FRONTEND Y NODE.JS (React UI y Notification Service)
+###-----------------------------------------------------------------------------
+# Directorios de dependencias
+node_modules/
+jspm_packages/
+
+# Entregables de compilación / Build outputs
+build/
+dist/
+.next/
+
+# Logs de empaquetadores (npm/yarn)
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Pruebas y cobertura de código (Testing & Coverage)
+coverage/
+.nyc_output/
+
+###-----------------------------------------------------------------------------
+### 5. INFRAESTRUCTURA Y ORQUESTACIÓN (Docker, AWS, CI/CD)
+###-----------------------------------------------------------------------------
+# Volúmenes locales de Docker si se usan bind mounts en vez de named volumes
+# (Evita subir datos de PostgreSQL/Kafka/RabbitMQ)
+.docker-data/
+docker/volumes/
+data/
+
+# Estado local de Terraform / AWS (Previsión para la fase de infraestructura)
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+###-----------------------------------------------------------------------------
+### 6. SEGURIDAD Y VARIABLES DE ENTORNO (Política de Cero Filtraciones)
+###-----------------------------------------------------------------------------
+# Archivos de configuración de entorno con credenciales secretas
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Excepción: la plantilla SIN secretos reales sí debe ir al repo,
+# documenta qué variables necesita cada servicio
+!.env.example
+
+# Almacenes de claves Java (KeyStores) y certificados HTTPS locales
+*.jks
+*.p12
+*.crt
+*.key
