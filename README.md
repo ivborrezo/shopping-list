@@ -10,6 +10,18 @@ Java 21 · Spring Boot 3.x · PostgreSQL · Docker
 
 ---
 
+## Índice
+
+- [Descripción del sistema](#descripción-del-sistema)
+- [Arquitectura](#arquitectura)
+- [Estructura del repositorio](#estructura-del-repositorio)
+- [Inicio rápido](#inicio-rápido)
+- [Documentación](#documentación)
+- [Roadmap](#roadmap)
+- [Autor](#autor)
+
+---
+
 ## Descripción del sistema
 
 ShoppingList permite crear y gestionar listas de la compra de forma
@@ -22,6 +34,23 @@ local está definida como código mediante Docker Compose.
 > únicamente infraestructura base — `docker compose up` levanta las
 > bases de datos de cada servicio. Todavía no hay lógica de negocio
 > implementada.
+
+---
+
+## Arquitectura
+
+Cada microservicio tiene su propia base de datos PostgreSQL,
+físicamente separada (instancia propia, no un esquema compartido), y
+ningún servicio accede directamente a la base de datos de otro — toda
+relación entre dominios se resolverá a través de la API correspondiente.
+Esta decisión, sus consecuencias y las alternativas descartadas están
+documentadas en
+[ADR-002 — Database-per-Service Pattern](./docs/adr/ADR-002-database-per-service-pattern.md).
+
+| Servicio | Base de datos | Puerto local |
+|---|---|---|
+| `product-service` | `product-db` (PostgreSQL) | `5434` |
+| `list-service` | `list-db` (PostgreSQL) | `5435` |
 
 ---
 
@@ -78,6 +107,21 @@ Para parar y limpiar los volúmenes de datos:
 ```bash
 docker compose down -v
 ```
+
+---
+
+## Documentación
+
+Las decisiones de arquitectura del proyecto se documentan como
+Architecture Decision Records (ADR) en [`docs/adr/`](./docs/adr/).
+
+| ADR | Decisión | Estado |
+|---|---|---|
+| [ADR-001 — Monorepo vs. Polyrepo](./docs/adr/ADR-001-monorepo-vs-polyrepo.md) | Estrategia de repositorio único para todo el sistema | ✅ Redactado |
+| [ADR-002 — Database-per-Service Pattern](./docs/adr/ADR-002-database-per-service-pattern.md) | Base de datos independiente y físicamente aislada por servicio | ✅ Redactado |
+
+Esta sección crecerá a medida que se tomen nuevas decisiones de
+arquitectura en próximas fases.
 
 ---
 
