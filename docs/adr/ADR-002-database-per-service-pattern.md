@@ -145,21 +145,9 @@ ejemplo, `list_item` almacena el `product_id` y su tipo, `BASE` o
 
 ### Documentación relacionada
 
-- `patterns-notes/architecture-patterns/database-per-service.md`:
-  contiene el razonamiento detallado sobre por qué se eligieron
-  instancias PostgreSQL físicamente separadas (no un único contenedor
-  con bases lógicas distintas) y los trade-offs vividos durante la
-  sesión de scaffolding inicial.
-- `patterns-notes/learnings-by-phase/fase-1-infraestructura.md`:
-  aprendizajes de la sesión de scaffolding, incluida la intuición
-  inicial (pendiente de ADR formal propio) de usar DNS interno de
-  Docker Compose en lugar de Eureka — decisión relacionada pero
-  independiente de esta.
 - Esta decisión es la causa raíz que motiva el uso del **Snapshot
   pattern** en `list_item.display_name` (`list-service`), documentado
-  en su ADR local correspondiente
-  (`list-service/docs/adr/`) y en
-  `patterns-notes/design-patterns/snapshot-pattern.md`.
+  en su ADR local correspondiente (`list-service/docs/adr/`).
 - **Addressed by** (pendiente): `ADR-XXFX-gestion-de-transacciones-distribuidas-con-saga`
   — resolverá la deuda técnica de transacciones distribuidas aceptada
   en este documento. Enlazar bidireccionalmente cuando se redacte.
@@ -187,8 +175,12 @@ servicio, en lugar de instancias físicamente separadas.
 **Por qué se descartó**: aunque reduce el número de instancias a
 operar, mantiene un único punto de fallo y un único recurso de
 cómputo compartido entre servicios (no resuelve el *noisy neighbor
-problem*), y no representa con fidelidad cómo se desplegaría el
-sistema en un entorno de producción real con servicios verdaderamente
-independientes. El razonamiento completo de esta comparación está
-desarrollado en
-`patterns-notes/architecture-patterns/database-per-service.md`.
+problem*: una query pesada de `product-service` seguiría compitiendo
+por las mismas CPU, memoria y conexiones de la instancia que usa
+`list-service`). Tampoco representa con fidelidad cómo se desplegaría
+el sistema en un entorno de producción real, donde cada servicio
+gestiona su propio motor de base de datos de forma independiente
+(incluyendo versión, parámetros de configuración y ciclo de vida de
+backups). Se valoró que el ahorro de recursos en Free Tier no
+compensaba renunciar a demostrar, en el propio diseño, el aislamiento
+real que el patrón Database-per-Service persigue.
