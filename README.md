@@ -119,6 +119,7 @@ Architecture Decision Records (ADR) en [`docs/adr/`](./docs/adr/).
 |---|---|---|
 | [ADR-001 — Monorepo vs. Polyrepo](./docs/adr/ADR-001-monorepo-vs-polyrepo.md) | Estrategia de repositorio único para todo el sistema | ✅ Redactado |
 | [ADR-002 — Database-per-Service Pattern](./docs/adr/ADR-002-database-per-service-pattern.md) | Base de datos independiente y físicamente aislada por servicio | ✅ Redactado |
+| [ADR-003 — Service Discovery nativo y descarte de Eureka](./docs/adr/ADR-003-service-discovery-nativo-y-descarte-de-eureka.md) | DNS interno (Docker Compose / AWS Cloud Map) en lugar de un Service Registry como Netflix Eureka | ✅ Redactado |
 
 Esta sección crecerá a medida que se tomen nuevas decisiones de
 arquitectura en próximas fases.
