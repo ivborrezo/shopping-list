@@ -76,13 +76,13 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 > como diff de Git** — un PR que actualice el diagrama mostrará un
 > archivo binario/XML reemplazado, no un cambio de texto inspeccionable
 > línea a línea. Se mitiga parcialmente conservando el archivo fuente
-> editable (`c4-level2-containers.drawio`) junto al `.svg` exportado,
+> editable (`c4-level2-containers.drawio.xml`) junto al `.svg` exportado,
 > de forma que el diagrama siga siendo reproducible y versionado,
 > aunque no diffable en el sentido estricto.
 
 ![C4 Nivel 2 — Diagrama de Contenedores de ShoppingList](img/c4-level2-containers.svg)
 
-*Fuente editable: [`img/c4-level2-containers.drawio`](img/c4-level2-containers.drawio)*
+*Fuente editable: [`img/c4-level2-containers.drawio.xml`](img/c4-level2-containers.drawio.xml)*
 
 ### Matriz de Comunicaciones e Interacciones
 
