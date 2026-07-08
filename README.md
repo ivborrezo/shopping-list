@@ -30,10 +30,12 @@ colaborativa. El sistema está diseñado siguiendo principios
 independiente con su propia base de datos, y toda la infraestructura
 local está definida como código mediante Docker Compose.
 
-> **Estado actual:** Fase 1 (MVP Core) en desarrollo. Esta sesión cubre
-> únicamente infraestructura base — `docker compose up` levanta las
-> bases de datos de cada servicio. Todavía no hay lógica de negocio
-> implementada.
+> **Estado actual:** Fase 1 (MVP Core) en desarrollo. `docker compose up`
+> levanta las bases de datos de cada servicio. Todavía no hay lógica de
+> negocio implementada — lo que existe hasta ahora es el contrato de
+> diseño de la API de ambos servicios (OpenAPI, Design-First) y la
+> arquitectura de eventos y convenciones de logging, redactadas antes
+> de escribir el primer controller.
 
 ---
 
@@ -63,9 +65,16 @@ shopping-list/
 ├── .gitignore
 ├── README.md
 ├── docs/
-│   └── adr/
+│   ├── adr/
+│   ├── events/
+│   │   └── event-architecture.md
+│   └── logging-conventions.md
 ├── product-service/
+│   └── docs/
+│       └── api-contract.yaml
 └── list-service/
+    └── docs/
+        └── api-contract.yaml
 ```
 
 Cada microservicio es operacionalmente independiente dentro del
@@ -118,6 +127,24 @@ docker compose down -v
 |---|---|
 | [C4 Nivel 2 — Diagrama de Contenedores](./docs/architecture/c4-level2-containers.md) | Vista de contenedores del sistema completo (arquitectura objetivo por fases, codificada por color según estado de implementación) |
 
+### Arquitectura de eventos y convenciones
+
+| Documento | Descripción |
+|---|---|
+| [Arquitectura de eventos](./docs/events/event-architecture.md) | Qué eventos existen, quién los publica y quién los consumirá, y por qué. Documento provisional, pendiente de la elección de message broker |
+| [Convenciones de logging](./docs/logging-conventions.md) | Criterio MDC vs. structured key-value, formato de salida por perfil y ciclo de vida del `correlationId`. Documento provisional hasta Fase 6 |
+
+### Contratos de API (diseño, Design-First)
+
+Redactados antes de implementar ningún controller, como contrato de
+diseño previo al código. Una vez exista la implementación, se marcarán
+como snapshot histórico de diseño.
+
+| Servicio | Contrato |
+|---|---|
+| `product-service` | [OpenAPI](./product-service/docs/api-contract.yaml) |
+| `list-service` | [OpenAPI](./list-service/docs/api-contract.yaml) |
+
 ### Architecture Decision Records (ADR)
 
 Las decisiones de arquitectura del proyecto se documentan como
@@ -129,6 +156,7 @@ Architecture Decision Records (ADR) en [`docs/adr/`](./docs/adr/).
 | [ADR-002 — Database-per-Service Pattern](./docs/adr/ADR-002-database-per-service-pattern.md) | Base de datos independiente y físicamente aislada por servicio | ✅ Redactado |
 | [ADR-003 — Service Discovery nativo y descarte de Eureka](./docs/adr/ADR-003-service-discovery-nativo-y-descarte-de-eureka.md) | DNS interno (Docker Compose / AWS Cloud Map) en lugar de un Service Registry como Netflix Eureka | ✅ Redactado |
 | [ADR-004 — Estándares de Desarrollo y Gobernanza](./docs/adr/ADR-004-estandares-de-desarrollo-y-gobernanza.md) | Documentación de arquitectura (Markdown; Mermaid no se usa por el momento), Conventional Commits y Checkstyle (Google Java Style) | ✅ Redactado |
+| [ADR-005 — Convención de nombrado de eventos](./docs/adr/ADR-005-convencion-nombrado-eventos.md) | `<aggregate>.<past_tense_action>` en snake_case, agnóstica al lenguaje (proyecto políglota) | ✅ Redactado |
 
 Esta sección crecerá a medida que se tomen nuevas decisiones de
 arquitectura en próximas fases.

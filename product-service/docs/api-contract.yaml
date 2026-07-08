@@ -1,0 +1,338 @@
+openapi: 3.0.3
+info:
+  title: Product Service API
+  description: >
+    API del catálogo de productos y categorías (base_product, category) y de
+    los productos creados libremente por los usuarios (user_product) para
+    ShoppingList.
+
+
+    Nota de vigencia: este documento es el contrato de diseño de Fase 1,
+    redactado antes de implementar el servicio. Una vez exista código y
+    springdoc-openapi genere el contrato real a partir de él, este fichero
+    se marcará como snapshot histórico de diseño (no se mantendrá
+    sincronizado a mano), y el contrato vigente pasará a ser el expuesto
+    en /v3/api-docs.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081
+    description: Entorno local (Docker Compose)
+
+tags:
+  - name: categories
+    description: Catálogo de categorías, gestionado por el sistema.
+  - name: products
+    description: Productos base (catálogo) y productos de usuario.
+
+paths:
+  /categories:
+    get:
+      tags: [categories]
+      summary: Listar categorías del catálogo
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de categorías, traducidas al idioma solicitado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryPage'
+
+  /categories/{id}:
+    get:
+      tags: [categories]
+      summary: Obtener una categoría por id
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Categoría encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /products:
+    get:
+      tags: [products]
+      summary: Listar productos (base y/o de usuario)
+      description: >
+        Sin filtro `type`, devuelve productos base. Usar `type=USER` junto a
+        `ownerId` para listar los productos propios de un usuario.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [BASE, USER]
+            default: BASE
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: ownerId
+          in: query
+          description: >
+            Requerido cuando `type=USER`. Placeholder sin autenticación real
+            (ver ADR-XXF1-identificacion-propietario-sin-autenticacion,
+            pendiente de redactar).
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Página de productos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+
+    post:
+      tags: [products]
+      summary: Crear un producto de usuario
+      description: Texto libre, sin traducción. Requiere `ownerId` en el body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserProductRequest'
+      responses:
+        '201':
+          description: Producto de usuario creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+
+  /products/{id}:
+    get:
+      tags: [products]
+      summary: Obtener un producto por id (base o de usuario)
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Producto encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [products]
+      summary: Editar un producto de usuario
+      description: Solo aplica a productos de tipo USER; no permite editar catálogo base.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserProductRequest'
+      responses:
+        '200':
+          description: Producto actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: El producto referenciado no es de tipo USER.
+
+    delete:
+      tags: [products]
+      summary: Eliminar un producto de usuario
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Producto eliminado.
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: El producto referenciado no es de tipo USER.
+
+components:
+  parameters:
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: >
+        Idioma solicitado para entidades del catálogo (es | en | eu). Si no se
+        especifica o el idioma no tiene traducción, se aplica fallback a `en`.
+      schema:
+        type: string
+        enum: [es, en, eu]
+        default: en
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    NotFound:
+      description: El recurso solicitado no existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+          example: dairy
+        name:
+          type: string
+          description: Traducción en el idioma resuelto (Accept-Language, con fallback a en).
+        isActive:
+          type: boolean
+
+    CategoryPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          type: string
+          enum: [BASE, USER]
+        code:
+          type: string
+          nullable: true
+          description: Solo presente en productos BASE (ej. whole_milk).
+        name:
+          type: string
+          description: >
+            Traducción resuelta (BASE) o texto libre introducido por el
+            usuario (USER).
+        categoryId:
+          type: integer
+          format: int64
+          nullable: true
+        ownerId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Solo presente en productos de tipo USER.
+        basedOn:
+          type: integer
+          format: int64
+          nullable: true
+          description: Id de producto BASE del que deriva (opcional, solo en USER).
+
+    ProductPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+
+    CreateUserProductRequest:
+      type: object
+      required: [ownerId, name]
+      properties:
+        ownerId:
+          type: string
+          format: uuid
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-XXF1-identificacion-propietario-sin-autenticacion).
+        name:
+          type: string
+        basedOn:
+          type: integer
+          format: int64
+          nullable: true
+
+    UpdateUserProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+          description: Mensaje localizado vía Spring MessageSource según Accept-Language.

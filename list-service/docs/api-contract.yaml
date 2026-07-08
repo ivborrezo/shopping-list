@@ -1,0 +1,318 @@
+openapi: 3.0.3
+info:
+  title: List Service API
+  description: >
+    API de gestión de listas de la compra y sus ítems para ShoppingList.
+
+
+    Nota de vigencia: este documento es el contrato de diseño de Fase 1,
+    redactado antes de implementar el servicio. Una vez exista código y
+    springdoc-openapi genere el contrato real a partir de él, este fichero
+    se marcará como snapshot histórico de diseño (no se mantendrá
+    sincronizado a mano), y el contrato vigente pasará a ser el expuesto
+    en /v3/api-docs.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8082
+    description: Entorno local (Docker Compose)
+
+tags:
+  - name: lists
+    description: Gestión de listas de la compra.
+  - name: list-items
+    description: Ítems dentro de una lista.
+
+paths:
+  /lists:
+    get:
+      tags: [lists]
+      summary: Listar listas de un propietario
+      parameters:
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-XXF1-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de listas del propietario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPage'
+
+    post:
+      tags: [lists]
+      summary: Crear una lista
+      description: Publica el evento de dominio `list.created`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateListRequest'
+      responses:
+        '201':
+          description: Lista creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+
+  /lists/{id}:
+    get:
+      tags: [lists]
+      summary: Obtener una lista por id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Lista encontrada, con sus ítems.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [lists]
+      summary: Eliminar una lista
+      description: Publica el evento de dominio `list.deleted`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Lista eliminada.
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /lists/{id}/items:
+    post:
+      tags: [list-items]
+      summary: Añadir un producto a la lista
+      description: >
+        Publica el evento de dominio `list.item.added`. Guarda un snapshot
+        (`displayName`) del nombre del producto en el momento de añadirlo
+        (Snapshot pattern), resuelto contra product-service en el momento de
+        la petición.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddListItemRequest'
+      responses:
+        '201':
+          description: Ítem añadido a la lista.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /lists/{id}/items/{itemId}:
+    delete:
+      tags: [list-items]
+      summary: Eliminar un producto de la lista
+      description: Publica el evento de dominio `list.item.removed`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Ítem eliminado.
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [list-items]
+      summary: Marcar un ítem como comprado o pendiente
+      description: >
+        Publica el evento de dominio `list.item.purchased`, con el campo
+        `purchased` reflejando el nuevo estado (cubre tanto marcar como
+        desmarcar).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateListItemPurchasedRequest'
+      responses:
+        '200':
+          description: Ítem actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    NotFound:
+      description: El recurso solicitado no existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ShoppingList:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        ownerId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListItem'
+
+    ListPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingList'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+
+    CreateListRequest:
+      type: object
+      required: [ownerId]
+      properties:
+        ownerId:
+          type: string
+          format: uuid
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-XXF1-identificacion-propietario-sin-autenticacion).
+        name:
+          type: string
+          nullable: true
+
+    ListItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        productType:
+          type: string
+          enum: [BASE, USER]
+        displayName:
+          type: string
+          description: >
+            Snapshot del nombre del producto en el momento de añadirlo a la
+            lista (Snapshot pattern); no se actualiza si el catálogo cambia
+            después.
+        purchased:
+          type: boolean
+          default: false
+
+    AddListItemRequest:
+      type: object
+      required: [productId, productType]
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productType:
+          type: string
+          enum: [BASE, USER]
+
+    UpdateListItemPurchasedRequest:
+      type: object
+      required: [purchased]
+      properties:
+        purchased:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+          description: Mensaje localizado vía Spring MessageSource según Accept-Language.
