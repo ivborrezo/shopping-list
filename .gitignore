@@ -112,3 +112,13 @@ data/
 *.p12
 *.crt
 *.key
+
+###-----------------------------------------------------------------------------
+### 7. HERRAMIENTAS Y CONTEXTO DE INTELIGENCIA ARTIFICIAL (IA / LLMs)
+###-----------------------------------------------------------------------------
+AGENTS.MD
+AGENTS.md
+agents.md
+.cursorrules
+.cursor/
+.claude/
