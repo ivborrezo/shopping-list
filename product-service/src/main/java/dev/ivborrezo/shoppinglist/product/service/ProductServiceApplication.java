@@ -1,4 +1,4 @@
-package dev.ivborrezo.shoppinglist.product_service;
+package dev.ivborrezo.shoppinglist.product.service;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
