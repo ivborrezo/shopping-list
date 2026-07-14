@@ -1,3 +1,12 @@
 spring:
   application:
     name: product-service
+  profiles:
+    active: local
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+
+server:
+  port: 8081

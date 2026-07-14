@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${PRODUCT_DB_HOST:localhost}:${PRODUCT_DB_PORT_OUT:5434}/${PRODUCT_DB_NAME:product_service_db}
+    username: ${PRODUCT_DB_USER:product_user}
+    password: ${PRODUCT_DB_PASSWORD:product_pass}
