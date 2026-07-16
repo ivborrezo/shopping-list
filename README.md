@@ -158,6 +158,8 @@ Architecture Decision Records (ADR) en [`docs/adr/`](./docs/adr/).
 | [ADR-004 — Estándares de Desarrollo y Gobernanza](./docs/adr/ADR-004-estandares-de-desarrollo-y-gobernanza.md) | Documentación de arquitectura (Markdown; Mermaid no se usa por el momento), Conventional Commits y Checkstyle (Google Java Style) | ✅ Redactado |
 | [ADR-005 — Convención de nombrado de eventos](./docs/adr/ADR-005-convencion-nombrado-eventos.md) | `<aggregate>.<past_tense_action>` en snake_case, agnóstica al lenguaje (proyecto políglota) | ✅ Redactado |
 | [ADR-006 — Identificación de propietario sin autenticación](./docs/adr/ADR-006-identificacion-propietario-sin-autenticacion.md) | `ownerId` como placeholder en el body (Fase 1-3), validado solo en formato, sin registro compartido entre servicios ni plan de migración a Fase 4 | ✅ Redactado |
+| [ADR-007 — Flyway como herramienta de migraciones](./docs/adr/ADR-007-flyway-como-herramienta-de-migraciones.md) | Flyway (edición Community) como gestor único del esquema de cada base de datos por servicio; `ddl-auto: none`, migraciones versionadas en SQL | ✅ Redactado |
+| [ADR-008 — Testcontainers para testing de integración](./docs/adr/ADR-008-testcontainers-para-testing-de-integracion.md) | Tests de integración contra PostgreSQL real vía contenedores efímeros; descarte de H2 por discrepancias de comportamiento | ✅ Redactado |
 
 Esta sección crecerá a medida que se tomen nuevas decisiones de
 arquitectura en próximas fases.

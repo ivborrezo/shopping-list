@@ -148,6 +148,9 @@ ejemplo, `list_item` almacena el `product_id` y su tipo, `BASE` o
 - Esta decisión es la causa raíz que motiva el uso del **Snapshot
   pattern** en `list_item.display_name` (`list-service`), documentado
   en su ADR local correspondiente (`list-service/docs/adr/`).
+- **Addressed by** ADR-007 (Flyway como herramienta de migraciones) —
+  materializa el *cómo* se gestiona la evolución del esquema de cada
+  base de datos privada por servicio. Enlazado bidireccionalmente.
 - **Addressed by** (pendiente): `ADR-XXFX-gestion-de-transacciones-distribuidas-con-saga`
   — resolverá la deuda técnica de transacciones distribuidas aceptada
   en este documento. Enlazar bidireccionalmente cuando se redacte.
