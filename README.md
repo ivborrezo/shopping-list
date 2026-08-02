@@ -145,6 +145,12 @@ como snapshot histórico de diseño.
 | `product-service` | [OpenAPI](./product-service/docs/api-contract.yaml) |
 | `list-service` | [OpenAPI](./list-service/docs/api-contract.yaml) |
 
+### Estrategia de CI/CD
+
+| Documento | Descripción |
+|---|---|
+| [Estrategia de CI/CD del monorepo](./docs/cicd/cicd-strategy.md) | Documento operativo derivado de ADR-009 |
+
 ### Architecture Decision Records (ADR)
 
 Las decisiones de arquitectura del proyecto se documentan como
@@ -160,6 +166,7 @@ Architecture Decision Records (ADR) en [`docs/adr/`](./docs/adr/).
 | [ADR-006 — Identificación de propietario sin autenticación](./docs/adr/ADR-006-identificacion-propietario-sin-autenticacion.md) | `ownerId` como placeholder en el body (Fase 1-3), validado solo en formato, sin registro compartido entre servicios ni plan de migración a Fase 4 | ✅ Redactado |
 | [ADR-007 — Flyway como herramienta de migraciones](./docs/adr/ADR-007-flyway-como-herramienta-de-migraciones.md) | Flyway (edición Community) como gestor único del esquema de cada base de datos por servicio; `ddl-auto: none`, migraciones versionadas en SQL | ✅ Redactado |
 | [ADR-008 — Testcontainers para testing de integración](./docs/adr/ADR-008-testcontainers-para-testing-de-integracion.md) | Tests de integración contra PostgreSQL real vía contenedores efímeros; descarte de H2 por discrepancias de comportamiento | ✅ Redactado |
+| [ADR-009 — Estrategia de CI y Git Hooks](./docs/adr/ADR-009-estrategia-de-ci-y-git-hooks.md) | Estrategia de CI (sin CD) en dos capas (pre-commit local + GitHub Actions remoto) para el monorepo políglota: hook nativo vía `core.hooksPath` con tres capas y dispatch por servicio, gate híbrido advisory→hard, Testcontainers en `ubuntu-latest` hosted con paridad local↔CI, caching Maven + BuildKit `type=gha`. Cierra delegaciones pendientes de ADR-004 y ADR-008 | ✅ Aceptado |
 
 Esta sección crecerá a medida que se tomen nuevas decisiones de
 arquitectura en próximas fases.
