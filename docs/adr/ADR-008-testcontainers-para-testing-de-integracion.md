@@ -118,10 +118,11 @@ sería una decisión nueva, fuera del alcance de este ADR.
 - **Requiere Docker disponible en el entorno de ejecución** del test:
   en local es transparente (Docker ya es prerrequisito del proyecto),
   pero en CI implica Docker-in-Docker o equivalentes en el runner de
-  GitHub Actions. La estrategia concreta para resolver esto se decide
-  en `docs/cicd/cicd-strategy.md` (pendiente de redactar); es uno de
-  los puntos a vigilar en la rama 2, donde se configura por primera
-  vez el pipeline de CI.
+  GitHub Actions. La estrategia concreta para resolver esto se
+  formaliza en [ADR-009](ADR-009-estrategia-de-ci-y-git-hooks.md)
+  (Decisión 6: runner `ubuntu-latest` hosted con Docker nativo
+  disponible, no DinD real) y se materializa operativamente en
+  `docs/cicd/cicd-strategy.md` §7.
 - **Overhead de arranque por test**: levantar un contenedor PostgreSQL
   tiene un coste de segundos, no de milisegundos. Mitigable con
   configuración reutilizable (container reuse, shared containers por
@@ -140,9 +141,13 @@ sería una decisión nueva, fuera del alcance de este ADR.
   Flyway reales del servicio contra el contenedor PostgreSQL efímero.
   La integridad de las migraciones se verifica de forma implícita en
   cada test.
-- `docs/cicd/cicd-strategy.md` (pendiente de redactar) definirá la
-  estrategia de Docker-in-Docker en GitHub Actions para los tests
-  con Testcontainers, así como la gate de calidad en CI.
+- [ADR-009 — Estrategia de CI y Git Hooks](ADR-009-estrategia-de-ci-y-git-hooks.md)
+  formaliza la resolución de los dos puntos que este ADR dejaba en
+  suspenso: la estrategia de Docker en GitHub Actions para los tests
+  con Testcontainers (Decisión 6 de ADR-009: runner `ubuntu-latest`
+  hosted, Docker nativo, paridad local↔CI) y la gate de calidad en
+  CI (Decisión 5: gate híbrido advisory→hard). `docs/cicd/cicd-strategy.md`
+  es la materialización operativa de ambas.
 
 ## Alternativas consideradas
 
