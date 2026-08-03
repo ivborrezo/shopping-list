@@ -1,0 +1,66 @@
+name: product-service CI
+
+# Trigger policy (ADR-009, Decisión 4):
+#   - paths del servicio afectado
+#   - config/checkstyle/** (ruleset compartido; un cambio puede romper
+#     cualquier servicio que lo use)
+#   - el propio workflow (self-validation: un typo en el YAML se
+#     descubre al re-ejecutarse)
+on:
+  push:
+    paths:
+      - product-service/**
+      - config/checkstyle/**
+      - docs/cicd/**
+      - .github/workflows/product-service.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Caching Maven vía setup-java (ADR-009, Decisión 7): invalidación
+      # por hash del pom.xml, salta el download de dependencias desde
+      # Maven Central en cada run.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      # Orden fail-fast (ADR-009 §4 / cicd-strategy.md §4): lo barato
+      # antes que lo caro. Cada step es bloqueante.
+      - name: Spotless check
+        run: ./product-service/mvnw -f product-service/pom.xml spotless:check
+
+      - name: Checkstyle check
+        run: ./product-service/mvnw -f product-service/pom.xml checkstyle:check
+
+      - name: Compile
+        run: ./product-service/mvnw -f product-service/pom.xml -q compile
+
+      # Verify con Testcontainers (ADR-008/ADR-009 Decisión 6): runner
+      # ubuntu-latest hosted, Docker nativo del runner (no DinD real,
+      # no jobs.<id>.container:, no services:). Paridad local↔CI
+      # estricta vía @ServiceConnection, sin perfil de test de CI.
+      - name: Verify (Testcontainers)
+        run: ./product-service/mvnw -f product-service/pom.xml clean verify
+
+      # Caching BuildKit (ADR-009, Decisión 7): reutiliza las capas
+      # del stage builder entre runs vía el backend de GitHub Actions
+      # cache. El # syntax=docker/dockerfile:1.4 del Dockerfile ya
+      # habilita BuildKit.
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Docker build (valida Dockerfile)
+        uses: docker/build-push-action@v5
+        with:
+          context: product-service/
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
