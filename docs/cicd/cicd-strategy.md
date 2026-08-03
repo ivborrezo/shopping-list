@@ -295,10 +295,10 @@ monorepo. Activación por clon:
 git config core.hooksPath githooks
 ```
 
-**Forward-reference:** la documentación concreta del paso a paso
-(cómo cargar las variables de entorno, cómo instalar el hook) se
-redactará en `<servicio>/docs/local-setup.md`. Para `product-service`,
-ese documento se redacta en el paso 8 de la Rama 2
+La carga de variables de entorno del servicio (datasource, puertos)
+se redactará en `<servicio>/docs/local-setup.md`, ya que es
+específica de cada servicio. Para `product-service`, ese documento
+se redacta en el paso 8 de la Rama 2
 (`docs(product-service): redactar local-setup.md con variables de entorno y source .env`),
 una vez que todo lo anterior (wiring en `docker-compose.yml` incluido)
 esté verificado y se pueda documentar con precisión.
@@ -353,9 +353,23 @@ CI (prohibitivos en un hook de feedback inmediato).
 
 ### Configuración manual por clon
 
-Un comando (`git config core.hooksPath githooks`) ejecutado una vez por
-clon. Coste bajo. No se automatiza con dependencias externas (Husky)
-para no añadir tooling JS al monorepo mayoritariamente Java.
+Tras clonar el repositorio, ejecutar una vez por clon:
+
+```bash
+# Activar githooks versionados (ADR-009, Decisión 1)
+git config core.hooksPath githooks
+```
+
+Verificar que los hooks están activos:
+
+```bash
+ls githooks/
+# Debe listar: pre-commit  commit-msg
+```
+
+No se automatiza con dependencias externas (Husky) para no añadir
+tooling JS al monorepo mayoritariamente Java. Coste bajo: un solo
+comando tras el clone, sin dependencias adicionales.
 
 ## 9. Convención de naming de tests
 

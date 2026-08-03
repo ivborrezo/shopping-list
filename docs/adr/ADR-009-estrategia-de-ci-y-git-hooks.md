@@ -67,11 +67,11 @@ entre decisión de herramienta y estrategia de integración.
 
 El pre-commit hook vive en un directorio `githooks/` versionado en la
 raíz del monorepo, activado por `git config core.hooksPath githooks`
-(ejecutado una vez por clon y documentado en cada `local-setup.md`
-de servicio). El hook viaja con el repositorio: cualquier evaluador
-que clone el repo lo recibe sin necesidad de instalar dependencias
-adicionales, coherente con el objetivo de portafolio público del
-proyecto.
+(ejecutado una vez por clon y documentado en
+`docs/cicd/cicd-strategy.md` §8). El hook viaja con el repositorio:
+cualquier evaluador que clone el repo lo recibe sin necesidad de
+instalar dependencias adicionales, coherente con el objetivo de
+portafolio público del proyecto.
 
 ### Decisión 2 — Pre-commit con tres capas y dispatch por servicio
 
@@ -307,7 +307,7 @@ Failsafe será trivial.
   auto-promoción a hard gate (Decisión 5), no requiere ADR separado.
 - **Configuración manual `core.hooksPath` por clon.** Un comando
   (`git config core.hooksPath githooks`) ejecutado una vez por clon y
-  documentado en `local-setup.md` de cada servicio. Coste bajo, no se
+  documentado en `docs/cicd/cicd-strategy.md` §8. Coste bajo, no se
   automatiza con dependencias externas (Husky) para no añadir tooling
   JS al monorepo mayoritariamente Java.
 - **Latencia de arranque de contenedor Postgres por run de CI.** La

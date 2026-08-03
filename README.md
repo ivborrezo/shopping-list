@@ -104,6 +104,8 @@ cp .env.example .env
 docker compose up
 ```
 
+> **Githooks (recomendado):** tras clonar, activa los hooks versionados con `git config core.hooksPath githooks` — validan formato de commits y sanity básico (ver [Estrategia de CI/CD §8](./docs/cicd/cicd-strategy.md#instalación)).
+
 Una vez arrancado:
 
 | Servicio | URL local |
