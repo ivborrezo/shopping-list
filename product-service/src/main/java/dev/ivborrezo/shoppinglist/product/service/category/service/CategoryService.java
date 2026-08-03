@@ -13,7 +13,7 @@ public class CategoryService {
 
   private final CategoryRepository categoryRepository;
 
-  /** Inicializa el servicio con el repositorio de categorías e inyecta dependencias */
+  /** Inicializa el servicio con el repositorio de categorías e inyecta dependencias. */
   public CategoryService(CategoryRepository categoryRepository) {
     this.categoryRepository = categoryRepository;
   }
