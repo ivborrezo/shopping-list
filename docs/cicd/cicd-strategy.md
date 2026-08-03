@@ -83,11 +83,11 @@ steps:
       java-version: 21
       cache: maven
   - name: Spotless check
-    run: ./mvnw -f product-service/pom.xml spotless:check
+    run: ./product-service/mvnw -f product-service/pom.xml spotless:check
   - name: Checkstyle check
-    run: ./mvnw -f product-service/pom.xml checkstyle:check
+    run: ./product-service/mvnw -f product-service/pom.xml checkstyle:check
   - name: Compile
-    run: ./mvnw -f product-service/pom.xml -q compile
+    run: ./product-service/mvnw -f product-service/pom.xml -q compile
   - name: Verify (Testcontainers)
     run: ./product-service/mvnw -f product-service/pom.xml clean verify
   - name: Docker build (valida Dockerfile)
@@ -102,7 +102,7 @@ Justificación del orden:
   normaliza, el linter valida lo que queda. Si Spotless falla, ni
   gastamos un ciclo en Checkstyle.
 - **Checkstyle antes que compile**: Checkstyle no requiere compilar
-  (ruleset stock de checkstyle 9.3 sin módulos que dependan de
+  (ruleset basado en checkstyle 9.3, sin módulos que dependan de
   tipos). Fallar en Checkstyle es más barato que fallar en compile.
 - **Compile antes que verify**: si el código no compila, no tiene
   sentido levantar Postgres. Compile valida tipos; verify ya
@@ -122,6 +122,56 @@ Cada step es bloqueante (no se continúa si el anterior falla). El
 orden es directo: si falla Spotless, no corre Checkstyle, no compila,
 no prueba, no construye imagen. Los jobs de Checkstyle y Spotless
 fallan el build (no advisory) — ver §5.
+
+### 4.1 Umbral de severidad de Checkstyle
+
+El `pom.xml` de cada servicio Java fija `violationSeverity=error` en
+`maven-checkstyle-plugin` (solo las violaciones de severity `error`
+fallan el build). El `config/checkstyle/checkstyle.xml` compartido
+en la raíz del monorepo es una copia física del stock
+`google_checks.xml` de checkstyle 9.3 (copia física desde la Rama 1,
+ver ADR-004 §Decisión 3) con el root `Checker` dejando `severity=
+warning` como default — lo que heredan todos los módulos que no lo
+sobreescriben. Sobre ese default, 35 módulos se elevan explícitamente
+a `severity=error`, agrupados en tres buckets según el motivo de la
+elevación:
+
+- **Bucket A — bug-prone / estructural (12 módulos):** reglas que
+  atrapan defectos semánticos que Spotless no puede reformatear
+  (`OuterTypeFilename`, `IllegalTokenText`,
+  `AvoidEscapedUnicodeCharacters`, `AvoidStarImport`,
+  `OneTopLevelClass`, `EmptyBlock`, `NeedBraces`,
+  `MissingSwitchDefault`, `FallThrough`, `UpperEll`, `ModifierOrder`,
+  `NoFinalizer`).
+- **Bucket B — naming conventions (14 módulos):** reglas de nombres
+  que Spotless no toca (`PackageName`, `TypeName`, `MemberName`,
+  `ParameterName`, `LambdaParameterName`, `CatchParameterName`,
+  `LocalVariableName`, `PatternVariableName`,
+  `ClassTypeParameterName`, `RecordComponentName`,
+  `RecordTypeParameterName`, `MethodTypeParameterName`,
+  `InterfaceTypeParameterName`, `MethodName`).
+- **Bucket C — javadoc (9 módulos):** reglas de documentación
+  coherentes con AGENTS.md §5 (Javadoc obligatorio en tipos
+  públicos y métodos públicos ≥2 líneas). `NonEmptyAtclauseDescription`,
+  `InvalidJavadocPosition`, `SummaryJavadoc`, `JavadocParagraph`,
+  `RequireEmptyLineBeforeBlockTagGroup`, `AtclauseOrder`,
+  `JavadocMethod`, `MissingJavadocMethod`, `MissingJavadocType`.
+
+El resto de módulos del ruleset (~22) sigue como `warning` heredado
+del root `Checker`: formatting cubierto por Spotless (red doble
+deliberada, ADR-009 §3) y reglas subjetivas o ruidosas
+(`AbbreviationAsWordInName`, `OverloadMethodsDeclarationOrder`,
+`VariableDeclarationUsageDistance`, `Indentation`, `LineLength`,
+etc.) que no merecen bloquear el build.
+
+Ajustar el umbral (añadir o quitar módulos del bucket de error) no
+reabre ADR-009: el ADR fija el principio ("Checkstyle debe fallar el
+build, no advisory") y esta subsección es su materialización
+operativa. ADR-004 delegó explícitamente la integración concreta del
+grado de exigencia a este documento (§Decisión 3, "ajustar el grado
+de exigencia de un gate de CI es bajo comparado con el de cambiar la
+herramienta"). `list-service` heredará automáticamente el ruleset
+compartido por path relativo desde su pom.
 
 ## 5. Gating
 
