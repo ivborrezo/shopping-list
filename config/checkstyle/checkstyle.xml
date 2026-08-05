@@ -13,7 +13,7 @@
 
   Overrides aplicados respecto al stock (ver ADR-004 §Decisión 3 y
   ADR-009 §5 "Checkstyle debe fallar el build, no advisory"):
-  34 módulos elevados a severity=error sobre el default warning del
+  35 módulos elevados a severity=error sobre el default warning del
   root Checker, agrupados en tres buckets:
     - Bucket A (12): bug-prone / estructural que Spotless no reformatea.
     - Bucket B (14): naming conventions que Spotless no toca.
