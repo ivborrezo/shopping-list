@@ -4,9 +4,11 @@
 
 **Sistema de lista de la compra colaborativa construido como arquitectura de microservicios Cloud-Native.**
 
-Java 21 · Spring Boot 3.x · PostgreSQL · Docker
+Java 21 · Spring Boot 4.x · PostgreSQL · Docker
 
 </div>
+
+[![CI](https://github.com/iv-borrezo/shopping-list/actions/workflows/product-service.yml/badge.svg)](https://github.com/iv-borrezo/shopping-list/actions/workflows/product-service.yml)
 
 ---
 
@@ -17,6 +19,12 @@ Java 21 · Spring Boot 3.x · PostgreSQL · Docker
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Inicio rápido](#inicio-rápido)
 - [Documentación](#documentación)
+  - [Diagramas de arquitectura](#diagramas-de-arquitectura)
+  - [Arquitectura de eventos y convenciones](#arquitectura-de-eventos-y-convenciones)
+  - [Contratos de API](#contratos-de-api-diseño-design-first)
+  - [Guías de desarrollo](#guías-de-desarrollo)
+  - [Estrategia de CI/CD](#estrategia-de-cicd)
+  - [Architecture Decision Records (ADR)](#architecture-decision-records-adr)
 - [Roadmap](#roadmap)
 - [Autor](#autor)
 
@@ -31,11 +39,12 @@ independiente con su propia base de datos, y toda la infraestructura
 local está definida como código mediante Docker Compose.
 
 > **Estado actual:** Fase 1 (MVP Core) en desarrollo. `docker compose up`
-> levanta las bases de datos de cada servicio. Todavía no hay lógica de
-> negocio implementada — lo que existe hasta ahora es el contrato de
-> diseño de la API de ambos servicios (OpenAPI, Design-First) y la
-> arquitectura de eventos y convenciones de logging, redactadas antes
-> de escribir el primer controller.
+> levanta `product-db`, `list-db` y `product-service` (Spring Boot,
+> build multi-stage desde `Dockerfile`). `product-service` expone
+> `GET /categories` contra PostgreSQL real, con CI funcionando
+> (Testcontainers), git hooks y 9 ADRs documentando las decisiones de
+> arquitectura. `list-service` es un placeholder con su contrato de
+> API definido (Design-First).
 
 ---
 
@@ -49,10 +58,11 @@ Esta decisión, sus consecuencias y las alternativas descartadas están
 documentadas en
 [ADR-002 — Database-per-Service Pattern](./docs/adr/ADR-002-database-per-service-pattern.md).
 
-| Servicio | Base de datos | Puerto local |
+| Servicio | Contenedor | Puerto local |
 |---|---|---|
-| `product-service` | `product-db` (PostgreSQL) | `5434` |
-| `list-service` | `list-db` (PostgreSQL) | `5435` |
+| `product-service` | `shopping-list-product-service` | `8081` |
+| `product-db` | `shopping-list-product-db` (PostgreSQL) | `5434` |
+| `list-db` | `shopping-list-list-db` (PostgreSQL) | `5435` |
 
 ---
 
@@ -62,24 +72,30 @@ documentadas en
 shopping-list/
 ├── docker-compose.yml
 ├── .env.example
-├── .gitignore
-├── README.md
+├── .github/workflows/       # CI pipeline (product-service)
+├── githooks/                # pre-commit + commit-msg
+├── config/checkstyle/       # Google Java Style (compartido)
 ├── docs/
-│   ├── adr/
+│   ├── adr/                 # 9 ADRs
+│   ├── architecture/        # C4 Level 2
+│   ├── cicd/                # Estrategia CI/CD
 │   ├── events/
-│   │   └── event-architecture.md
 │   └── logging-conventions.md
-├── product-service/
+├── product-service/         # Spring Boot + PostgreSQL
+│   ├── Dockerfile (multi-stage)
+│   ├── src/
 │   └── docs/
-│       └── api-contract.yaml
-└── list-service/
+│       ├── api-contract.yaml
+│       └── local-setup.md
+└── list-service/            # Placeholder (contrato de API)
     └── docs/
         └── api-contract.yaml
 ```
 
-Cada microservicio es operacionalmente independiente dentro del
-monorepo: tendrá su propio sistema de build, su propio `Dockerfile` y
-sus propios tests, una vez se implemente en próximas sesiones.
+`product-service` ya es operacionalmente independiente: build Maven,
+`Dockerfile` multi-stage, tests con Testcontainers y pipeline de CI
+propio. `list-service` es un placeholder con su contrato de API
+definido; su implementación replicará la misma estructura.
 
 ---
 
@@ -100,8 +116,8 @@ cd shopping-list
 # 2. Preparar variables de entorno
 cp .env.example .env
 
-# 3. Levantar las bases de datos
-docker compose up
+# 3. Levantar el sistema
+docker compose up -d
 ```
 
 > **Githooks (recomendado):** tras clonar, activa los hooks versionados con `git config core.hooksPath githooks` — validan formato de commits y sanity básico (ver [Estrategia de CI/CD §8](./docs/cicd/cicd-strategy.md#instalación)).
@@ -110,8 +126,18 @@ Una vez arrancado:
 
 | Servicio | URL local |
 |---|---|
+| `product-service` (API REST) | `http://localhost:8081` |
 | `product-db` (PostgreSQL) | `localhost:5434` |
 | `list-db` (PostgreSQL) | `localhost:5435` |
+
+```bash
+# Verificación rápida
+curl -s http://localhost:8081/actuator/health
+curl -s http://localhost:8081/categories | head -c 200
+```
+
+Para desarrollo local (tests, IDE, Maven), consulta
+[`product-service/docs/local-setup.md`](./product-service/docs/local-setup.md).
 
 Para parar y limpiar los volúmenes de datos:
 
@@ -146,6 +172,12 @@ como snapshot histórico de diseño.
 |---|---|
 | `product-service` | [OpenAPI](./product-service/docs/api-contract.yaml) |
 | `list-service` | [OpenAPI](./list-service/docs/api-contract.yaml) |
+
+### Guías de desarrollo
+
+| Documento | Descripción |
+|---|---|
+| [Setup local de `product-service`](./product-service/docs/local-setup.md) | Prerrequisitos, variables de entorno, escenarios de ejecución (CLI, VSCode, Docker Compose), tests y troubleshooting |
 
 ### Estrategia de CI/CD
 
