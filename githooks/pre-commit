@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+# Hook pre-commit — ADR-009.
+#
+# Tres capas con dispatch por servicio:
+#   1. Sanity bash (sub-300ms): patrones mínimos que ni CI ni IDE cazan
+#      de forma fiable. Pure bash, sin invocar toolchains.
+#   2. Spotless :check sobre los servicios Java afectados.
+#   3. Checkstyle :check sobre los mismos servicios Java afectados.
+#
+# Fail-fast: si la Capa 1 detecta un problema, no arrancan las
+# toolchains (startup JVM de 2-5s). El dispatch extrae el directorio
+# raíz de cada servicio Java desde los paths staged y lanza solo la
+# toolchain del servicio afectado.
+#
+# Activación por clon:
+#   git config core.hooksPath githooks
+set -euo pipefail
+
+# Staged files (solo añadidos/copiados/modificados; ignoramos borrados
+# para no intentar leer lo que ya no existe en el working tree).
+mapfile -t staged < <(git diff --cached --name-only --diff-filter=ACM)
+
+# ─── Capa 1 — Sanity bash ───────────────────────────────────────
+echo "[sanity] inspeccionando staged files..."
+
+if ((${#staged[@]})); then
+  # Clasificar staged files por extensión.
+  java_js_files=()
+  for f in "${staged[@]}"; do
+    case "$f" in
+      *.java|*.js) java_js_files+=("$f") ;;
+    esac
+  done
+
+  if ((${#java_js_files[@]})); then
+    # Carácter de tabulación como literal (portable: no depende de \t
+    # en ERE, que POSIX no estandariza).
+    tab_char=$(printf '\t')
+
+    # — Tabs en .java/.js —
+    matches=""
+    for f in "${java_js_files[@]}"; do
+      if m=$(grep -nHF "$tab_char" -- "$f" 2>/dev/null); then
+        matches+="$m"$'\n'
+      fi
+    done
+    if [[ -n "$matches" ]]; then
+      echo "[sanity] tabuladores encontrados en .java/.js (usar 2 espacios):" >&2
+      printf '%s' "$matches" >&2
+      exit 1
+    fi
+
+    # — CRLF en .java/.js (modo binario -U, sin anclaje $ que es poco
+    # fiable en modo binario) —
+    crlf_files=""
+    for f in "${java_js_files[@]}"; do
+      if c=$(grep -lU $'\r' -- "$f" 2>/dev/null); then
+        crlf_files+="$c"$'\n'
+      fi
+    done
+    if [[ -n "$crlf_files" ]]; then
+      echo "[sanity] CRLF detectado en .java/.js (usar LF):" >&2
+      printf '%s' "$crlf_files" >&2
+      exit 1
+    fi
+
+    # — console.log en .js —
+    js_only=()
+    for f in "${java_js_files[@]}"; do
+      case "$f" in *.js) js_only+=("$f") ;; esac
+    done
+    if ((${#js_only[@]})); then
+      matches=""
+      for f in "${js_only[@]}"; do
+        if m=$(grep -nHF 'console.log' -- "$f" 2>/dev/null); then
+          matches+="$m"$'\n'
+        fi
+      done
+      if [[ -n "$matches" ]]; then
+        echo "[sanity] console.log encontrado en .js:" >&2
+        printf '%s' "$matches" >&2
+        exit 1
+      fi
+    fi
+
+    # — .printStackTrace( en .java —
+    java_only=()
+    for f in "${java_js_files[@]}"; do
+      case "$f" in *.java) java_only+=("$f") ;; esac
+    done
+    if ((${#java_only[@]})); then
+      matches=""
+      for f in "${java_only[@]}"; do
+        if m=$(grep -nHF '.printStackTrace(' -- "$f" 2>/dev/null); then
+          matches+="$m"$'\n'
+        fi
+      done
+      if [[ -n "$matches" ]]; then
+        echo "[sanity] .printStackTrace() encontrado en .java:" >&2
+        printf '%s' "$matches" >&2
+        exit 1
+      fi
+    fi
+  fi
+
+  # — Secrets por typo —
+  # Patrón ERE portable (no PCRE), case-insensitive vía el flag -i
+  # del grep (no (?i), que no es ERE). Clase de caracteres final:
+  # comilla simple (U+0027) y comilla doble (U+0022).
+  secret_pattern=$(printf '%s' "(password|passwd|secret|api[_-]?key|apikey|token)[[:space:]]*[=:>][[:space:]]*['\"][^'\"]{8,}['\"]")
+
+  secrets_candidates=()
+  for f in "${staged[@]}"; do
+    case "$f" in
+      .env.example|.gitignore) continue ;;
+      *.md) continue ;;
+      docs/*) continue ;;
+      *) secrets_candidates+=("$f") ;;
+    esac
+  done
+
+  if ((${#secrets_candidates[@]})); then
+    matches=""
+    for f in "${secrets_candidates[@]}"; do
+      if m=$(grep -inHE "$secret_pattern" -- "$f" 2>/dev/null); then
+        matches+="$m"$'\n'
+      fi
+    done
+    if [[ -n "$matches" ]]; then
+      echo "[sanity] posible secret por typo detectado:" >&2
+      printf '%s' "$matches" >&2
+      exit 1
+    fi
+  fi
+fi
+
+# ─── Dispatch Java: servicios afectados con pom.xml en su raíz ──
+services=()
+for f in "${staged[@]+"${staged[@]}"}"; do
+  [[ -z "$f" ]] && continue
+  top="${f%%/*}"
+  [[ "$top" == "$f" ]] && continue
+  if [[ -f "$top/pom.xml" ]]; then
+    already=0
+    for s in "${services[@]+"${services[@]}"}"; do
+      if [[ "$s" == "$top" ]]; then already=1; break; fi
+    done
+    [[ $already -eq 0 ]] && services+=("$top")
+  fi
+done
+
+# ─── Capa 2 — Spotless ─────────────────────────────────────────
+for svc in "${services[@]+"${services[@]}"}"; do
+  echo "[spotless] $svc"
+  ./"$svc"/mvnw -f "$svc"/pom.xml spotless:check
+done
+
+# ─── Capa 3 — Checkstyle ───────────────────────────────────────
+for svc in "${services[@]+"${services[@]}"}"; do
+  echo "[checkstyle] $svc"
+  ./"$svc"/mvnw -f "$svc"/pom.xml checkstyle:check
+done
+
+exit 0

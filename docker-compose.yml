@@ -21,6 +21,20 @@ services:
     networks:
       - shopping-list-net
 
+  # ── product-service ──────────────────────────────────────────────
+  product-service:
+    build: ./product-service
+    container_name: shopping-list-product-service
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env
+    depends_on:
+      product-db:
+        condition: service_healthy
+    networks:
+      - shopping-list-net
+
   # ── list-service database ─────────────────────────────────────────
   list-db:
     image: postgres:16-alpine

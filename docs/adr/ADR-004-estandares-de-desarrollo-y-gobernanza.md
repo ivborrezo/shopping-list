@@ -206,4 +206,8 @@ fases posteriores):
 - `docs/cicd/cicd-strategy.md` — Diseño de integración en el pipeline
   de CI/CD de los linters y formatters fijados en la Decisión 3
   (orden de ejecución, alcance por fase, carácter bloqueante o no).
-  Pendiente de redactar.
+  Redactado. Las decisiones irreversibles que gobiernan esa
+  integración (estrategia de Git hooks locales vs. CI remoto, gate
+  de fusión, paridad local↔CI) se formalizan en
+  [ADR-009](ADR-009-estrategia-de-ci-y-git-hooks.md); este documento
+  es su materialización operativa.

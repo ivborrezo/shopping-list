@@ -4,13 +4,7 @@
 # ==============================================================================
 
 ###-----------------------------------------------------------------------------
-### 1. ARCHIVOS PRIVADOS Y PREPARACIÓN DE ENTREVISTAS (Crítico)
-###-----------------------------------------------------------------------------
-# Carpeta local de aprendizaje, consolidación de patrones y notas de entrevistas
-patterns-notes/
-
-###-----------------------------------------------------------------------------
-### 2. IDES Y EDITORES DE CÓDIGO (JetBrains, VS Code, Eclipse, Cursor)
+### 1. IDES Y EDITORES DE CÓDIGO (JetBrains, VS Code, Eclipse, Cursor)
 ###-----------------------------------------------------------------------------
 # JetBrains (IntelliJ IDEA, WebStorm, etc.)
 .idea/
@@ -38,7 +32,7 @@ out/
 Thumbs.db
 
 ###-----------------------------------------------------------------------------
-### 3. BACKEND CORE: JAVA Y SPRING BOOT (product-service, list-service, gateway...)
+### 2. BACKEND CORE: JAVA Y SPRING BOOT (product-service, list-service, gateway...)
 ###-----------------------------------------------------------------------------
 # Herramientas de construcción (Maven)
 target/
@@ -58,7 +52,7 @@ build/
 logs/
 
 ###-----------------------------------------------------------------------------
-### 4. FRONTEND Y NODE.JS (React UI y Notification Service)
+### 3. FRONTEND Y NODE.JS (React UI y Notification Service)
 ###-----------------------------------------------------------------------------
 # Directorios de dependencias
 node_modules/
@@ -80,7 +74,7 @@ coverage/
 .nyc_output/
 
 ###-----------------------------------------------------------------------------
-### 5. INFRAESTRUCTURA Y ORQUESTACIÓN (Docker, AWS, CI/CD)
+### 4. INFRAESTRUCTURA Y ORQUESTACIÓN (Docker, AWS, CI/CD)
 ###-----------------------------------------------------------------------------
 # Volúmenes locales de Docker si se usan bind mounts en vez de named volumes
 # (Evita subir datos de PostgreSQL/Kafka/RabbitMQ)
@@ -94,7 +88,7 @@ data/
 *.tfstate.backup
 
 ###-----------------------------------------------------------------------------
-### 6. SEGURIDAD Y VARIABLES DE ENTORNO (Política de Cero Filtraciones)
+### 5. SEGURIDAD Y VARIABLES DE ENTORNO (Política de Cero Filtraciones)
 ###-----------------------------------------------------------------------------
 # Archivos de configuración de entorno con credenciales secretas
 .env
@@ -114,7 +108,7 @@ data/
 *.key
 
 ###-----------------------------------------------------------------------------
-### 7. HERRAMIENTAS Y CONTEXTO DE INTELIGENCIA ARTIFICIAL (IA / LLMs)
+### 6. HERRAMIENTAS Y CONTEXTO DE INTELIGENCIA ARTIFICIAL (IA / LLMs)
 ###-----------------------------------------------------------------------------
 AGENTS.MD
 AGENTS.md

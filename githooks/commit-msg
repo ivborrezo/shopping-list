@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Hook commit-msg — ADR-009 §8.
+#
+# Valida que el mensaje de commit cumpla la convención del proyecto
+# (Conventional Commits en castellano) con una regex mínima en bash
+# puro (sub-300ms). No valida el scope contra una allowlist: si la
+# allowlist se quedara corta, bloquearía commits legítimos y se
+# convertiría en fricción. La corrección del scope depende del
+# desarrollador.
+#
+# Activación: mismo `git config core.hooksPath githooks` del hook
+# pre-commit (un único comando cubre ambos hooks).
+set -euo pipefail
+
+msg_file="$1"
+pattern='^(chore|build|feat|test|docs|ci|fix|refactor)(\([a-z0-9_-]+\))?: .+'
+
+# Primera línea no-vacía del mensaje que no sea un comentario de Git
+# (las líneas que empiezan con '#' son añadidas automáticamente por
+# Git con metadatos del commit).
+first_line=$(grep -vE '^[[:space:]]*#' "$msg_file" | grep -vE '^[[:space:]]*$' | head -n1 || true)
+
+if ! grep -Eq "$pattern" <<<"$first_line"; then
+  cat >&2 <<EOF
+[commit-msg] el mensaje no cumple la convención del proyecto.
+
+Formato esperado: tipo(scope): resumen   (scope opcional)
+Tipos válidos: chore|build|feat|test|docs|ci|fix|refactor
+Recibido: $first_line
+EOF
+  exit 1
+fi
+
+exit 0
