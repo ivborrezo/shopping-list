@@ -22,12 +22,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Caching Maven vía setup-java (ADR-009, Decisión 7): invalidación
       # por hash del pom.xml, salta el download de dependencias desde
       # Maven Central en cada run.
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
@@ -55,10 +55,10 @@ jobs:
       # del stage builder entre runs vía el backend de GitHub Actions
       # cache. El # syntax=docker/dockerfile:1.4 del Dockerfile ya
       # habilita BuildKit.
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - name: Docker build (valida Dockerfile)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: product-service/
           push: false
