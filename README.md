@@ -41,8 +41,9 @@ local está definida como código mediante Docker Compose.
 > **Estado actual:** Fase 1 (MVP Core) en desarrollo. `docker compose up`
 > levanta `product-db`, `list-db` y `product-service` (Spring Boot,
 > build multi-stage desde `Dockerfile`). `product-service` expone
-> `GET /categories` contra PostgreSQL real, con CI funcionando
-> (Testcontainers), git hooks y 9 ADRs documentando las decisiones de
+> `GET /categories`, `GET /categories/{id}` y `POST /categories`
+> con soporte multiidioma (es/en/eu). CI en verde (Testcontainers +
+> failsafe), git hooks y 11 ADRs documentando las decisiones de
 > arquitectura. `list-service` es un placeholder con su contrato de
 > API definido (Design-First).
 
@@ -76,7 +77,7 @@ shopping-list/
 ├── githooks/                # pre-commit + commit-msg
 ├── config/checkstyle/       # Google Java Style (compartido)
 ├── docs/
-│   ├── adr/                 # 9 ADRs
+│   ├── adr/                 # 11 ADRs
 │   ├── architecture/        # C4 Level 2
 │   ├── cicd/                # Estrategia CI/CD
 │   ├── events/
@@ -201,9 +202,11 @@ Architecture Decision Records (ADR) en [`docs/adr/`](./docs/adr/).
 | [ADR-007 — Flyway como herramienta de migraciones](./docs/adr/ADR-007-flyway-como-herramienta-de-migraciones.md) | Flyway (edición Community) como gestor único del esquema de cada base de datos por servicio; `ddl-auto: none`, migraciones versionadas en SQL | ✅ Redactado |
 | [ADR-008 — Testcontainers para testing de integración](./docs/adr/ADR-008-testcontainers-para-testing-de-integracion.md) | Tests de integración contra PostgreSQL real vía contenedores efímeros; descarte de H2 por discrepancias de comportamiento | ✅ Redactado |
 | [ADR-009 — Estrategia de CI y Git Hooks](./docs/adr/ADR-009-estrategia-de-ci-y-git-hooks.md) | Estrategia de CI (sin CD) en dos capas (pre-commit local + GitHub Actions remoto) para el monorepo políglota: hook nativo vía `core.hooksPath` con tres capas y dispatch por servicio, gate híbrido advisory→hard, Testcontainers en `ubuntu-latest` hosted con paridad local↔CI, caching Maven + BuildKit `type=gha`. Cierra delegaciones pendientes de ADR-004 y ADR-008 | ✅ Aceptado |
+| [ADR-010 — Política de Testing (TDD vs. test-after)](./docs/adr/ADR-010-politica-de-testing-tdd-vs-test-after.md) | TDD como política por defecto; tests unitarios (Mockito) para lógica aislada e integración (Testcontainers) para flujos E2E, con excepciones legítimas documentadas | ✅ Redactado |
+| [ADR-011 — Estrategia de internacionalización y fallback](./docs/adr/ADR-011-estrategia-de-internacionalizacion-y-fallback.md) | Resolución de `Accept-Language` vía `AcceptHeaderLocaleResolver`, fallback exacto → inglés → primer disponible, resolución del nombre en capa de servicio (no JPQL), validación de `locale` en dos capas (Bean Validation + servicio) | ✅ Redactado |
 
-Esta sección crecerá a medida que se tomen nuevas decisiones de
-arquitectura en próximas fases.
+Los ADRs se redactan a medida que se toman decisiones de arquitectura
+en cada fase; la tabla refleja el estado actual de las mismas.
 
 ---
 
