@@ -1,11 +1,17 @@
 package dev.ivborrezo.shoppinglist.product.service.category.controller;
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.category.dto.CreateCategoryRequest;
 import dev.ivborrezo.shoppinglist.product.service.category.service.CategoryService;
+import jakarta.validation.Valid;
+import java.net.URI;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,5 +48,20 @@ public class CategoryController {
   @GetMapping("/{id}")
   public CategoryResponseDto getById(@PathVariable Long id, Locale locale) {
     return categoryService.findById(id, locale);
+  }
+
+  /**
+   * Crea una categoría del catálogo con sus traducciones.
+   *
+   * @param request petición con código, estado activo y traducciones
+   * @param locale idioma resuelto desde la cabecera por Spring MVC
+   * @return {@code 201 Created} con DTO y cabecera {@code Location}
+   */
+  @PostMapping
+  public ResponseEntity<CategoryResponseDto> create(
+      @Valid @RequestBody CreateCategoryRequest request, Locale locale) {
+    CategoryResponseDto created = categoryService.create(request, locale);
+    URI location = URI.create("/categories/" + created.id());
+    return ResponseEntity.created(location).body(created);
   }
 }

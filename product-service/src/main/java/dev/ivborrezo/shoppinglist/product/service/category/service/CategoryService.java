@@ -1,6 +1,7 @@
 package dev.ivborrezo.shoppinglist.product.service.category.service;
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.category.dto.CreateCategoryRequest;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.CategoryTranslation;
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
@@ -18,6 +19,8 @@ import org.springframework.web.server.ResponseStatusException;
 public class CategoryService {
 
   private static final String FALLBACK_LOCALE = "en";
+
+  private static final Set<String> SUPPORTED_LOCALES = Set.of("es", "en", "eu");
 
   private final CategoryRepository categoryRepository;
 
@@ -50,6 +53,42 @@ public class CategoryService {
         .findById(id)
         .map(c -> CategoryResponseDto.from(c, resolveName(c, locale)))
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+  }
+
+  /**
+   * Crea una categoría con sus traducciones y devuelve el DTO con el nombre localizado.
+   *
+   * @param request petición con el código, estado activo y lista de traducciones
+   * @param locale idioma en el que se devuelve el nombre de la categoría creada
+   * @return DTO de la categoría recién creada con el nombre localizado al idioma solicitado
+   * @throws IllegalArgumentException si alguna traducción usa un locale no soportado
+   */
+  @Transactional
+  public CategoryResponseDto create(CreateCategoryRequest request, Locale locale) {
+    validateSupportedLocales(request.translations());
+
+    Category category = new Category();
+    category.setCode(request.code());
+    category.setIsActive(request.isActive());
+
+    for (CreateCategoryRequest.Translation t : request.translations()) {
+      CategoryTranslation translation = new CategoryTranslation();
+      translation.setLocale(t.locale());
+      translation.setName(t.name());
+      translation.setCategory(category);
+      category.getTranslations().add(translation);
+    }
+
+    Category saved = categoryRepository.save(category);
+    return CategoryResponseDto.from(saved, resolveName(saved, locale));
+  }
+
+  private void validateSupportedLocales(List<CreateCategoryRequest.Translation> translations) {
+    boolean allSupported =
+        translations.stream().allMatch(t -> SUPPORTED_LOCALES.contains(t.locale()));
+    if (!allSupported) {
+      throw new IllegalArgumentException("Unsupported locale");
+    }
   }
 
   /**
