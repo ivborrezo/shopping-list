@@ -48,7 +48,7 @@ import tools.jackson.databind.ObjectMapper;
 @TestConstructor(autowireMode = AutowireMode.ALL)
 @Transactional
 @Testcontainers
-class CategoryIntegrationTest {
+class CategoryIntegrationIT {
 
   @Container @ServiceConnection
   static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
@@ -67,7 +67,7 @@ class CategoryIntegrationTest {
    * @param objectMapper mapper Jackson para deserializar el body de las respuestas HTTP
    * @param entityManager gestor JPA para inserciones ad hoc dentro de la transacción del test
    */
-  CategoryIntegrationTest(
+  CategoryIntegrationIT(
       MockMvc mockMvc, ObjectMapper objectMapper, TestEntityManager entityManager) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
