@@ -5,6 +5,7 @@ import dev.ivborrezo.shoppinglist.product.service.category.service.CategoryServi
 import java.util.List;
 import java.util.Locale;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,5 +30,17 @@ public class CategoryController {
   @GetMapping
   public List<CategoryResponseDto> list(Locale locale) {
     return categoryService.findActive(locale);
+  }
+
+  /**
+   * Recupera una categoría por su identificador con el nombre localizado al idioma solicitado.
+   *
+   * @param id identificador de la categoría a recuperar
+   * @param locale idioma resuelto desde la cabecera por Spring MVC
+   * @return DTO de la categoría encontrada con su nombre localizado
+   */
+  @GetMapping("/{id}")
+  public CategoryResponseDto getById(@PathVariable Long id, Locale locale) {
+    return categoryService.findById(id, locale);
   }
 }

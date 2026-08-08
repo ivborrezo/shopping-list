@@ -7,8 +7,10 @@ import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRe
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Servicio de gestión de categorías del catálogo con resolución de nombres localizados. */
 @Service
@@ -33,6 +35,21 @@ public class CategoryService {
     return categoryRepository.findByIsActiveTrue().stream()
         .map(c -> CategoryResponseDto.from(c, resolveName(c, locale)))
         .toList();
+  }
+
+  /**
+   * Busca una categoría por su identificador con el nombre resuelto al idioma solicitado.
+   *
+   * @param id identificador de la categoría a recuperar
+   * @param locale idioma en el que se quiere el nombre de la categoría
+   * @return DTO de la categoría encontrada con su nombre localizado
+   * @throws ResponseStatusException con {@code 404} si la categoría no existe
+   */
+  public CategoryResponseDto findById(Long id, Locale locale) {
+    return categoryRepository
+        .findById(id)
+        .map(c -> CategoryResponseDto.from(c, resolveName(c, locale)))
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
   }
 
   /**
