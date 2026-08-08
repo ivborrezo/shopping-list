@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
@@ -116,7 +117,15 @@ class CategoryCreationIntegrationIT {
         .andExpect(status().isBadRequest());
   }
 
-  /** Sin manejo global de errores, un locale no soportado se traduce en 500. */
+  /**
+   * Sin manejo global de errores, un locale no soportado se traduce en 500.
+   *
+   * <p>Deshabilitado hasta Rama 6: MockMvc en modo MOCK no tiene el filtro de errores del
+   * contenedor Servlet, por lo que las excepciones no manejadas se propagan como error de test en
+   * lugar de devolver 500. Se reactivará cuando exista {@code @RestControllerAdvice}.
+   */
+  @Disabled(
+      "Requiere @ControllerAdvice (Rama 6): MockMvc en modo MOCK no despacha errores del contenedor")
   @Test
   void createCategory_withUnsupportedLocale_returns500() throws Exception {
     String body =
@@ -135,7 +144,16 @@ class CategoryCreationIntegrationIT {
         .andExpect(status().isInternalServerError());
   }
 
-  /** Sin manejo global de errores, un code duplicado se traduce en 500. */
+  /**
+   * Sin manejo global de errores, un code duplicado se traduce en 500.
+   *
+   * <p>Deshabilitado hasta Rama 6: MockMvc en modo MOCK no tiene el filtro de errores del
+   * contenedor Servlet, por lo que las excepciones no manejadas se propagan como error de test en
+   * lugar de devolver 500. Se reactivará cuando exista {@code @RestControllerAdvice}. En Rama 6 el
+   * status esperado migrará a 409 según {@code api-contract.yaml}.
+   */
+  @Disabled(
+      "Requiere @ControllerAdvice (Rama 6): MockMvc en modo MOCK no despacha errores del contenedor")
   @Test
   void createCategory_withDuplicateCode_returns500() throws Exception {
     String body =
