@@ -41,8 +41,9 @@ local está definida como código mediante Docker Compose.
 > **Estado actual:** Fase 1 (MVP Core) en desarrollo. `docker compose up`
 > levanta `product-db`, `list-db` y `product-service` (Spring Boot,
 > build multi-stage desde `Dockerfile`). `product-service` expone
-> `GET /categories` contra PostgreSQL real, con CI funcionando
-> (Testcontainers), git hooks y 9 ADRs documentando las decisiones de
+> `GET /categories`, `GET /categories/{id}` y `POST /categories`
+> con soporte multiidioma (es/en/eu). CI en verde (Testcontainers +
+> failsafe), git hooks y 11 ADRs documentando las decisiones de
 > arquitectura. `list-service` es un placeholder con su contrato de
 > API definido (Design-First).
 
@@ -76,7 +77,7 @@ shopping-list/
 ├── githooks/                # pre-commit + commit-msg
 ├── config/checkstyle/       # Google Java Style (compartido)
 ├── docs/
-│   ├── adr/                 # 9 ADRs
+│   ├── adr/                 # 11 ADRs
 │   ├── architecture/        # C4 Level 2
 │   ├── cicd/                # Estrategia CI/CD
 │   ├── events/
