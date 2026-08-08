@@ -1,13 +1,17 @@
 package dev.ivborrezo.shoppinglist.product.service.category.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -15,8 +19,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * Categoría del catálogo gestionado por el sistema.
  *
- * <p>Su nombre localizado vive en {@code category_translation} (Rama 3, i18n Table); esta entidad
- * solo carga los campos estructurales y de auditoría. Las columnas {@code created_at}/{@code
+ * <p>Los nombres localizados viven en {@code category_translation} (patrón i18n Table),
+ * relacionados por la colección {@code translations}. Las columnas {@code created_at}/{@code
  * updated_at} se almacenan como {@code TIMESTAMPTZ} en PostgreSQL y se mapean a {@link Instant}
  * (instante absoluto, sin zona adjunta); la convención es transversal a todas las columnas de
  * auditoría del monorepo.
@@ -43,6 +47,9 @@ public class Category {
   @LastModifiedDate
   @Column(nullable = false)
   private Instant updatedAt;
+
+  @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+  private Set<CategoryTranslation> translations = new LinkedHashSet<>();
 
   public Category() {}
 
@@ -76,5 +83,9 @@ public class Category {
 
   public Instant getUpdatedAt() {
     return updatedAt;
+  }
+
+  public Set<CategoryTranslation> getTranslations() {
+    return translations;
   }
 }
