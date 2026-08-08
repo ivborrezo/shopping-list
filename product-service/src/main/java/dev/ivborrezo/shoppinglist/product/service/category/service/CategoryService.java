@@ -1,29 +1,71 @@
 package dev.ivborrezo.shoppinglist.product.service.category.service;
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
+import dev.ivborrezo.shoppinglist.product.service.category.entity.CategoryTranslation;
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Servicio de gestión de categorías del catálogo. */
+/** Servicio de gestión de categorías del catálogo con resolución de nombres localizados. */
 @Service
 @Transactional(readOnly = true)
 public class CategoryService {
 
+  private static final String FALLBACK_LOCALE = "en";
+
   private final CategoryRepository categoryRepository;
 
-  /** Inicializa el servicio con el repositorio de categorías e inyecta dependencias. */
   public CategoryService(CategoryRepository categoryRepository) {
     this.categoryRepository = categoryRepository;
   }
 
   /**
-   * Devuelve las categorías activas del catálogo, materializadas como DTOs de respuesta.
+   * Devuelve las categorías activas del catálogo con el nombre resuelto al idioma solicitado.
    *
-   * @return lista de DTOs con las categorías activas; vacía si no hay ninguna
+   * @param locale idioma en el que se quieren los nombres de las categorías
+   * @return lista de DTOs con las categorías activas y sus nombres localizados; vacía si no hay
    */
-  public List<CategoryResponseDto> findActive() {
-    return categoryRepository.findByIsActiveTrue().stream().map(CategoryResponseDto::from).toList();
+  public List<CategoryResponseDto> findActive(Locale locale) {
+    return categoryRepository.findByIsActiveTrue().stream()
+        .map(c -> CategoryResponseDto.from(c, resolveName(c, locale)))
+        .toList();
+  }
+
+  /**
+   * Resuelve el nombre localizado de una categoría aplicando: coincidencia exacta con el locale
+   * solicitado → fallback a {@value #FALLBACK_LOCALE} → primer idioma disponible.
+   */
+  private String resolveName(Category category, Locale locale) {
+    Set<CategoryTranslation> translations = category.getTranslations();
+    if (translations.isEmpty()) {
+      return null;
+    }
+    String localeTag = locale.toLanguageTag();
+
+    String exact =
+        translations.stream()
+            .filter(t -> t.getLocale().equals(localeTag))
+            .map(CategoryTranslation::getName)
+            .findFirst()
+            .orElse(null);
+    if (exact != null) {
+      return exact;
+    }
+
+    String english =
+        translations.stream()
+            .filter(t -> t.getLocale().equals(FALLBACK_LOCALE))
+            .map(CategoryTranslation::getName)
+            .findFirst()
+            .orElse(null);
+    if (english != null) {
+      return english;
+    }
+
+    return translations.iterator().next().getName();
   }
 }

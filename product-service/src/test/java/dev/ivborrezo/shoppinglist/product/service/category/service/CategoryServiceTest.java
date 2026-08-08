@@ -5,10 +5,10 @@ import static org.mockito.Mockito.when;
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
+import dev.ivborrezo.shoppinglist.product.service.category.entity.CategoryTranslation;
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,7 +100,10 @@ class CategoryServiceTest {
     assertThat(categories).isEmpty();
   }
 
-  /** POJO de traducción para montar la entidad de test sin la entidad JPA real. */
+  /**
+   * POJO auxiliar para construir traducciones de test. El {@link CategoryFixture} las convierte en
+   * {@link CategoryTranslation} al construirse.
+   */
   private static class TranslationFixture {
 
     private final String locale;
@@ -121,17 +124,21 @@ class CategoryServiceTest {
     }
   }
 
-  /** Subclase de {@link Category} que expone traducciones para el test unitario. */
+  /**
+   * Subclase de {@link Category} que recibe traducciones como {@link TranslationFixture} y las
+   * convierte en {@link CategoryTranslation} poblando la colección {@code translations} heredada.
+   */
   private static class CategoryFixture extends Category {
 
-    private final Set<TranslationFixture> translations;
-
-    CategoryFixture(TranslationFixture... translations) {
-      this.translations = Set.of(translations);
-    }
-
-    Set<TranslationFixture> getTranslations() {
-      return translations;
+    CategoryFixture(TranslationFixture... fixtures) {
+      setIsActive(true);
+      for (TranslationFixture f : fixtures) {
+        CategoryTranslation ct = new CategoryTranslation();
+        ct.setLocale(f.getLocale());
+        ct.setName(f.getName());
+        ct.setCategory(this);
+        getTranslations().add(ct);
+      }
     }
   }
 }
