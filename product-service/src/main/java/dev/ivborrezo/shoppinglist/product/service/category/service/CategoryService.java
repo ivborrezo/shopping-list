@@ -5,9 +5,12 @@ import dev.ivborrezo.shoppinglist.product.service.category.dto.CreateCategoryReq
 import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.CategoryTranslation;
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
+import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,15 +32,20 @@ public class CategoryService {
   }
 
   /**
-   * Devuelve las categorías activas del catálogo con el nombre resuelto al idioma solicitado.
+   * Devuelve las categorías activas del catálogo paginadas, con el nombre resuelto al idioma
+   * solicitado.
    *
    * @param locale idioma en el que se quieren los nombres de las categorías
-   * @return lista de DTOs con las categorías activas y sus nombres localizados; vacía si no hay
+   * @param pageable parámetros de paginación (número de página, tamaño)
+   * @return página de DTOs con las categorías activas y sus nombres localizados; vacía si no hay
    */
-  public List<CategoryResponseDto> findActive(Locale locale) {
-    return categoryRepository.findByIsActiveTrue().stream()
-        .map(c -> CategoryResponseDto.from(c, resolveName(c, locale)))
-        .toList();
+  public PagedResponse<CategoryResponseDto> findActive(Locale locale, Pageable pageable) {
+    Page<Category> page = categoryRepository.findByIsActiveTrue(pageable);
+    List<CategoryResponseDto> dtos =
+        page.getContent().stream()
+            .map(c -> CategoryResponseDto.from(c, resolveName(c, locale)))
+            .toList();
+    return new PagedResponse<>(dtos, page.getNumber(), page.getSize(), page.getTotalElements());
   }
 
   /**
