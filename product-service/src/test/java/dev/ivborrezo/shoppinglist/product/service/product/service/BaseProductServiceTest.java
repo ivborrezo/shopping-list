@@ -45,7 +45,12 @@ class BaseProductServiceTest {
   @Test
   void findActive_returnsNameInRequestedLocale() {
     ProductFixture milk =
-        new ProductFixture("whole_milk", 1L, "L", null, "ML",
+        new ProductFixture(
+            "whole_milk",
+            1L,
+            "L",
+            null,
+            "ML",
             new TranslationFixture("es", "Leche entera", "Descripción en español"),
             new TranslationFixture("en", "Whole milk", "Description in English"),
             new TranslationFixture("eu", "Esne osoa", "Deskribapena euskaraz"));
@@ -63,7 +68,12 @@ class BaseProductServiceTest {
   @Test
   void findActive_fallsBackToEnglish_whenRequestedLocaleUnavailable() {
     ProductFixture milk =
-        new ProductFixture("whole_milk", 1L, "L", null, "ML",
+        new ProductFixture(
+            "whole_milk",
+            1L,
+            "L",
+            null,
+            "ML",
             new TranslationFixture("es", "Leche entera", null),
             new TranslationFixture("en", "Whole milk", null));
     when(baseProductRepository.findByIsActiveTrue(any(Pageable.class)))
@@ -80,8 +90,8 @@ class BaseProductServiceTest {
   @Test
   void findActive_fallsBackToFirstAvailable_whenEnglishAlsoUnavailable() {
     ProductFixture milk =
-        new ProductFixture("whole_milk", 1L, "L", null, "ML",
-            new TranslationFixture("es", "Leche entera", null));
+        new ProductFixture(
+            "whole_milk", 1L, "L", null, "ML", new TranslationFixture("es", "Leche entera", null));
     when(baseProductRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(java.util.List.of(milk)));
 
@@ -96,7 +106,12 @@ class BaseProductServiceTest {
   @Test
   void findActive_returnsDescriptionInRequestedLocale() {
     ProductFixture milk =
-        new ProductFixture("whole_milk", 1L, "L", null, "ML",
+        new ProductFixture(
+            "whole_milk",
+            1L,
+            "L",
+            null,
+            "ML",
             new TranslationFixture("es", "Leche entera", "Leche de vaca entera"),
             new TranslationFixture("en", "Whole milk", "Full-fat cow milk"),
             new TranslationFixture("eu", "Esne osoa", "Behi-esne osoa"));
@@ -113,8 +128,8 @@ class BaseProductServiceTest {
   @Test
   void findActive_returnsNullDescription_whenTranslationHasNoDescription() {
     ProductFixture milk =
-        new ProductFixture("whole_milk", 1L, "L", null, "ML",
-            new TranslationFixture("en", "Whole milk", null));
+        new ProductFixture(
+            "whole_milk", 1L, "L", null, "ML", new TranslationFixture("en", "Whole milk", null));
     when(baseProductRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(java.util.List.of(milk)));
 
@@ -128,9 +143,10 @@ class BaseProductServiceTest {
   @Test
   void findActive_returnsPaginationMetadata() {
     ProductFixture milk =
-        new ProductFixture("whole_milk", 1L, "L", null, "ML",
-            new TranslationFixture("es", "Leche entera", null));
-    Page<BaseProduct> springPage = new PageImpl<>(java.util.List.of(milk), PageRequest.of(2, 10), 42);
+        new ProductFixture(
+            "whole_milk", 1L, "L", null, "ML", new TranslationFixture("es", "Leche entera", null));
+    Page<BaseProduct> springPage =
+        new PageImpl<>(java.util.List.of(milk), PageRequest.of(2, 10), 42);
     when(baseProductRepository.findByIsActiveTrue(any(Pageable.class))).thenReturn(springPage);
 
     PagedResponse<BaseProductResponseDto> page =
@@ -145,7 +161,12 @@ class BaseProductServiceTest {
   @Test
   void findActive_fallsBackDescriptionToEnglish() {
     ProductFixture milk =
-        new ProductFixture("whole_milk", 1L, "L", null, "ML",
+        new ProductFixture(
+            "whole_milk",
+            1L,
+            "L",
+            null,
+            "ML",
             new TranslationFixture("es", "Leche entera", "Leche de vaca entera"),
             new TranslationFixture("en", "Whole milk", "Full-fat cow milk"));
     when(baseProductRepository.findByIsActiveTrue(any(Pageable.class)))
@@ -179,12 +200,18 @@ class BaseProductServiceTest {
 
   /**
    * Subclase de {@link BaseProduct} que recibe traducciones como {@link TranslationFixture} y las
-   * convierte en {@link BaseProductTranslation} poblando la colección {@code translations} heredada.
+   * convierte en {@link BaseProductTranslation} poblando la colección {@code translations}
+   * heredada.
    */
   private static class ProductFixture extends BaseProduct {
 
-    ProductFixture(String code, Long categoryId, String defaultUnit, Integer calories,
-        String caloriesPer, TranslationFixture... fixtures) {
+    ProductFixture(
+        String code,
+        Long categoryId,
+        String defaultUnit,
+        Integer calories,
+        String caloriesPer,
+        TranslationFixture... fixtures) {
       setCode(code);
       setCategoryId(categoryId);
       setDefaultUnit(defaultUnit);

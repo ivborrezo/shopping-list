@@ -99,7 +99,8 @@ class BaseProductGetByIdIntegrationIT {
     assertThat(product.id()).isEqualTo(3L);
     assertThat(product.code()).isEqualTo("cured_cheese");
     assertThat(product.name()).isEqualTo("Queso curado");
-    assertThat(product.description()).isEqualTo("Queso de leche de oveja con maduración prolongada");
+    assertThat(product.description())
+        .isEqualTo("Queso de leche de oveja con maduración prolongada");
     assertThat(product.categoryId()).isEqualTo(1L);
     assertThat(product.defaultUnit()).isEqualTo("G");
     assertThat(product.calories()).isEqualTo(350);
@@ -109,7 +110,8 @@ class BaseProductGetByIdIntegrationIT {
   /** Devuelve 404 cuando el identificador de producto base no existe. */
   @Test
   void getBaseProductById_withNonExistentId_returns404() throws Exception {
-    mockMvc.perform(get("/base-products/9999").header("Accept-Language", "es"))
+    mockMvc
+        .perform(get("/base-products/9999").header("Accept-Language", "es"))
         .andExpect(status().isNotFound());
   }
 }

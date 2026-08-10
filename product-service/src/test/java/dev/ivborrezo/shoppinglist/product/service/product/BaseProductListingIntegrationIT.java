@@ -29,8 +29,8 @@ import tools.jackson.databind.ObjectMapper;
  * búsqueda textual e internacionalización según la cabecera {@code Accept-Language}.
  *
  * <p>Trabaja sobre los 30 productos del seed V7 (aplicados por Flyway en el arranque del contexto
- * de test), cubriendo la pila completa sin mocks: {@code DispatcherServlet → BaseProductController →
- * BaseProductService → BaseProductRepository → PostgreSQL}.
+ * de test), cubriendo la pila completa sin mocks: {@code DispatcherServlet → BaseProductController
+ * → BaseProductService → BaseProductRepository → PostgreSQL}.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -87,9 +87,7 @@ class BaseProductListingIntegrationIT {
     PagedResponse<BaseProductResponseDto> page = getBaseProducts("?text=leche");
 
     assertThat(page.content()).isNotEmpty();
-    assertThat(page.content())
-        .extracting(BaseProductResponseDto::code)
-        .contains("whole_milk");
+    assertThat(page.content()).extracting(BaseProductResponseDto::code).contains("whole_milk");
   }
 
   /** Devuelve los nombres en euskera con la cabecera {@code Accept-Language: eu}. */
@@ -153,8 +151,8 @@ class BaseProductListingIntegrationIT {
     return getBaseProducts(queryString, null);
   }
 
-  private PagedResponse<BaseProductResponseDto> getBaseProducts(String queryString,
-      String acceptLanguage) throws Exception {
+  private PagedResponse<BaseProductResponseDto> getBaseProducts(
+      String queryString, String acceptLanguage) throws Exception {
     var request = get("/base-products" + (queryString.isEmpty() ? "" : "?" + queryString));
     if (acceptLanguage != null) {
       request = request.header("Accept-Language", acceptLanguage);
