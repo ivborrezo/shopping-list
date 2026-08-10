@@ -153,7 +153,8 @@ class BaseProductListingIntegrationIT {
 
   private PagedResponse<BaseProductResponseDto> getBaseProducts(
       String queryString, String acceptLanguage) throws Exception {
-    var request = get("/base-products" + (queryString.isEmpty() ? "" : "?" + queryString));
+    var query = queryString.startsWith("?") ? queryString.substring(1) : queryString;
+    var request = get("/base-products" + (query.isEmpty() ? "" : "?" + query));
     if (acceptLanguage != null) {
       request = request.header("Accept-Language", acceptLanguage);
     }
