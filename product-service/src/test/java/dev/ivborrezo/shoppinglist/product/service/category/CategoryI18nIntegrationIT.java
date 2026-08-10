@@ -5,7 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
-import java.util.List;
+import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
@@ -66,9 +66,10 @@ class CategoryI18nIntegrationIT {
   /** Devuelve el nombre en español de la categoría dairy con la cabecera {@code es}. */
   @Test
   void getCategories_withEsHeader_returnsNamesInSpanish() throws Exception {
-    List<CategoryResponseDto> categories = getCategories("es");
+    PagedResponse<CategoryResponseDto> page = getCategories("es");
 
-    assertThat(categories)
+    assertThat(page.totalElements()).isEqualTo(10);
+    assertThat(page.content())
         .filteredOn(category -> category.code().equals("dairy"))
         .singleElement()
         .extracting(CategoryResponseDto::name)
@@ -78,9 +79,9 @@ class CategoryI18nIntegrationIT {
   /** Devuelve el nombre en inglés de la categoría dairy con la cabecera {@code en}. */
   @Test
   void getCategories_withEnHeader_returnsNamesInEnglish() throws Exception {
-    List<CategoryResponseDto> categories = getCategories("en");
+    PagedResponse<CategoryResponseDto> page = getCategories("en");
 
-    assertThat(categories)
+    assertThat(page.content())
         .filteredOn(category -> category.code().equals("dairy"))
         .singleElement()
         .extracting(CategoryResponseDto::name)
@@ -90,9 +91,9 @@ class CategoryI18nIntegrationIT {
   /** Devuelve el nombre en euskera de la categoría dairy con la cabecera {@code eu}. */
   @Test
   void getCategories_withEuHeader_returnsNamesInEuskera() throws Exception {
-    List<CategoryResponseDto> categories = getCategories("eu");
+    PagedResponse<CategoryResponseDto> page = getCategories("eu");
 
-    assertThat(categories)
+    assertThat(page.content())
         .filteredOn(category -> category.code().equals("dairy"))
         .singleElement()
         .extracting(CategoryResponseDto::name)
@@ -102,9 +103,9 @@ class CategoryI18nIntegrationIT {
   /** Aplica fallback a inglés cuando la petición no incluye la cabecera {@code Accept-Language}. */
   @Test
   void getCategories_withoutAcceptLanguageHeader_fallsBackToEnglish() throws Exception {
-    List<CategoryResponseDto> categories = getCategories(null);
+    PagedResponse<CategoryResponseDto> page = getCategories(null);
 
-    assertThat(categories)
+    assertThat(page.content())
         .filteredOn(category -> category.code().equals("dairy"))
         .singleElement()
         .extracting(CategoryResponseDto::name)
@@ -114,9 +115,9 @@ class CategoryI18nIntegrationIT {
   /** Aplica fallback a inglés cuando el idioma solicitado no está soportado. */
   @Test
   void getCategories_withUnsupportedLocale_fallsBackToEnglish() throws Exception {
-    List<CategoryResponseDto> categories = getCategories("fr");
+    PagedResponse<CategoryResponseDto> page = getCategories("fr");
 
-    assertThat(categories)
+    assertThat(page.content())
         .filteredOn(category -> category.code().equals("dairy"))
         .singleElement()
         .extracting(CategoryResponseDto::name)
@@ -126,9 +127,9 @@ class CategoryI18nIntegrationIT {
   /** Aplica fallback a inglés cuando la cabecera {@code Accept-Language} es inválida. */
   @Test
   void getCategories_withMalformedHeader_fallsBackToEnglish() throws Exception {
-    List<CategoryResponseDto> categories = getCategories("???");
+    PagedResponse<CategoryResponseDto> page = getCategories("???");
 
-    assertThat(categories)
+    assertThat(page.content())
         .filteredOn(category -> category.code().equals("dairy"))
         .singleElement()
         .extracting(CategoryResponseDto::name)
@@ -137,13 +138,13 @@ class CategoryI18nIntegrationIT {
 
   /**
    * Ejecuta {@code GET /categories} con la cabecera {@code Accept-Language} indicada y deserializa
-   * la lista de categorías resultante.
+   * la página de categorías resultante.
    *
    * @param acceptLanguage valor de la cabecera; {@code null} para omitirla
-   * @return lista de categorías activas devuelta por el endpoint
+   * @return página de categorías activas devuelta por el endpoint
    * @throws Exception si la petición MockMvc o la deserialización fallan
    */
-  private List<CategoryResponseDto> getCategories(String acceptLanguage) throws Exception {
+  private PagedResponse<CategoryResponseDto> getCategories(String acceptLanguage) throws Exception {
     var request = get("/categories");
     if (acceptLanguage != null) {
       request = request.header("Accept-Language", acceptLanguage);
@@ -152,6 +153,6 @@ class CategoryI18nIntegrationIT {
 
     return objectMapper.readValue(
         result.getResponse().getContentAsByteArray(),
-        new TypeReference<List<CategoryResponseDto>>() {});
+        new TypeReference<PagedResponse<CategoryResponseDto>>() {});
   }
 }
