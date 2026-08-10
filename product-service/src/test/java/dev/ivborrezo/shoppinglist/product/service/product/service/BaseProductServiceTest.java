@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
@@ -33,12 +34,14 @@ class BaseProductServiceTest {
 
   @Mock private BaseProductRepository baseProductRepository;
 
+  @Mock private CategoryRepository categoryRepository;
+
   private BaseProductService baseProductService;
 
-  /** Instancia el servicio bajo test con el repositorio mockeado. */
+  /** Instancia el servicio bajo test con los repositorios mockeados. */
   @BeforeEach
   void setUp() {
-    baseProductService = new BaseProductService(baseProductRepository);
+    baseProductService = new BaseProductService(baseProductRepository, categoryRepository);
   }
 
   /** Devuelve el nombre en el idioma solicitado cuando existe traducción. */

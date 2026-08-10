@@ -44,4 +44,12 @@ public interface BaseProductRepository extends JpaRepository<BaseProduct, Long> 
         AND LOWER(t.name) LIKE LOWER(CONCAT('%', :text, '%'))
       """)
   Page<BaseProduct> findByIsActiveTrueAndText(@Param("text") String text, Pageable pageable);
+
+  /**
+   * Comprueba si existe un producto base con el código dado.
+   *
+   * @param code código de producto a verificar
+   * @return {@code true} si ya existe un producto con ese código
+   */
+  boolean existsByCode(String code);
 }

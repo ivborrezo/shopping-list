@@ -1,10 +1,13 @@
 package dev.ivborrezo.shoppinglist.product.service.product.service;
 
+import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateBaseProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProductTranslation;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -23,12 +26,18 @@ import org.springframework.web.server.ResponseStatusException;
 @Transactional(readOnly = true)
 public class BaseProductService {
 
+  private static final Set<String> SUPPORTED_LOCALES = Set.of("es", "en", "eu");
+
   private static final String FALLBACK_LOCALE = "en";
 
   private final BaseProductRepository baseProductRepository;
 
-  public BaseProductService(BaseProductRepository baseProductRepository) {
+  private final CategoryRepository categoryRepository;
+
+  public BaseProductService(
+      BaseProductRepository baseProductRepository, CategoryRepository categoryRepository) {
     this.baseProductRepository = baseProductRepository;
+    this.categoryRepository = categoryRepository;
   }
 
   /**
@@ -93,6 +102,61 @@ public class BaseProductService {
     }
     return BaseProductResponseDto.from(
         product, resolveName(product, locale), resolveDescription(product, locale));
+  }
+
+  /**
+   * Crea un producto base con sus traducciones y devuelve el DTO con el nombre y la descripción
+   * localizados.
+   *
+   * @param request petición con los datos del producto base y sus traducciones
+   * @param locale idioma en el que se devuelven los textos localizados del producto creado
+   * @return DTO del producto base recién creado con sus textos localizados
+   * @throws ResponseStatusException con {@code 400} si la categoría no existe
+   * @throws ResponseStatusException con {@code 409} si ya existe un producto con ese código
+   * @throws IllegalArgumentException si alguna traducción usa un locale no soportado
+   */
+  @Transactional
+  public BaseProductResponseDto create(CreateBaseProductRequest request, Locale locale) {
+    if (!categoryRepository.existsById(request.categoryId())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found");
+    }
+
+    if (baseProductRepository.existsByCode(request.code())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Product code already exists");
+    }
+
+    validateSupportedLocales(request.translations());
+
+    BaseProduct product = new BaseProduct();
+    product.setCode(request.code());
+    product.setCategoryId(request.categoryId());
+    product.setDefaultUnit(request.defaultUnit());
+    product.setCalories(request.calories());
+    product.setCaloriesPer(request.caloriesPer());
+    product.setIsActive(request.isActive());
+    product.setTranslations(new HashSet<>());
+
+    for (CreateBaseProductRequest.ProductTranslation t : request.translations()) {
+      BaseProductTranslation translation = new BaseProductTranslation();
+      translation.setLocale(t.locale());
+      translation.setName(t.name());
+      translation.setDescription(t.description());
+      translation.setBaseProduct(product);
+      product.getTranslations().add(translation);
+    }
+
+    BaseProduct saved = baseProductRepository.save(product);
+    return BaseProductResponseDto.from(
+        saved, resolveName(saved, locale), resolveDescription(saved, locale));
+  }
+
+  private void validateSupportedLocales(
+      List<CreateBaseProductRequest.ProductTranslation> translations) {
+    boolean allSupported =
+        translations.stream().allMatch(t -> SUPPORTED_LOCALES.contains(t.locale()));
+    if (!allSupported) {
+      throw new IllegalArgumentException("Unsupported locale");
+    }
   }
 
   /**
