@@ -245,6 +245,21 @@ public class BaseProductService {
         saved, resolveName(saved, locale), resolveDescription(saved, locale));
   }
 
+  /**
+   * Elimina físicamente un producto base y sus traducciones en cascada.
+   *
+   * @param id identificador del producto base a eliminar
+   * @throws ResponseStatusException con {@code 404} si el producto no existe
+   */
+  @Transactional
+  public void delete(Long id) {
+    BaseProduct product =
+        baseProductRepository
+            .findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    baseProductRepository.delete(product);
+  }
+
   private void validateSupportedLocales(
       List<CreateBaseProductRequest.ProductTranslation> translations) {
     boolean allSupported =

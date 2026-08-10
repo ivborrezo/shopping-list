@@ -11,6 +11,7 @@ import java.util.Locale;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -92,5 +93,17 @@ public class BaseProductController {
   public BaseProductResponseDto update(
       @PathVariable Long id, @Valid @RequestBody UpdateBaseProductRequest request, Locale locale) {
     return baseProductService.update(id, request, locale);
+  }
+
+  /**
+   * Elimina un producto base del catálogo.
+   *
+   * @param id identificador del producto base a eliminar
+   * @return {@code 204 No Content} si el borrado fue exitoso
+   */
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> delete(@PathVariable Long id) {
+    baseProductService.delete(id);
+    return ResponseEntity.noContent().build();
   }
 }
