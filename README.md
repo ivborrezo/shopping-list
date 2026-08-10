@@ -40,12 +40,12 @@ local está definida como código mediante Docker Compose.
 
 > **Estado actual:** Fase 1 (MVP Core) en desarrollo. `docker compose up`
 > levanta `product-db`, `list-db` y `product-service` (Spring Boot,
-> build multi-stage desde `Dockerfile`). `product-service` expone
-> `GET /categories`, `GET /categories/{id}` y `POST /categories`
-> con soporte multiidioma (es/en/eu). CI en verde (Testcontainers +
-> failsafe), git hooks y 11 ADRs documentando las decisiones de
-> arquitectura. `list-service` es un placeholder con su contrato de
-> API definido (Design-First).
+> build multi-stage desde `Dockerfile`). `product-service` expone CRUD
+> completo de `/categories` (con paginación) y `/base-products`
+> con soporte multiidioma (es/en/eu), búsqueda textual y filtros.
+> CI en verde (Testcontainers + failsafe), git hooks y 12 ADRs
+> documentando las decisiones de arquitectura. `list-service` es un
+> placeholder con su contrato de API definido (Design-First).
 
 ---
 
@@ -77,7 +77,7 @@ shopping-list/
 ├── githooks/                # pre-commit + commit-msg
 ├── config/checkstyle/       # Google Java Style (compartido)
 ├── docs/
-│   ├── adr/                 # 11 ADRs
+│   ├── adr/                 # 12 ADRs
 │   ├── architecture/        # C4 Level 2
 │   ├── cicd/                # Estrategia CI/CD
 │   ├── events/
@@ -135,6 +135,7 @@ Una vez arrancado:
 # Verificación rápida
 curl -s http://localhost:8081/actuator/health
 curl -s http://localhost:8081/categories | head -c 200
+curl -s 'http://localhost:8081/base-products?page=0&size=3' | head -c 200
 ```
 
 Para desarrollo local (tests, IDE, Maven), consulta
@@ -179,6 +180,7 @@ como snapshot histórico de diseño.
 | Documento | Descripción |
 |---|---|
 | [Setup local de `product-service`](./product-service/docs/local-setup.md) | Prerrequisitos, variables de entorno, escenarios de ejecución (CLI, VSCode, Docker Compose), tests y troubleshooting |
+| [Esquema de BD de `product-service`](./product-service/docs/database-schema.md) | Tablas `category`, `category_translation`, `base_product`, `base_product_translation` con migraciones Flyway |
 
 ### Estrategia de CI/CD
 
@@ -213,7 +215,7 @@ en cada fase; la tabla refleja el estado actual de las mismas.
 
 ## Roadmap
 
-- [ ] **Fase 1** — MVP Core: `product-service` + `list-service`
+- [x] **Fase 1** — MVP Core: `product-service` (categories + base-products), [ ] `list-service`
 - [ ] **Fase 2** — `frontend` (React)
 - [ ] **Fase 3** — `api-gateway` + `config-service`
 - [ ] **Fase 4** — Seguridad: `auth-service` (Keycloak + OAuth2/OIDC)
