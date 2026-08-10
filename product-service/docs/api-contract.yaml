@@ -2,17 +2,17 @@ openapi: 3.0.3
 info:
   title: Product Service API
   description: >
-    API del catálogo de productos y categorías (base_product, category) y de
-    los productos creados libremente por los usuarios (user_product) para
-    ShoppingList.
+    API del catálogo de categorías, productos base localizados y productos de
+    usuario monolingües para ShoppingList. Los productos base y de usuario se
+    exponen como colecciones independientes y sus DTOs reflejan sus reglas de
+    ciclo de vida, internacionalización y propiedad.
 
 
     Nota de vigencia: este documento es el contrato de diseño de Fase 1,
     redactado antes de implementar el servicio. Una vez exista código y
-    springdoc-openapi genere el contrato real a partir de él, este fichero
-    se marcará como snapshot histórico de diseño (no se mantendrá
-    sincronizado a mano), y el contrato vigente pasará a ser el expuesto
-    en /v3/api-docs.
+    springdoc-openapi genere el contrato real a partir de él, este fichero se
+    marcará como snapshot histórico de diseño (no se mantendrá sincronizado a
+    mano), y el contrato vigente pasará a ser el expuesto en /v3/api-docs.
   version: 1.0.0
 servers:
   - url: http://localhost:8081
@@ -21,8 +21,10 @@ servers:
 tags:
   - name: categories
     description: Catálogo de categorías, gestionado por el sistema.
-  - name: products
-    description: Productos base (catálogo) y productos de usuario.
+  - name: base-products
+    description: Catálogo de productos base, gestionado por administradores.
+  - name: user-products
+    description: "Productos de usuario: catálogo personal creado por cada usuario."
 
 paths:
   /categories:
@@ -92,67 +94,71 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /products:
+  /base-products:
     get:
-      tags: [products]
-      summary: Listar productos (base y/o de usuario)
+      tags: [base-products]
+      summary: Listar productos base
       description: >
-        Sin filtro `type`, devuelve productos base. Usar `type=USER` junto a
-        `ownerId` para listar los productos propios de un usuario.
+        Listado público del catálogo de productos base. Devuelve nombre y
+        descripción localizados según `Accept-Language` con el fallback de
+        ADR-011.
       parameters:
         - $ref: '#/components/parameters/AcceptLanguage'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
-        - name: type
-          in: query
-          schema:
-            type: string
-            enum: [BASE, USER]
-            default: BASE
         - name: categoryId
           in: query
           schema:
             type: integer
             format: int64
-        - name: ownerId
+            nullable: true
+        - name: text
           in: query
-          description: >
-            Requerido cuando `type=USER`. Placeholder sin autenticación real
-            (ver ADR-XXF1-identificacion-propietario-sin-autenticacion,
-            pendiente de redactar).
+          description: Búsqueda textual en el nombre localizado.
           schema:
             type: string
-            format: uuid
+            nullable: true
       responses:
         '200':
-          description: Página de productos.
+          description: Página de productos base con nombre y descripción localizados.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProductPage'
-
+                $ref: '#/components/schemas/BaseProductPage'
     post:
-      tags: [products]
-      summary: Crear un producto de usuario
-      description: Texto libre, sin traducción. Requiere `ownerId` en el body.
+      tags: [base-products]
+      summary: Crear un producto base
+      description: >
+        Operación administrativa. Mismo criterio placeholder que ADR-006 para
+        propietario: sin auth real hasta Fase 4
+        (ADR-XXF4-keycloak-como-identity-provider pendiente).
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUserProductRequest'
+              $ref: '#/components/schemas/CreateBaseProductRequest'
       responses:
         '201':
-          description: Producto de usuario creado.
+          description: Producto base creado.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Product'
+                $ref: '#/components/schemas/BaseProduct'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Ya existe un producto base con ese code.
 
-  /products/{id}:
+  /base-products/{id}:
     get:
-      tags: [products]
-      summary: Obtener un producto por id (base o de usuario)
+      tags: [base-products]
+      summary: Obtener un producto base por id
       parameters:
         - $ref: '#/components/parameters/AcceptLanguage'
         - name: id
@@ -163,18 +169,152 @@ paths:
             format: int64
       responses:
         '200':
-          description: Producto encontrado.
+          description: Producto base encontrado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Product'
+                $ref: '#/components/schemas/BaseProduct'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [base-products]
+      summary: Editar un producto base
+      description: >
+        Operación administrativa. Mismo criterio placeholder que ADR-006 para
+        propietario: sin auth real hasta Fase 4
+        (ADR-XXF4-keycloak-como-identity-provider pendiente).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBaseProductRequest'
+      responses:
+        '200':
+          description: Producto base actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseProduct'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Ya existe otro producto base con ese code.
+    delete:
+      tags: [base-products]
+      summary: Eliminar un producto base
+      description: >
+        Operación administrativa. Mismo criterio placeholder que ADR-006 para
+        propietario: sin auth real hasta Fase 4
+        (ADR-XXF4-keycloak-como-identity-provider pendiente).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Producto base eliminado.
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /user-products:
+    get:
+      tags: [user-products]
+      summary: Listar productos de un propietario
+      description: >
+        Placeholder de ADR-006: se listan los productos del `ownerId` indicado
+        sin enforcement de identidad real hasta Fase 4.
+      parameters:
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            UUID del propietario. Placeholder sin autenticación real (ver
+            ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+            format: int64
+            nullable: true
+      responses:
+        '200':
+          description: Página de productos de usuario del propietario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProductPage'
+    post:
+      tags: [user-products]
+      summary: Crear un producto de usuario
+      description: >
+        Crea un producto de usuario. Si se especifica `basedOnBaseId`, el
+        servicio copia los valores del producto base origen (snapshot en el
+        locale del `Accept-Language` de la petición), permitiendo sobreescribir
+        los campos en el body. `basedOnBaseId` queda como trazabilidad histórica
+        inmutable.
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserProductRequest'
+      responses:
+        '201':
+          description: Producto de usuario creado.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProduct'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /user-products/{id}:
+    get:
+      tags: [user-products]
+      summary: Obtener un producto de usuario por id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Producto de usuario encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProduct'
+        '404':
+          $ref: '#/components/responses/NotFound'
     patch:
-      tags: [products]
+      tags: [user-products]
       summary: Editar un producto de usuario
-      description: Solo aplica a productos de tipo USER; no permite editar catálogo base.
+      description: Solo el propietario puede editarlo; enforcement real pendiente de ADR-006.
       parameters:
         - name: id
           in: path
@@ -190,19 +330,19 @@ paths:
               $ref: '#/components/schemas/UpdateUserProductRequest'
       responses:
         '200':
-          description: Producto actualizado.
+          description: Producto de usuario actualizado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Product'
+                $ref: '#/components/schemas/UserProduct'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: El producto referenciado no es de tipo USER.
-
+          description: No se puede modificar un campo inmutable como basedOnBaseId.
     delete:
-      tags: [products]
+      tags: [user-products]
       summary: Eliminar un producto de usuario
+      description: Solo el propietario puede eliminarlo; enforcement real pendiente de ADR-006.
       parameters:
         - name: id
           in: path
@@ -212,11 +352,9 @@ paths:
             format: int64
       responses:
         '204':
-          description: Producto eliminado.
+          description: Producto de usuario eliminado.
         '404':
           $ref: '#/components/responses/NotFound'
-        '409':
-          description: El producto referenciado no es de tipo USER.
 
 components:
   parameters:
@@ -322,46 +460,81 @@ components:
           maxLength: 128
           example: Lácteos
 
-    Product:
+    BaseProduct:
       type: object
       properties:
         id:
           type: integer
           format: int64
-        type:
-          type: string
-          enum: [BASE, USER]
         code:
           type: string
+        categoryId:
+          type: integer
+          format: int64
+        defaultUnit:
+          $ref: '#/components/schemas/UnitEnum'
+        calories:
+          type: integer
+          format: int32
           nullable: true
-          description: Solo presente en productos BASE (ej. whole_milk).
+        caloriesPer:
+          $ref: '#/components/schemas/CaloriesPerEnum'
+        isActive:
+          type: boolean
         name:
           type: string
-          description: >
-            Traducción resuelta (BASE) o texto libre introducido por el
-            usuario (USER).
+          description: Nombre resuelto mediante i18n y fallback.
+        description:
+          type: string
+          nullable: true
+          description: Descripción resuelta mediante i18n y fallback.
+
+    UserProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        ownerId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
         categoryId:
           type: integer
           format: int64
           nullable: true
-        ownerId:
-          type: string
-          format: uuid
-          nullable: true
-          description: Solo presente en productos de tipo USER.
-        basedOn:
+        basedOnBaseId:
           type: integer
           format: int64
           nullable: true
-          description: Id de producto BASE del que deriva (opcional, solo en USER).
+        defaultUnit:
+          $ref: '#/components/schemas/UnitEnum'
+        calories:
+          type: integer
+          format: int32
+          nullable: true
+        caloriesPer:
+          $ref: '#/components/schemas/CaloriesPerEnum'
+        shareWithListMembers:
+          type: boolean
+          default: false
+        shareWithFriends:
+          type: boolean
+          default: false
+        isActive:
+          type: boolean
 
-    ProductPage:
+    BaseProductPage:
       type: object
       properties:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/Product'
+            $ref: '#/components/schemas/BaseProduct'
         page:
           type: integer
         size:
@@ -370,28 +543,167 @@ components:
           type: integer
           format: int64
 
+    UserProductPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserProduct'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+
+    CreateBaseProductRequest:
+      type: object
+      required: [code, categoryId, defaultUnit, caloriesPer, isActive, translations]
+      properties:
+        code:
+          type: string
+          minLength: 1
+        categoryId:
+          type: integer
+          format: int64
+        defaultUnit:
+          $ref: '#/components/schemas/UnitEnum'
+        calories:
+          type: integer
+          format: int32
+          nullable: true
+        caloriesPer:
+          $ref: '#/components/schemas/CaloriesPerEnum'
+        isActive:
+          type: boolean
+        translations:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ProductTranslation'
+
+    UpdateBaseProductRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        categoryId:
+          type: integer
+          format: int64
+        defaultUnit:
+          $ref: '#/components/schemas/UnitEnum'
+        calories:
+          type: integer
+          format: int32
+          nullable: true
+        caloriesPer:
+          $ref: '#/components/schemas/CaloriesPerEnum'
+        isActive:
+          type: boolean
+        translations:
+          type: array
+          description: Reemplaza el conjunto completo de traducciones.
+          items:
+            $ref: '#/components/schemas/ProductTranslation'
+
     CreateUserProductRequest:
       type: object
-      required: [ownerId, name]
+      required: [ownerId, name, defaultUnit, caloriesPer]
       properties:
         ownerId:
           type: string
           format: uuid
           description: >
-            Placeholder sin autenticación real hasta Fase 4
-            (ver ADR-XXF1-identificacion-propietario-sin-autenticacion).
+            Placeholder sin autenticación real hasta Fase 4 (ver
+            ADR-006-identificacion-propietario-sin-autenticacion).
         name:
           type: string
-        basedOn:
+        description:
+          type: string
+          nullable: true
+        categoryId:
+          type: integer
+          format: int64
+          nullable: true
+        defaultUnit:
+          $ref: '#/components/schemas/UnitEnum'
+        calories:
+          type: integer
+          format: int32
+          nullable: true
+        caloriesPer:
+          $ref: '#/components/schemas/CaloriesPerEnum'
+        shareWithListMembers:
+          type: boolean
+          default: false
+        shareWithFriends:
+          type: boolean
+          default: false
+        basedOnBaseId:
           type: integer
           format: int64
           nullable: true
 
     UpdateUserProductRequest:
       type: object
+      required: [ownerId]
       properties:
+        ownerId:
+          type: string
+          format: uuid
+          description: Placeholder de ADR-006; se valida solo el formato.
         name:
           type: string
+        description:
+          type: string
+          nullable: true
+        categoryId:
+          type: integer
+          format: int64
+          nullable: true
+        defaultUnit:
+          $ref: '#/components/schemas/UnitEnum'
+        calories:
+          type: integer
+          format: int32
+          nullable: true
+        caloriesPer:
+          $ref: '#/components/schemas/CaloriesPerEnum'
+        shareWithListMembers:
+          type: boolean
+        shareWithFriends:
+          type: boolean
+        isActive:
+          type: boolean
+
+    ProductTranslation:
+      type: object
+      required: [locale, name]
+      properties:
+        locale:
+          type: string
+          minLength: 2
+          maxLength: 5
+        name:
+          type: string
+          maxLength: 128
+        description:
+          type: string
+          nullable: true
+
+    UnitEnum:
+      type: string
+      enum: [KG, G, L, ML, UNIT, DOZEN]
+
+    CaloriesPerEnum:
+      type: string
+      enum: [G, ML, UNIT]
+
+    ProductType:
+      type: string
+      enum: [BASE, USER]
 
     ErrorResponse:
       type: object

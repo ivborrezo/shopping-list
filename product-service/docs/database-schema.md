@@ -60,6 +60,70 @@ categoría (patrón i18n Table). Entidad JPA:
 - `V4__seed_category_translations.sql` — seed de 30 traducciones
   (10 categorías × 3 idiomas: es/en/eu).
 
+### `base_product`
+
+Productos base del catálogo gestionado por el sistema. Entidad JPA:
+[`BaseProduct`](../../product-service/src/main/java/dev/ivborrezo/shoppinglist/product/service/product/entity/BaseProduct.java).
+
+| Columna | Tipo |
+|---|---|
+| `id` | `BIGINT` |
+| `code` | `VARCHAR(64)` |
+| `category_id` | `BIGINT` |
+| `default_unit` | `VARCHAR(10)` |
+| `calories` | `INT` |
+| `calories_per` | `VARCHAR(10)` |
+| `is_active` | `BOOLEAN` |
+| `created_at` | `TIMESTAMPTZ` |
+| `updated_at` | `TIMESTAMPTZ` |
+
+**Constraints**
+
+- `PRIMARY KEY (id)`.
+- `UNIQUE (code)` como constraint nombrada `uk_base_product_code`.
+- `FOREIGN KEY (category_id) REFERENCES category (id)` — sin comportamiento
+  en cascada, para evitar borrados silenciosos de productos al eliminar una
+  categoría.
+
+**Nota de diseño:** `category_id` se modela como `Long` en la entidad JPA,
+sin `@ManyToOne` a `Category`. Es una decisión consciente de mantener bounded
+contexts separados incluso dentro del mismo servicio: cada agregado
+(`category`, `base_product`) gestiona su propio estado sin acoplamiento a
+nivel de ORM.
+
+**Migraciones**
+
+- `V5__create_base_product_table.sql` — DDL de la tabla.
+- `V7__seed_base_products.sql` — seed de 30 productos base repartidos entre
+  las 10 categorías del seed V2.
+
+### `base_product_translation`
+
+Nombres y descripciones localizados de productos base, una fila por idioma
+soportado (patrón i18n Table). Entidad JPA:
+[`BaseProductTranslation`](../../product-service/src/main/java/dev/ivborrezo/shoppinglist/product/service/product/entity/BaseProductTranslation.java).
+
+| Columna | Tipo |
+|---|---|
+| `product_id` | `BIGINT` |
+| `locale` | `VARCHAR(5)` |
+| `name` | `VARCHAR(128)` |
+| `description` | `TEXT` |
+
+**Constraints**
+
+- `PRIMARY KEY (product_id, locale)` — cada producto tiene como mucho una
+  traducción por idioma.
+- `FOREIGN KEY (product_id) REFERENCES base_product (id) ON DELETE CASCADE`
+  como constraint nombrada `fk_base_product_translation_product`.
+
+**Migraciones**
+
+- `V6__create_base_product_translation_table.sql` — DDL de la tabla.
+- `V7__seed_base_products.sql` — seed de 90 traducciones
+  (30 productos × 3 idiomas: es/en/eu), en la misma migración que el seed
+  de productos base.
+
 ---
 
 ## Relaciones
@@ -77,6 +141,31 @@ categoría (patrón i18n Table). Entidad JPA:
   categoría, sin estado redundante duplicado.
 - **Lado inverso JPA:** `Category` expone la colección vía
   `@OneToMany(mappedBy = "category", cascade = ALL, orphanRemoval = true)`.
+
+`base_product.id` → `base_product_translation.product_id`
+
+- **Cardinalidad:** 1:N — un producto base tiene N traducciones (una por
+  idioma); cada traducción pertenece exactamente a un producto base.
+- **Borrado en cascada:** eliminar un producto base elimina sus traducciones
+  (`ON DELETE CASCADE`), coherente con que las traducciones no tienen
+  identidad propia fuera de su producto base.
+- **Lado propietario JPA:** `BaseProductTranslation`, declarando la relación
+  con `@ManyToOne` + `@MapsId("productId")`.
+- **Lado inverso JPA:** `BaseProduct` expone la colección vía
+  `@OneToMany(mappedBy = "baseProduct", cascade = ALL, orphanRemoval = true)`.
+
+`base_product.category_id` → `category.id`
+
+- **Cardinalidad:** N:1 — varios productos base pueden pertenecer a la misma
+  categoría; cada producto base referencia exactamente una categoría.
+- **Borrado en cascada:** no se aplica. Eliminar una categoría con productos
+  activos es un caso de negocio que debe gestionarse en capa de aplicación,
+  no mediante borrado silencioso en cascada.
+- **Sin relación JPA:**
+  [`BaseProduct.categoryId`](../../product-service/src/main/java/dev/ivborrezo/shoppinglist/product/service/product/entity/BaseProduct.java)
+  es un `Long` sin `@ManyToOne`: los bounded contexts se mantienen separados
+  incluso dentro del mismo servicio, por coherencia con el patrón
+  database-per-service aplicado entre servicios.
 
 ---
 
@@ -110,6 +199,10 @@ registra en la tabla `flyway_schema_history`).
 | `V2` | `V2__seed_categories.sql` | Seed de 10 categorías. |
 | `V3` | `V3__create_category_translation_table.sql` | DDL de `category_translation`. |
 | `V4` | `V4__seed_category_translations.sql` | Seed de 30 traducciones (es/en/eu). |
+| `V5` | `V5__create_base_product_table.sql` | DDL de `base_product`. |
+| `V6` | `V6__create_base_product_translation_table.sql` | DDL de `base_product_translation`. |
+| `V7` | `V7__seed_base_products.sql` | Seed de 30 productos base + 90 traducciones (es/en/eu). |
+| `V8` | `V8__sync_base_product_sequence.sql` | Sincroniza la secuencia identity tras el seed V7 con IDs explícitos. |
 
 El esquema no incluye de momento diagrama ER: la herramienta de diagramación
 está pendiente de decisión (ADR-004), por lo que las relaciones se describen

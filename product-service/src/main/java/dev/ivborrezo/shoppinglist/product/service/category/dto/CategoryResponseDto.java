@@ -9,19 +9,6 @@ import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
 public record CategoryResponseDto(Long id, String code, String name, boolean isActive) {
 
   /**
-   * Construye un DTO de respuesta a partir de la entidad {@link Category}, sin nombre localizado.
-   *
-   * @param category entidad fuente de la que se copian los campos del DTO
-   * @return DTO con los valores de {@code id}, {@code code} e {@code isActive} de la entidad
-   * @deprecated usar {@link #from(Category, String)} para incluir el nombre resuelto
-   */
-  @Deprecated
-  public static CategoryResponseDto from(Category category) {
-    return new CategoryResponseDto(
-        category.getId(), category.getCode(), null, category.getIsActive());
-  }
-
-  /**
    * Construye un DTO de respuesta a partir de la entidad {@link Category} y el nombre ya resuelto
    * al idioma solicitado.
    *

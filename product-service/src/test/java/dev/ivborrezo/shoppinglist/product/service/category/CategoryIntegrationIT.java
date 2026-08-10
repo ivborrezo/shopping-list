@@ -6,8 +6,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
+import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import java.time.Instant;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
@@ -84,13 +84,14 @@ class CategoryIntegrationIT {
   void getCategories_returnsAllTenActiveSeededCategories() throws Exception {
     MvcResult result = mockMvc.perform(get("/categories")).andExpect(status().isOk()).andReturn();
 
-    List<CategoryResponseDto> categories =
+    PagedResponse<CategoryResponseDto> page =
         objectMapper.readValue(
             result.getResponse().getContentAsByteArray(),
-            new TypeReference<List<CategoryResponseDto>>() {});
+            new TypeReference<PagedResponse<CategoryResponseDto>>() {});
 
-    assertThat(categories).hasSize(10);
-    assertThat(categories)
+    assertThat(page.totalElements()).isGreaterThanOrEqualTo(10);
+    assertThat(page.content()).hasSize(10);
+    assertThat(page.content())
         .extracting(CategoryResponseDto::code)
         .containsExactlyInAnyOrder(
             "dairy",
@@ -103,8 +104,8 @@ class CategoryIntegrationIT {
             "frozen",
             "household",
             "personal_care");
-    assertThat(categories).extracting(CategoryResponseDto::isActive).containsOnly(true);
-    assertThat(categories).allMatch(category -> category.id() != null);
+    assertThat(page.content()).extracting(CategoryResponseDto::isActive).containsOnly(true);
+    assertThat(page.content()).allMatch(category -> category.id() != null);
   }
 
   /**
@@ -125,13 +126,13 @@ class CategoryIntegrationIT {
 
     MvcResult result = mockMvc.perform(get("/categories")).andExpect(status().isOk()).andReturn();
 
-    List<CategoryResponseDto> categories =
+    PagedResponse<CategoryResponseDto> page =
         objectMapper.readValue(
             result.getResponse().getContentAsByteArray(),
-            new TypeReference<List<CategoryResponseDto>>() {});
+            new TypeReference<PagedResponse<CategoryResponseDto>>() {});
 
-    assertThat(categories).hasSize(10);
-    assertThat(categories)
+    assertThat(page.content()).hasSize(10);
+    assertThat(page.content())
         .extracting(CategoryResponseDto::code)
         .doesNotContain("_test_inactive_ad_hoc");
   }

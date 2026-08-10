@@ -3,10 +3,12 @@ package dev.ivborrezo.shoppinglist.product.service.category.controller;
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CreateCategoryRequest;
 import dev.ivborrezo.shoppinglist.product.service.category.service.CategoryService;
+import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.util.List;
 import java.util.Locale;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,15 +29,18 @@ public class CategoryController {
   }
 
   /**
-   * Lista las categorías activas del catálogo con el nombre localizado al idioma de la cabecera
-   * {@code Accept-Language}.
+   * Lista las categorías activas del catálogo paginadas, con el nombre localizado al idioma de la
+   * cabecera {@code Accept-Language}.
    *
+   * @param pageable parámetros de paginación inyectados por Spring a partir de {@code page} y
+   *     {@code size}
    * @param locale idioma resuelto desde la cabecera por Spring MVC
-   * @return lista de DTOs con las categorías activas; vacía si no hay ninguna
+   * @return página de DTOs con las categorías activas y sus nombres localizados
    */
   @GetMapping
-  public List<CategoryResponseDto> list(Locale locale) {
-    return categoryService.findActive(locale);
+  public PagedResponse<CategoryResponseDto> list(
+      @PageableDefault Pageable pageable, Locale locale) {
+    return categoryService.findActive(locale, pageable);
   }
 
   /**
