@@ -3,6 +3,7 @@ package dev.ivborrezo.shoppinglist.product.service.product.controller;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateBaseProductRequest;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateBaseProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.service.BaseProductService;
 import jakarta.validation.Valid;
 import java.net.URI;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -76,5 +78,19 @@ public class BaseProductController {
     BaseProductResponseDto created = baseProductService.create(request, locale);
     URI location = URI.create("/base-products/" + created.id());
     return ResponseEntity.created(location).body(created);
+  }
+
+  /**
+   * Edita parcialmente un producto base del catálogo aplicando solo los campos enviados.
+   *
+   * @param id identificador del producto base a editar
+   * @param request petición con los campos a modificar; solo los no nulos se aplican
+   * @param locale idioma resuelto desde la cabecera por Spring MVC
+   * @return DTO del producto base tras aplicar los cambios, con sus textos localizados
+   */
+  @PatchMapping("/{id}")
+  public BaseProductResponseDto update(
+      @PathVariable Long id, @Valid @RequestBody UpdateBaseProductRequest request, Locale locale) {
+    return baseProductService.update(id, request, locale);
   }
 }

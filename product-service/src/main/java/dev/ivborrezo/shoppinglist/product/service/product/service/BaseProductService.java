@@ -4,6 +4,7 @@ import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRe
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateBaseProductRequest;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateBaseProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProductTranslation;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
@@ -143,6 +144,100 @@ public class BaseProductService {
       translation.setDescription(t.description());
       translation.setBaseProduct(product);
       product.getTranslations().add(translation);
+    }
+
+    BaseProduct saved = baseProductRepository.save(product);
+    return BaseProductResponseDto.from(
+        saved, resolveName(saved, locale), resolveDescription(saved, locale));
+  }
+
+  /**
+   * Edita parcialmente un producto base aplicando solo los campos no nulos del request.
+   *
+   * <p>Si {@code code} cambia y ya existe otro producto con ese código, se rechaza con 409. Si
+   * {@code translations} está presente, reemplaza el conjunto completo — no fusiona. La validación
+   * de locales soportados se aplica tanto en creación como en edición.
+   *
+   * @param id identificador del producto base a editar
+   * @param request petición con los campos a modificar; solo los no nulos se aplican
+   * @param locale idioma en el que se devuelven los textos localizados del producto editado
+   * @return DTO del producto base tras aplicar los cambios, con sus textos localizados
+   * @throws ResponseStatusException con {@code 404} si el producto no existe
+   * @throws ResponseStatusException con {@code 400} si la categoría indicada no existe
+   * @throws ResponseStatusException con {@code 409} si el nuevo código ya está en uso por otro
+   *     producto
+   * @throws IllegalArgumentException si alguna traducción usa un locale no soportado
+   */
+  @Transactional
+  public BaseProductResponseDto update(Long id, UpdateBaseProductRequest request, Locale locale) {
+    BaseProduct product =
+        baseProductRepository
+            .findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+    if (request.code() != null && !request.code().equals(product.getCode())) {
+      if (baseProductRepository.existsByCode(request.code())) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Product code already exists");
+      }
+      product.setCode(request.code());
+    }
+
+    if (request.categoryId() != null) {
+      if (!categoryRepository.existsById(request.categoryId())) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found");
+      }
+      product.setCategoryId(request.categoryId());
+    }
+
+    if (request.defaultUnit() != null) {
+      product.setDefaultUnit(request.defaultUnit());
+    }
+
+    if (request.calories() != null) {
+      product.setCalories(request.calories());
+    }
+
+    if (request.caloriesPer() != null) {
+      product.setCaloriesPer(request.caloriesPer());
+    }
+
+    if (request.isActive() != null) {
+      product.setIsActive(request.isActive());
+    }
+
+    if (request.translations() != null) {
+      for (UpdateBaseProductRequest.ProductTranslation t : request.translations()) {
+        if (!SUPPORTED_LOCALES.contains(t.locale())) {
+          throw new IllegalArgumentException("Unsupported locale");
+        }
+      }
+
+      java.util.Set<String> requestedLocales =
+          request.translations().stream()
+              .map(UpdateBaseProductRequest.ProductTranslation::locale)
+              .collect(java.util.stream.Collectors.toSet());
+
+      product.getTranslations().removeIf(ct -> !requestedLocales.contains(ct.getLocale()));
+
+      for (UpdateBaseProductRequest.ProductTranslation t : request.translations()) {
+        BaseProductTranslation existing =
+            product.getTranslations().stream()
+                .filter(ct -> ct.getLocale().equals(t.locale()))
+                .findFirst()
+                .orElse(null);
+
+        if (existing != null) {
+          existing.setName(t.name());
+          existing.setDescription(t.description());
+        } else {
+          BaseProductTranslation newTranslation = new BaseProductTranslation();
+          newTranslation.setLocale(t.locale());
+          newTranslation.setName(t.name());
+          newTranslation.setDescription(t.description());
+          newTranslation.setBaseProduct(product);
+          product.getTranslations().add(newTranslation);
+        }
+      }
     }
 
     BaseProduct saved = baseProductRepository.save(product);
