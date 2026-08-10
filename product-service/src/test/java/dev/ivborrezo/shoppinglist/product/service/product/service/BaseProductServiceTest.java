@@ -10,6 +10,7 @@ import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductRespons
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProductTranslation;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductTranslationRepository;
 import java.util.Locale;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,12 +37,15 @@ class BaseProductServiceTest {
 
   @Mock private CategoryRepository categoryRepository;
 
+  @Mock private BaseProductTranslationRepository translationRepository;
+
   private BaseProductService baseProductService;
 
   /** Instancia el servicio bajo test con los repositorios mockeados. */
   @BeforeEach
   void setUp() {
-    baseProductService = new BaseProductService(baseProductRepository, categoryRepository);
+    baseProductService =
+        new BaseProductService(baseProductRepository, categoryRepository, translationRepository);
   }
 
   /** Devuelve el nombre en el idioma solicitado cuando existe traducción. */

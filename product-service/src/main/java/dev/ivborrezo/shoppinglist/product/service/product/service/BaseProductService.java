@@ -8,6 +8,7 @@ import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateBaseProductR
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProductTranslation;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductTranslationRepository;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -35,10 +36,23 @@ public class BaseProductService {
 
   private final CategoryRepository categoryRepository;
 
+  private final BaseProductTranslationRepository translationRepository;
+
+  /**
+   * Construye el servicio de productos base con los repositorios de productos, categorías y
+   * traducciones.
+   *
+   * @param baseProductRepository repositorio de productos base
+   * @param categoryRepository repositorio de categorías
+   * @param translationRepository repositorio de traducciones de productos base
+   */
   public BaseProductService(
-      BaseProductRepository baseProductRepository, CategoryRepository categoryRepository) {
+      BaseProductRepository baseProductRepository,
+      CategoryRepository categoryRepository,
+      BaseProductTranslationRepository translationRepository) {
     this.baseProductRepository = baseProductRepository;
     this.categoryRepository = categoryRepository;
+    this.translationRepository = translationRepository;
   }
 
   /**
@@ -212,31 +226,16 @@ public class BaseProductService {
         }
       }
 
-      java.util.Set<String> requestedLocales =
-          request.translations().stream()
-              .map(UpdateBaseProductRequest.ProductTranslation::locale)
-              .collect(java.util.stream.Collectors.toSet());
-
-      product.getTranslations().removeIf(ct -> !requestedLocales.contains(ct.getLocale()));
+      translationRepository.deleteAllByProductId(product.getId());
+      product.getTranslations().clear();
 
       for (UpdateBaseProductRequest.ProductTranslation t : request.translations()) {
-        BaseProductTranslation existing =
-            product.getTranslations().stream()
-                .filter(ct -> ct.getLocale().equals(t.locale()))
-                .findFirst()
-                .orElse(null);
-
-        if (existing != null) {
-          existing.setName(t.name());
-          existing.setDescription(t.description());
-        } else {
-          BaseProductTranslation newTranslation = new BaseProductTranslation();
-          newTranslation.setLocale(t.locale());
-          newTranslation.setName(t.name());
-          newTranslation.setDescription(t.description());
-          newTranslation.setBaseProduct(product);
-          product.getTranslations().add(newTranslation);
-        }
+        BaseProductTranslation translation = new BaseProductTranslation();
+        translation.setLocale(t.locale());
+        translation.setName(t.name());
+        translation.setDescription(t.description());
+        translation.setBaseProduct(product);
+        product.getTranslations().add(translation);
       }
     }
 

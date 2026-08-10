@@ -62,7 +62,9 @@ public class BaseProduct {
   @Column(nullable = false)
   private Instant updatedAt;
 
-  @OneToMany(mappedBy = "baseProduct", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(
+      mappedBy = "baseProduct",
+      cascade = {CascadeType.PERSIST, CascadeType.MERGE})
   private Set<BaseProductTranslation> translations = new LinkedHashSet<>();
 
   /** Constructor sin argumentos exigido por JPA. */
