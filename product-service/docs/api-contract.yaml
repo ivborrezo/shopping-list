@@ -337,8 +337,8 @@ paths:
                 $ref: '#/components/schemas/UserProduct'
         '404':
           $ref: '#/components/responses/NotFound'
-        '409':
-          description: No se puede modificar un campo inmutable como basedOnBaseId.
+        '403':
+          description: El ownerId del body no coincide con el propietario del producto.
     delete:
       tags: [user-products]
       summary: Eliminar un producto de usuario
@@ -350,9 +350,20 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            UUID del propietario. Placeholder sin autenticación real (ver
+            ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
       responses:
         '204':
           description: Producto de usuario eliminado.
+        '403':
+          description: El ownerId del query param no coincide con el propietario del producto.
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -610,7 +621,7 @@ components:
 
     CreateUserProductRequest:
       type: object
-      required: [ownerId, name, defaultUnit, caloriesPer]
+      required: [ownerId]
       properties:
         ownerId:
           type: string
@@ -620,6 +631,9 @@ components:
             ADR-006-identificacion-propietario-sin-autenticacion).
         name:
           type: string
+          description: >
+            Obligatorio salvo que se indique `basedOnBaseId`, en cuyo caso se
+            copia del producto base en el idioma de la petición.
         description:
           type: string
           nullable: true
@@ -629,12 +643,18 @@ components:
           nullable: true
         defaultUnit:
           $ref: '#/components/schemas/UnitEnum'
+          description: >
+            Obligatorio salvo que se indique `basedOnBaseId`, en cuyo caso se
+            copia del producto base en el idioma de la petición.
         calories:
           type: integer
           format: int32
           nullable: true
         caloriesPer:
           $ref: '#/components/schemas/CaloriesPerEnum'
+          description: >
+            Obligatorio salvo que se indique `basedOnBaseId`, en cuyo caso se
+            copia del producto base en el idioma de la petición.
         shareWithListMembers:
           type: boolean
           default: false
@@ -645,6 +665,12 @@ components:
           type: integer
           format: int64
           nullable: true
+          description: >
+            Si se indica, los campos ausentes del body se copian del producto
+            base origen (snapshot copy-on-create en el locale del
+            Accept-Language); los valores del body prevalecen. Si el producto
+            base no existe, se responde 400. El campo queda como trazabilidad
+            histórica inmutable.
 
     UpdateUserProductRequest:
       type: object
@@ -653,7 +679,10 @@ components:
         ownerId:
           type: string
           format: uuid
-          description: Placeholder de ADR-006; se valida solo el formato.
+          description: >
+            Placeholder de ADR-006; se valida solo el formato. Chequeo de
+            propiedad: si no coincide con el propietario almacenado, se
+            responde 403.
         name:
           type: string
         description:
@@ -677,6 +706,13 @@ components:
           type: boolean
         isActive:
           type: boolean
+        basedOnBaseId:
+          type: integer
+          format: int64
+          nullable: true
+          description: >
+            Campo inmutable: si se envía se ignora y el producto conserva su
+            valor original.
 
     ProductTranslation:
       type: object
