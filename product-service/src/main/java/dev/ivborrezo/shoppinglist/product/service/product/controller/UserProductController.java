@@ -2,6 +2,7 @@ package dev.ivborrezo.shoppinglist.product.service.product.controller;
 
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateUserProductRequest;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateUserProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.product.service.UserProductService;
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -59,6 +61,24 @@ public class UserProductController {
   @GetMapping("/{id}")
   public UserProductResponseDto getById(@PathVariable Long id) {
     return userProductService.findById(id);
+  }
+
+  /**
+   * Edita parcialmente un producto de usuario por su identificador, aplicando solo los campos no
+   * nulos del body.
+   *
+   * <p>El {@code ownerId} del body actúa como verificación de propiedad: si no coincide con el
+   * propietario almacenado, la edición se rechaza con {@code 403}. El contenido de los productos de
+   * usuario es monolingüe, por lo que el endpoint no resuelve textos localizados.
+   *
+   * @param id identificador del producto a editar
+   * @param request petición con los campos a modificar, validada con Bean Validation
+   * @return DTO del producto de usuario tras aplicar los cambios
+   */
+  @PatchMapping("/{id}")
+  public UserProductResponseDto update(
+      @PathVariable Long id, @Valid @RequestBody UpdateUserProductRequest request) {
+    return userProductService.update(id, request);
   }
 
   /**

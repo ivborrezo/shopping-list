@@ -5,6 +5,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateUserProductRequest;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateUserProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
@@ -202,6 +203,80 @@ public class UserProductService {
     product.setShareWithFriends(
         request.shareWithFriends() != null ? request.shareWithFriends() : false);
     product.setIsActive(true);
+
+    UserProduct saved = userProductRepository.save(product);
+    return UserProductResponseDto.from(saved);
+  }
+
+  /**
+   * Edita parcialmente un producto de usuario aplicando solo los campos no nulos del request.
+   *
+   * <p>Busca el producto por su identificador sin filtrar por estado, por lo que un propietario
+   * puede editar también productos inactivos (por ejemplo para reactivarlos con {@code
+   * isActive=true}). El {@code ownerId} del body se usa únicamente como verificación de propiedad y
+   * no modifica el almacenado. {@code basedOnBaseId} es una traza inmutable que se ignora en
+   * silencio si se envía.
+   *
+   * @param id identificador del producto de usuario a editar
+   * @param request petición con los campos a modificar; solo los no nulos se aplican
+   * @return DTO del producto de usuario tras aplicar los cambios
+   * @throws ResponseStatusException con {@code 404} si el producto no existe
+   * @throws ResponseStatusException con {@code 403} si el {@code ownerId} del request no coincide
+   *     con el propietario almacenado
+   * @throws ResponseStatusException con {@code 400} si la categoría indicada no existe o si {@code
+   *     defaultUnit} o {@code caloriesPer} no son valores válidos de su enum
+   */
+  @Transactional
+  public UserProductResponseDto update(Long id, UpdateUserProductRequest request) {
+    UserProduct product =
+        userProductRepository
+            .findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+    if (!product.getOwnerId().equals(request.ownerId())) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+    }
+
+    if (request.name() != null) {
+      product.setName(request.name());
+    }
+
+    if (request.description() != null) {
+      product.setDescription(request.description());
+    }
+
+    if (request.categoryId() != null) {
+      if (!categoryRepository.existsById(request.categoryId())) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found");
+      }
+      product.setCategoryId(request.categoryId());
+    }
+
+    if (request.defaultUnit() != null) {
+      requireValidUnit(request.defaultUnit());
+      product.setDefaultUnit(request.defaultUnit());
+    }
+
+    if (request.calories() != null) {
+      product.setCalories(request.calories());
+    }
+
+    if (request.caloriesPer() != null) {
+      requireValidCaloriesPer(request.caloriesPer());
+      product.setCaloriesPer(request.caloriesPer());
+    }
+
+    if (request.shareWithListMembers() != null) {
+      product.setShareWithListMembers(request.shareWithListMembers());
+    }
+
+    if (request.shareWithFriends() != null) {
+      product.setShareWithFriends(request.shareWithFriends());
+    }
+
+    if (request.isActive() != null) {
+      product.setIsActive(request.isActive());
+    }
 
     UserProduct saved = userProductRepository.save(product);
     return UserProductResponseDto.from(saved);
