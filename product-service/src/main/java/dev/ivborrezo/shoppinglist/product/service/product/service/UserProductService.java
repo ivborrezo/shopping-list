@@ -170,7 +170,7 @@ public class UserProductService {
     if (defaultUnit != null) {
       requireValidUnit(defaultUnit);
     } else if (base != null) {
-      defaultUnit = base.getDefaultUnit();
+      defaultUnit = base.getDefaultUnit().name();
     } else {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "defaultUnit is required");
     }
@@ -184,7 +184,7 @@ public class UserProductService {
     if (caloriesPer != null) {
       requireValidCaloriesPer(caloriesPer);
     } else if (base != null) {
-      caloriesPer = base.getCaloriesPer();
+      caloriesPer = base.getCaloriesPer().name();
     } else {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "caloriesPer is required");
     }

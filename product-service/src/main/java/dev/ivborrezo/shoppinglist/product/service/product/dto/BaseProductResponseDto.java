@@ -1,23 +1,23 @@
 package dev.ivborrezo.shoppinglist.product.service.product.dto;
 
+import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
+import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 
 /**
  * DTO de respuesta de un producto base del catálogo, con el nombre y la descripción ya localizados
  * al idioma resuelto según la cabecera {@code Accept-Language}.
  *
- * <p>Los campos {@code defaultUnit} y {@code caloriesPer} se serializan como {@code String}
- * directamente desde la columna de base de datos; el mapeo a los enums de dominio ({@code
- * UnitEnum}, {@code CaloriesPerEnum}) se realiza en la capa de API cuando sea necesario para
- * validación de entrada.
+ * <p>Los campos {@code defaultUnit} y {@code caloriesPer} se exponen como enums de dominio ({@link
+ * UnitEnum}, {@link CaloriesPerEnum}).
  */
 public record BaseProductResponseDto(
     Long id,
     String code,
     Long categoryId,
-    String defaultUnit,
+    UnitEnum defaultUnit,
     Integer calories,
-    String caloriesPer,
+    CaloriesPerEnum caloriesPer,
     Boolean isActive,
     String name,
     String description) {
