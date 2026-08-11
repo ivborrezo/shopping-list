@@ -3,6 +3,7 @@ package dev.ivborrezo.shoppinglist.product.service.product.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -51,7 +52,7 @@ class UserProductServiceTest {
   @Test
   void findByOwner_withoutCategory_callsRepositoryAndReturnsMappedPage() {
     UserProduct product = buildProduct(OWNER_ID, "Leche entera", 1L, true);
-    when(userProductRepository.findByOwnerIdAndIsActiveTrue(OWNER_ID, any(Pageable.class)))
+    when(userProductRepository.findByOwnerIdAndIsActiveTrue(eq(OWNER_ID), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(product)));
 
     PagedResponse<UserProductResponseDto> page =
@@ -75,14 +76,14 @@ class UserProductServiceTest {
   void findByOwner_withCategory_callsCategoryFilteredRepositoryQuery() {
     UserProduct product = buildProduct(OWNER_ID, "Manzana", 2L, true);
     when(userProductRepository.findByOwnerIdAndIsActiveTrueAndCategoryId(
-            OWNER_ID, 2L, any(Pageable.class)))
+            eq(OWNER_ID), eq(2L), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(product)));
 
     PagedResponse<UserProductResponseDto> page =
         userProductService.findByOwner(OWNER_ID, PageRequest.of(0, 20), 2L);
 
     verify(userProductRepository)
-        .findByOwnerIdAndIsActiveTrueAndCategoryId(OWNER_ID, 2L, any(Pageable.class));
+        .findByOwnerIdAndIsActiveTrueAndCategoryId(eq(OWNER_ID), eq(2L), any(Pageable.class));
     assertThat(page.content()).hasSize(1);
     assertThat(page.content().get(0).categoryId()).isEqualTo(2L);
   }
