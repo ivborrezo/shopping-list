@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
+import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -99,11 +101,33 @@ class BaseProductCreationIntegrationIT {
     assertThat(created.name()).isEqualTo("Arrautzak kanpoan");
     assertThat(created.description()).isEqualTo("Hamabiko askatasunean hazitako oiloen arrautzak");
     assertThat(created.categoryId()).isEqualTo(1L);
-    assertThat(created.defaultUnit()).isEqualTo("UNIT");
+    assertThat(created.defaultUnit()).isEqualTo(UnitEnum.UNIT);
     assertThat(created.calories()).isEqualTo(155);
-    assertThat(created.caloriesPer()).isEqualTo("G");
+    assertThat(created.caloriesPer()).isEqualTo(CaloriesPerEnum.G);
     assertThat(created.isActive()).isTrue();
     assertThat(result.getResponse().getHeader("Location")).contains("/base-products/");
+  }
+
+  /** Rechaza con 400 un {@code defaultUnit} que no corresponde a ninguna {@link UnitEnum}. */
+  @Test
+  void createBaseProduct_withInvalidDefaultUnit_returns400() throws Exception {
+    String body =
+        """
+        {
+          "code": "invalid_unit_product",
+          "categoryId": 1,
+          "defaultUnit": "XYZ",
+          "caloriesPer": "G",
+          "isActive": true,
+          "translations": [
+            {"locale": "es", "name": "Producto con unidad inválida"}
+          ]
+        }
+        """;
+
+    mockMvc
+        .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+        .andExpect(status().isBadRequest());
   }
 
   /**

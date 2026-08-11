@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
+import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -75,9 +77,9 @@ class BaseProductGetByIdIntegrationIT {
     assertThat(product.name()).isEqualTo("Esne osoa");
     assertThat(product.description()).isEqualTo("Behi-esne osoa, gaingabetu gabea");
     assertThat(product.categoryId()).isEqualTo(1L);
-    assertThat(product.defaultUnit()).isEqualTo("L");
+    assertThat(product.defaultUnit()).isEqualTo(UnitEnum.L);
     assertThat(product.calories()).isNull();
-    assertThat(product.caloriesPer()).isEqualTo("ML");
+    assertThat(product.caloriesPer()).isEqualTo(CaloriesPerEnum.ML);
   }
 
   /**
@@ -102,9 +104,9 @@ class BaseProductGetByIdIntegrationIT {
     assertThat(product.description())
         .isEqualTo("Queso de leche de oveja con maduración prolongada");
     assertThat(product.categoryId()).isEqualTo(1L);
-    assertThat(product.defaultUnit()).isEqualTo("G");
+    assertThat(product.defaultUnit()).isEqualTo(UnitEnum.G);
     assertThat(product.calories()).isEqualTo(350);
-    assertThat(product.caloriesPer()).isEqualTo("G");
+    assertThat(product.caloriesPer()).isEqualTo(CaloriesPerEnum.G);
   }
 
   /** Devuelve 404 cuando el identificador de producto base no existe. */
