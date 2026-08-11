@@ -42,7 +42,8 @@ local está definida como código mediante Docker Compose.
 > levanta `product-db`, `list-db` y `product-service` (Spring Boot,
 > build multi-stage desde `Dockerfile`). `product-service` expone CRUD
 > completo de `/categories` (con paginación) y `/base-products`
-> con soporte multiidioma (es/en/eu), búsqueda textual y filtros.
+> con soporte multiidioma (es/en/eu), búsqueda textual y filtros, y de
+> `/user-products` con snapshot copy-on-create desde un producto base.
 > CI en verde (Testcontainers + failsafe), git hooks y 12 ADRs
 > documentando las decisiones de arquitectura. `list-service` es un
 > placeholder con su contrato de API definido (Design-First).
@@ -136,6 +137,7 @@ Una vez arrancado:
 curl -s http://localhost:8081/actuator/health
 curl -s http://localhost:8081/categories | head -c 200
 curl -s 'http://localhost:8081/base-products?page=0&size=3' | head -c 200
+curl -s 'http://localhost:8081/user-products?ownerId=00000000-0000-0000-0000-000000000000' | head -c 200
 ```
 
 Para desarrollo local (tests, IDE, Maven), consulta
@@ -215,7 +217,7 @@ en cada fase; la tabla refleja el estado actual de las mismas.
 
 ## Roadmap
 
-- [x] **Fase 1** — MVP Core: `product-service` (categories + base-products), [ ] `list-service`
+- [x] **Fase 1** — MVP Core: `product-service` (categories + base-products + user-products), [ ] `list-service`
 - [ ] **Fase 2** — `frontend` (React)
 - [ ] **Fase 3** — `api-gateway` + `config-service`
 - [ ] **Fase 4** — Seguridad: `auth-service` (Keycloak + OAuth2/OIDC)
