@@ -2,7 +2,6 @@ package dev.ivborrezo.shoppinglist.product.service.product.entity;
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -11,41 +10,47 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.UUID;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
- * Producto base del catálogo gestionado por el sistema.
+ * Producto creado por un usuario a partir de su catálogo personal.
  *
- * <p>Los nombres y descripciones localizados viven en {@code base_product_translation} (patrón i18n
- * Table), relacionados por la colección {@code translations}. La relación con {@code category} se
- * modela como {@code categoryId} (tipo {@code Long}) sin {@code @ManyToOne}, manteniendo bounded
- * contexts separados incluso dentro del mismo servicio.
+ * <p>El contenido ({@code name} y {@code description}) es texto libre monolingüe, sin tabla de
+ * traducciones. Las relaciones con {@code category} y {@code base_product} se modelan como {@code
+ * categoryId} y {@code basedOnBaseId} (tipo {@code Long}) sin relaciones JPA, manteniendo bounded
+ * contexts separados. {@code basedOnBaseId} es una traza histórica inmutable del producto base del
+ * que deriva el usuario; la FK correspondiente se elimina en cascada a {@code NULL} para no
+ * bloquear la vida de este producto.
  *
  * <p>Las columnas {@code default_unit} y {@code calories_per} se almacenan como {@code VARCHAR} y
  * se mapean a los enums de dominio ({@code UnitEnum}, {@code CaloriesPerEnum}) mediante
  * {@code @Enumerated(EnumType.STRING)}.
  */
 @Entity
-@Table(name = "base_product")
+@Table(name = "user_product")
 @EntityListeners(AuditingEntityListener.class)
-public class BaseProduct {
+public class UserProduct {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false, length = 64)
-  private String code;
-
   @Column(nullable = false)
-  private Long categoryId;
+  private UUID ownerId;
+
+  @Column(nullable = false, length = 128)
+  private String name;
+
+  @Column private String description;
+
+  @Column private Long categoryId;
+
+  @Column private Long basedOnBaseId;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 10)
@@ -58,6 +63,12 @@ public class BaseProduct {
   private CaloriesPerEnum caloriesPer;
 
   @Column(nullable = false)
+  private Boolean shareWithListMembers;
+
+  @Column(nullable = false)
+  private Boolean shareWithFriends;
+
+  @Column(nullable = false)
   private Boolean isActive;
 
   @CreatedDate
@@ -68,13 +79,8 @@ public class BaseProduct {
   @Column(nullable = false)
   private Instant updatedAt;
 
-  @OneToMany(
-      mappedBy = "baseProduct",
-      cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-  private Set<BaseProductTranslation> translations = new LinkedHashSet<>();
-
   /** Constructor sin argumentos exigido por JPA. */
-  public BaseProduct() {}
+  public UserProduct() {}
 
   public Long getId() {
     return id;
@@ -84,12 +90,28 @@ public class BaseProduct {
     this.id = id;
   }
 
-  public String getCode() {
-    return code;
+  public UUID getOwnerId() {
+    return ownerId;
   }
 
-  public void setCode(String code) {
-    this.code = code;
+  public void setOwnerId(UUID ownerId) {
+    this.ownerId = ownerId;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
   }
 
   public Long getCategoryId() {
@@ -98,6 +120,14 @@ public class BaseProduct {
 
   public void setCategoryId(Long categoryId) {
     this.categoryId = categoryId;
+  }
+
+  public Long getBasedOnBaseId() {
+    return basedOnBaseId;
+  }
+
+  public void setBasedOnBaseId(Long basedOnBaseId) {
+    this.basedOnBaseId = basedOnBaseId;
   }
 
   public UnitEnum getDefaultUnit() {
@@ -124,6 +154,22 @@ public class BaseProduct {
     this.caloriesPer = caloriesPer;
   }
 
+  public Boolean getShareWithListMembers() {
+    return shareWithListMembers;
+  }
+
+  public void setShareWithListMembers(Boolean shareWithListMembers) {
+    this.shareWithListMembers = shareWithListMembers;
+  }
+
+  public Boolean getShareWithFriends() {
+    return shareWithFriends;
+  }
+
+  public void setShareWithFriends(Boolean shareWithFriends) {
+    this.shareWithFriends = shareWithFriends;
+  }
+
   public Boolean getIsActive() {
     return isActive;
   }
@@ -138,13 +184,5 @@ public class BaseProduct {
 
   public Instant getUpdatedAt() {
     return updatedAt;
-  }
-
-  public Set<BaseProductTranslation> getTranslations() {
-    return translations;
-  }
-
-  public void setTranslations(Set<BaseProductTranslation> translations) {
-    this.translations = translations;
   }
 }

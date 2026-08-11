@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -82,7 +83,7 @@ class BaseProductPatchIntegrationIT {
     assertThat(updated.code()).isEqualTo("aged_cheese");
     assertThat(updated.name()).isEqualTo("Queso curado");
     assertThat(updated.categoryId()).isEqualTo(1L);
-    assertThat(updated.defaultUnit()).isEqualTo("G");
+    assertThat(updated.defaultUnit()).isEqualTo(UnitEnum.G);
     assertThat(updated.calories()).isEqualTo(350);
   }
 
@@ -145,7 +146,7 @@ class BaseProductPatchIntegrationIT {
 
     assertThat(updated.id()).isEqualTo(4L);
     assertThat(updated.code()).isEqualTo("butter");
-    assertThat(updated.defaultUnit()).isEqualTo("KG");
+    assertThat(updated.defaultUnit()).isEqualTo(UnitEnum.KG);
   }
 
   /**

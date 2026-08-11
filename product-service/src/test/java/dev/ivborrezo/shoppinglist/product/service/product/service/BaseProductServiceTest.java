@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
+import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
+import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
@@ -221,9 +223,9 @@ class BaseProductServiceTest {
         TranslationFixture... fixtures) {
       setCode(code);
       setCategoryId(categoryId);
-      setDefaultUnit(defaultUnit);
+      setDefaultUnit(UnitEnum.valueOf(defaultUnit));
       setCalories(calories);
-      setCaloriesPer(caloriesPer);
+      setCaloriesPer(CaloriesPerEnum.valueOf(caloriesPer));
       setIsActive(true);
       for (TranslationFixture f : fixtures) {
         BaseProductTranslation t = new BaseProductTranslation();
