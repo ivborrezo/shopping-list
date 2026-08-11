@@ -283,6 +283,30 @@ public class UserProductService {
   }
 
   /**
+   * Elimina físicamente un producto de usuario tras verificar la propiedad del {@code ownerId}.
+   *
+   * <p>Busca el producto por su identificador sin filtrar por estado, por lo que un propietario
+   * puede borrar también productos inactivos.
+   *
+   * @param id identificador del producto de usuario a eliminar
+   * @param ownerId identificador del propietario que solicita el borrado
+   * @throws ResponseStatusException con {@code 404} si el producto no existe
+   * @throws ResponseStatusException con {@code 403} si el {@code ownerId} no coincide con el
+   *     propietario almacenado
+   */
+  @Transactional
+  public void delete(Long id, UUID ownerId) {
+    UserProduct product =
+        userProductRepository
+            .findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    if (!product.getOwnerId().equals(ownerId)) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+    }
+    userProductRepository.delete(product);
+  }
+
+  /**
    * Valida que un valor de {@code defaultUnit} sea un {@link UnitEnum} válido.
    *
    * @param value valor de unidad recibido en la petición

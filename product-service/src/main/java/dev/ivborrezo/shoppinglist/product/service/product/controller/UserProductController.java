@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -95,5 +96,19 @@ public class UserProductController {
     UserProductResponseDto created = userProductService.create(request, locale);
     URI location = URI.create("/user-products/" + created.id());
     return ResponseEntity.created(location).body(created);
+  }
+
+  /**
+   * Elimina un producto de usuario tras verificar que el {@code ownerId} del query param coincide
+   * con el propietario almacenado.
+   *
+   * @param id identificador del producto de usuario a eliminar
+   * @param ownerId identificador del propietario que solicita el borrado; obligatorio
+   * @return {@code 204 No Content} si el borrado fue exitoso
+   */
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> delete(@PathVariable Long id, @RequestParam UUID ownerId) {
+    userProductService.delete(id, ownerId);
+    return ResponseEntity.noContent().build();
   }
 }
