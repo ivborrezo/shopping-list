@@ -198,6 +198,25 @@ class UserProductCreationIntegrationIT {
         .andExpect(status().isBadRequest());
   }
 
+  /** Rechaza con 400 un {@code defaultUnit} que no corresponde a ninguna {@link UnitEnum}. */
+  @Test
+  void createUserProduct_withInvalidDefaultUnit_returns400() throws Exception {
+    String body =
+        """
+        {
+          "ownerId": "%s",
+          "name": "Producto con unidad inválida",
+          "defaultUnit": "XYZ",
+          "caloriesPer": "G"
+        }
+        """
+            .formatted(OWNER_ID);
+
+    mockMvc
+        .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
+        .andExpect(status().isBadRequest());
+  }
+
   /**
    * Rechaza con 400 la ausencia de {@code name} cuando no hay {@code basedOnBaseId} que lo copie.
    */

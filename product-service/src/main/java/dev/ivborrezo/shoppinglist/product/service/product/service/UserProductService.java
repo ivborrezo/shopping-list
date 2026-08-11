@@ -126,8 +126,7 @@ public class UserProductService {
    * @param locale idioma en el que se resuelven el nombre y la descripción del producto base
    * @return DTO del producto de usuario recién creado
    * @throws ResponseStatusException con {@code 400} si el producto base indicado no existe, si
-   *     falta algún campo obligatorio sin producto base, si la categoría indicada no existe, o si
-   *     {@code defaultUnit} o {@code caloriesPer} no son valores válidos de su enum
+   *     falta algún campo obligatorio sin producto base, o si la categoría indicada no existe
    */
   @Transactional
   public UserProductResponseDto create(CreateUserProductRequest request, Locale locale) {
@@ -166,12 +165,9 @@ public class UserProductService {
       categoryId = base.getCategoryId();
     }
 
-    String defaultUnit = request.defaultUnit();
-    if (defaultUnit != null) {
-      requireValidUnit(defaultUnit);
-    } else if (base != null) {
-      defaultUnit = base.getDefaultUnit().name();
-    } else {
+    UnitEnum defaultUnit =
+        request.defaultUnit() != null ? request.defaultUnit() : base.getDefaultUnit();
+    if (defaultUnit == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "defaultUnit is required");
     }
 
@@ -180,12 +176,9 @@ public class UserProductService {
       calories = base.getCalories();
     }
 
-    String caloriesPer = request.caloriesPer();
-    if (caloriesPer != null) {
-      requireValidCaloriesPer(caloriesPer);
-    } else if (base != null) {
-      caloriesPer = base.getCaloriesPer().name();
-    } else {
+    CaloriesPerEnum caloriesPer =
+        request.caloriesPer() != null ? request.caloriesPer() : base.getCaloriesPer();
+    if (caloriesPer == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "caloriesPer is required");
     }
 
@@ -223,8 +216,7 @@ public class UserProductService {
    * @throws ResponseStatusException con {@code 404} si el producto no existe
    * @throws ResponseStatusException con {@code 403} si el {@code ownerId} del request no coincide
    *     con el propietario almacenado
-   * @throws ResponseStatusException con {@code 400} si la categoría indicada no existe o si {@code
-   *     defaultUnit} o {@code caloriesPer} no son valores válidos de su enum
+   * @throws ResponseStatusException con {@code 400} si la categoría indicada no existe
    */
   @Transactional
   public UserProductResponseDto update(Long id, UpdateUserProductRequest request) {
@@ -253,7 +245,6 @@ public class UserProductService {
     }
 
     if (request.defaultUnit() != null) {
-      requireValidUnit(request.defaultUnit());
       product.setDefaultUnit(request.defaultUnit());
     }
 
@@ -262,7 +253,6 @@ public class UserProductService {
     }
 
     if (request.caloriesPer() != null) {
-      requireValidCaloriesPer(request.caloriesPer());
       product.setCaloriesPer(request.caloriesPer());
     }
 
@@ -304,33 +294,5 @@ public class UserProductService {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN);
     }
     userProductRepository.delete(product);
-  }
-
-  /**
-   * Valida que un valor de {@code defaultUnit} sea un {@link UnitEnum} válido.
-   *
-   * @param value valor de unidad recibido en la petición
-   * @throws ResponseStatusException con {@code 400} si el valor no pertenece al enum
-   */
-  private void requireValidUnit(String value) {
-    try {
-      UnitEnum.valueOf(value);
-    } catch (IllegalArgumentException e) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid defaultUnit");
-    }
-  }
-
-  /**
-   * Valida que un valor de {@code caloriesPer} sea un {@link CaloriesPerEnum} válido.
-   *
-   * @param value valor de unidad calórica recibido en la petición
-   * @throws ResponseStatusException con {@code 400} si el valor no pertenece al enum
-   */
-  private void requireValidCaloriesPer(String value) {
-    try {
-      CaloriesPerEnum.valueOf(value);
-    } catch (IllegalArgumentException e) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid caloriesPer");
-    }
   }
 }

@@ -41,9 +41,9 @@ public record UserProductResponseDto(
         product.getDescription(),
         product.getCategoryId(),
         product.getBasedOnBaseId(),
-        UnitEnum.valueOf(product.getDefaultUnit()),
+        product.getDefaultUnit(),
         product.getCalories(),
-        CaloriesPerEnum.valueOf(product.getCaloriesPer()),
+        product.getCaloriesPer(),
         product.getShareWithListMembers(),
         product.getShareWithFriends(),
         product.getIsActive());

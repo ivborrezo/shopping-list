@@ -1,8 +1,12 @@
 package dev.ivborrezo.shoppinglist.product.service.product.entity;
 
+import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
+import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -24,7 +28,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
  * bloquear la vida de este producto.
  *
  * <p>Las columnas {@code default_unit} y {@code calories_per} se almacenan como {@code VARCHAR} y
- * el mapeo a los enums de dominio se realiza en la capa de DTO/API, no en la capa de persistencia.
+ * se mapean a los enums de dominio ({@code UnitEnum}, {@code CaloriesPerEnum}) mediante
+ * {@code @Enumerated(EnumType.STRING)}.
  */
 @Entity
 @Table(name = "user_product")
@@ -47,13 +52,15 @@ public class UserProduct {
 
   @Column private Long basedOnBaseId;
 
+  @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 10)
-  private String defaultUnit;
+  private UnitEnum defaultUnit;
 
   @Column private Integer calories;
 
+  @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 10)
-  private String caloriesPer;
+  private CaloriesPerEnum caloriesPer;
 
   @Column(nullable = false)
   private Boolean shareWithListMembers;
@@ -123,11 +130,11 @@ public class UserProduct {
     this.basedOnBaseId = basedOnBaseId;
   }
 
-  public String getDefaultUnit() {
+  public UnitEnum getDefaultUnit() {
     return defaultUnit;
   }
 
-  public void setDefaultUnit(String defaultUnit) {
+  public void setDefaultUnit(UnitEnum defaultUnit) {
     this.defaultUnit = defaultUnit;
   }
 
@@ -139,11 +146,11 @@ public class UserProduct {
     this.calories = calories;
   }
 
-  public String getCaloriesPer() {
+  public CaloriesPerEnum getCaloriesPer() {
     return caloriesPer;
   }
 
-  public void setCaloriesPer(String caloriesPer) {
+  public void setCaloriesPer(CaloriesPerEnum caloriesPer) {
     this.caloriesPer = caloriesPer;
   }
 

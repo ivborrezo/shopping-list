@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
+import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import java.util.UUID;
@@ -200,9 +202,9 @@ class UserProductPatchIntegrationIT {
     product.setName(name);
     product.setDescription("Descripción de prueba");
     product.setCategoryId(1L);
-    product.setDefaultUnit("UNIT");
+    product.setDefaultUnit(UnitEnum.UNIT);
     product.setCalories(calories);
-    product.setCaloriesPer("G");
+    product.setCaloriesPer(CaloriesPerEnum.G);
     product.setShareWithListMembers(false);
     product.setShareWithFriends(false);
     product.setIsActive(true);

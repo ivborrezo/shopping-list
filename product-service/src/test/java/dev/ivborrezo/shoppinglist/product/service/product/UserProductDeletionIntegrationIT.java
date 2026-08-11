@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
+import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -121,8 +123,8 @@ class UserProductDeletionIntegrationIT {
     product.setName("Producto de prueba");
     product.setDescription("Descripción de prueba");
     product.setCategoryId(1L);
-    product.setDefaultUnit("UNIT");
-    product.setCaloriesPer("G");
+    product.setDefaultUnit(UnitEnum.UNIT);
+    product.setCaloriesPer(CaloriesPerEnum.G);
     product.setShareWithListMembers(false);
     product.setShareWithFriends(false);
     product.setIsActive(true);

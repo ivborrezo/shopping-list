@@ -151,9 +151,9 @@ class UserProductServiceTest {
     product.setName(name);
     product.setDescription("Descripción de prueba");
     product.setCategoryId(categoryId);
-    product.setDefaultUnit("UNIT");
+    product.setDefaultUnit(UnitEnum.UNIT);
     product.setCalories(150);
-    product.setCaloriesPer("G");
+    product.setCaloriesPer(CaloriesPerEnum.G);
     product.setShareWithListMembers(false);
     product.setShareWithFriends(false);
     product.setIsActive(active);
