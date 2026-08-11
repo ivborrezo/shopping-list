@@ -272,7 +272,7 @@ public class BaseProductService {
    * Resuelve el nombre localizado de un producto base aplicando: coincidencia exacta con el locale
    * solicitado → fallback a {@value #FALLBACK_LOCALE} → primer idioma disponible.
    */
-  private String resolveName(BaseProduct product, Locale locale) {
+  String resolveName(BaseProduct product, Locale locale) {
     Set<BaseProductTranslation> translations = product.getTranslations();
     if (translations.isEmpty()) {
       return null;
@@ -307,7 +307,7 @@ public class BaseProductService {
    * {@link #resolveName(BaseProduct, Locale)}. Si la traducción resuelta no tiene descripción,
    * devuelve {@code null}.
    */
-  private String resolveDescription(BaseProduct product, Locale locale) {
+  String resolveDescription(BaseProduct product, Locale locale) {
     Set<BaseProductTranslation> translations = product.getTranslations();
     if (translations.isEmpty()) {
       return null;

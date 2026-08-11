@@ -7,11 +7,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
+import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.UserProductRepository;
 import java.util.List;
 import java.util.Optional;
@@ -40,12 +42,20 @@ class UserProductServiceTest {
 
   @Mock private UserProductRepository userProductRepository;
 
+  @Mock private BaseProductRepository baseProductRepository;
+
+  @Mock private BaseProductService baseProductService;
+
+  @Mock private CategoryRepository categoryRepository;
+
   private UserProductService userProductService;
 
-  /** Instancia el servicio bajo test con el repositorio mockeado. */
+  /** Instancia el servicio bajo test con los repositorios y servicios mockeados. */
   @BeforeEach
   void setUp() {
-    userProductService = new UserProductService(userProductRepository);
+    userProductService =
+        new UserProductService(
+            userProductRepository, baseProductRepository, baseProductService, categoryRepository);
   }
 
   /** Lista los productos del propietario mapeados a DTO cuando no se filtra por categoría. */

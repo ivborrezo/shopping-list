@@ -1,18 +1,25 @@
 package dev.ivborrezo.shoppinglist.product.service.product.controller;
 
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateUserProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.product.service.UserProductService;
+import jakarta.validation.Valid;
+import java.net.URI;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Controller REST para la consulta de productos de usuario del catálogo personal. */
+/** Controller REST para la consulta y creación de productos de usuario del catálogo personal. */
 @RestController
 @RequestMapping("/user-products")
 public class UserProductController {
@@ -52,5 +59,21 @@ public class UserProductController {
   @GetMapping("/{id}")
   public UserProductResponseDto getById(@PathVariable Long id) {
     return userProductService.findById(id);
+  }
+
+  /**
+   * Crea un producto de usuario y devuelve el recurso creado con su cabecera {@code Location}.
+   *
+   * @param request petición con los datos del producto de usuario, validada con Bean Validation
+   * @param locale idioma de la petición en el que se resuelven los campos copiados del producto
+   *     base
+   * @return respuesta {@code 201} con el DTO del producto creado y la cabecera {@code Location}
+   */
+  @PostMapping
+  public ResponseEntity<UserProductResponseDto> create(
+      @Valid @RequestBody CreateUserProductRequest request, Locale locale) {
+    UserProductResponseDto created = userProductService.create(request, locale);
+    URI location = URI.create("/user-products/" + created.id());
+    return ResponseEntity.created(location).body(created);
   }
 }
