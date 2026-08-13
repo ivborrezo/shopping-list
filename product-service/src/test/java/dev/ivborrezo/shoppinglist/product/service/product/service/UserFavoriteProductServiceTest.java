@@ -10,17 +10,28 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
+import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReferenceDto;
+import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserFavoriteProduct;
+import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.UserFavoriteProductRepository;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.UserProductRepository;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -133,5 +144,90 @@ class UserFavoriteProductServiceTest {
     verify(userFavoriteProductRepository)
         .deleteByUserIdAndProductIdAndProductType(OWNER_ID, 1L, ProductType.BASE);
     verify(userRecentProductService, never()).markUsed(any(), any(), any());
+  }
+
+  /**
+   * Resuelve el nombre de un favorito de producto base en el idioma solicitado mediante el servicio
+   * de productos base.
+   */
+  @Test
+  void findFavorites_withBaseProduct_resolvesLocalizedName() {
+    UserFavoriteProduct favorite = new UserFavoriteProduct();
+    favorite.setUserId(OWNER_ID);
+    favorite.setProductId(1L);
+    favorite.setProductType(ProductType.BASE);
+    when(userFavoriteProductRepository.findByUserIdOrderByCreatedAtDesc(
+            eq(OWNER_ID), any(Pageable.class)))
+        .thenReturn(new PageImpl<>(List.of(favorite)));
+
+    BaseProduct base = new BaseProduct();
+    when(baseProductRepository.findById(1L)).thenReturn(Optional.of(base));
+    when(baseProductService.resolveName(base, Locale.ENGLISH)).thenReturn("Milk");
+
+    PagedResponse<ProductReferenceDto> page =
+        userFavoriteProductService.findFavorites(OWNER_ID, PageRequest.of(0, 20), Locale.ENGLISH);
+
+    assertThat(page.content()).hasSize(1);
+    assertThat(page.content().get(0).productId()).isEqualTo(1L);
+    assertThat(page.content().get(0).productType()).isEqualTo(ProductType.BASE);
+    assertThat(page.content().get(0).name()).isEqualTo("Milk");
+  }
+
+  /** Usa el nombre monolingüe del producto de usuario para un favorito de tipo {@code USER}. */
+  @Test
+  void findFavorites_withUserProduct_usesMonolingualName() {
+    UserFavoriteProduct favorite = new UserFavoriteProduct();
+    favorite.setUserId(OWNER_ID);
+    favorite.setProductId(5L);
+    favorite.setProductType(ProductType.USER);
+    when(userFavoriteProductRepository.findByUserIdOrderByCreatedAtDesc(
+            eq(OWNER_ID), any(Pageable.class)))
+        .thenReturn(new PageImpl<>(List.of(favorite)));
+
+    UserProduct userProduct = new UserProduct();
+    userProduct.setName("Mi producto");
+    when(userProductRepository.findById(5L)).thenReturn(Optional.of(userProduct));
+
+    PagedResponse<ProductReferenceDto> page =
+        userFavoriteProductService.findFavorites(OWNER_ID, PageRequest.of(0, 20), Locale.ENGLISH);
+
+    assertThat(page.content()).hasSize(1);
+    assertThat(page.content().get(0).name()).isEqualTo("Mi producto");
+  }
+
+  /**
+   * Incluye la fila en el listado con {@code name} a {@code null} cuando el producto referenciado
+   * ya no existe.
+   */
+  @Test
+  void findFavorites_orphanedProduct_returnsNullName() {
+    UserFavoriteProduct favorite = new UserFavoriteProduct();
+    favorite.setUserId(OWNER_ID);
+    favorite.setProductId(1L);
+    favorite.setProductType(ProductType.BASE);
+    when(userFavoriteProductRepository.findByUserIdOrderByCreatedAtDesc(
+            eq(OWNER_ID), any(Pageable.class)))
+        .thenReturn(new PageImpl<>(List.of(favorite)));
+    when(baseProductRepository.findById(1L)).thenReturn(Optional.empty());
+
+    PagedResponse<ProductReferenceDto> page =
+        userFavoriteProductService.findFavorites(OWNER_ID, PageRequest.of(0, 20), Locale.ENGLISH);
+
+    assertThat(page.content()).hasSize(1);
+    assertThat(page.content().get(0).name()).isNull();
+  }
+
+  /** Devuelve una página vacía cuando el usuario no tiene ningún favorito. */
+  @Test
+  void findFavorites_empty_returnsEmptyPage() {
+    when(userFavoriteProductRepository.findByUserIdOrderByCreatedAtDesc(
+            eq(OWNER_ID), any(Pageable.class)))
+        .thenReturn(Page.empty());
+
+    PagedResponse<ProductReferenceDto> page =
+        userFavoriteProductService.findFavorites(OWNER_ID, PageRequest.of(0, 20), Locale.ENGLISH);
+
+    assertThat(page.content()).isEmpty();
+    assertThat(page.totalElements()).isZero();
   }
 }
