@@ -1,13 +1,20 @@
 package dev.ivborrezo.shoppinglist.product.service.product.service;
 
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
+import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReferenceDto;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserFavoriteProduct;
+import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.UserFavoriteProductRepository;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.UserProductRepository;
 import java.time.Instant;
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,5 +106,50 @@ public class UserFavoriteProductService {
     userFavoriteProductRepository.save(favorite);
     userRecentProductService.markUsed(ownerId, productId, productType);
     return new FavoriteToggleResponse(true);
+  }
+
+  /**
+   * Devuelve los favoritos del propietario paginados, ordenados de más reciente a más antiguo, con
+   * el nombre del producto resuelto según su tipo.
+   *
+   * <p>Para productos base el nombre se resuelve con el fallback de localización del {@code
+   * Accept-Language}; para productos de usuario se usa el nombre monolingüe almacenado. Si el
+   * producto referenciado ya no existe, la referencia se conserva en el resultado con nombre {@code
+   * null}.
+   *
+   * @param ownerId identificador del propietario de los favoritos
+   * @param pageable parámetros de paginación (número de página, tamaño)
+   * @param locale idioma en el que se resuelven los nombres de los productos base
+   * @return página de DTOs con las referencias a los productos favoritos y sus nombres resueltos
+   */
+  public PagedResponse<ProductReferenceDto> findFavorites(
+      UUID ownerId, Pageable pageable, Locale locale) {
+    Page<UserFavoriteProduct> page =
+        userFavoriteProductRepository.findByUserIdOrderByCreatedAtDesc(ownerId, pageable);
+    List<ProductReferenceDto> dtos =
+        page.getContent().stream()
+            .map(favorite -> ProductReferenceDto.from(favorite, resolveName(favorite, locale)))
+            .toList();
+    return new PagedResponse<>(dtos, page.getNumber(), page.getSize(), page.getTotalElements());
+  }
+
+  /**
+   * Resuelve el nombre mostrable del producto referenciado por el favorito según su tipo.
+   *
+   * @param favorite entidad de favorito de la que se lee la referencia al producto
+   * @param locale idioma en el que se resuelve el nombre de los productos base
+   * @return nombre localizado o monolingüe según el tipo; {@code null} si el producto ya no existe
+   */
+  private String resolveName(UserFavoriteProduct favorite, Locale locale) {
+    if (favorite.getProductType() == ProductType.BASE) {
+      return baseProductRepository
+          .findById(favorite.getProductId())
+          .map(base -> baseProductService.resolveName(base, locale))
+          .orElse(null);
+    }
+    return userProductRepository
+        .findById(favorite.getProductId())
+        .map(UserProduct::getName)
+        .orElse(null);
   }
 }

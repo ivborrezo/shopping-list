@@ -3,6 +3,7 @@ package dev.ivborrezo.shoppinglist.product.service.product.controller;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateUserProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReferenceDto;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateUserProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.product.service.UserFavoriteProductService;
@@ -138,5 +139,20 @@ public class UserProductController {
   public FavoriteToggleResponse toggleFavorite(
       @PathVariable Long id, @RequestParam UUID ownerId, @RequestParam String productType) {
     return userFavoriteProductService.toggle(ownerId, id, productType);
+  }
+
+  /**
+   * Lista los productos favoritos del propietario paginados, con el nombre del producto resuelto.
+   *
+   * @param ownerId identificador del propietario de los favoritos
+   * @param pageable parámetros de paginación inyectados por Spring a partir de {@code page} y
+   *     {@code size}
+   * @param locale idioma resuelto desde la cabecera por Spring MVC
+   * @return página de DTOs con las referencias a los productos favoritos del propietario
+   */
+  @GetMapping("/favorites")
+  public PagedResponse<ProductReferenceDto> listFavorites(
+      @RequestParam UUID ownerId, @PageableDefault Pageable pageable, Locale locale) {
+    return userFavoriteProductService.findFavorites(ownerId, pageable, locale);
   }
 }
