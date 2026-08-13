@@ -367,6 +367,103 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /user-products/{id}/favorite:
+    post:
+      tags: [user-products]
+      summary: Marcar o desmarcar un producto como favorito
+      description: >
+        Toggle: si el producto ya está entre los favoritos del propietario se
+        desmarca (respuesta `favorited: false`); si no, se marca y se actualiza
+        su reciente (respuesta `favorited: true`).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            UUID del propietario. Placeholder sin autenticación real (ver
+            ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
+        - name: productType
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/ProductType'
+      responses:
+        '200':
+          description: Estado del favorito tras la operación.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FavoriteToggleResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /user-products/favorites:
+    get:
+      tags: [user-products]
+      summary: Listar los favoritos de un propietario
+      description: >
+        Listado paginado de favoritos con el nombre del producto resuelto según
+        su tipo (base localizado, usuario monolingüe).
+      parameters:
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            UUID del propietario. Placeholder sin autenticación real (ver
+            ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de referencias a los productos favoritos del propietario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductReferencePage'
+
+  /user-products/recents:
+    get:
+      tags: [user-products]
+      summary: Listar los productos más recientes de un propietario
+      description: >
+        Top 10 productos recientes por `last_used_at` descendente, con el
+        nombre resuelto según su tipo.
+      parameters:
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            UUID del propietario. Placeholder sin autenticación real (ver
+            ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Lista de referencias a los productos más recientes del propietario.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductReference'
+
 components:
   parameters:
     AcceptLanguage:
@@ -561,6 +658,43 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UserProduct'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+
+    FavoriteToggleResponse:
+      type: object
+      properties:
+        favorited:
+          type: boolean
+          description: "Estado del favorito tras el toggle: true si quedó marcado, false si dejó de estarlo."
+
+    ProductReference:
+      type: object
+      properties:
+        productId:
+          type: integer
+          format: int64
+        productType:
+          $ref: '#/components/schemas/ProductType'
+        name:
+          type: string
+          nullable: true
+          description: >
+            Nombre mostrable del producto: localizado para productos base,
+            monolingüe para los de usuario; null si el producto ya no existe.
+
+    ProductReferencePage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductReference'
         page:
           type: integer
         size:

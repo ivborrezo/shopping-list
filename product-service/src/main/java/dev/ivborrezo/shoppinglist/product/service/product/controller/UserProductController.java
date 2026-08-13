@@ -2,11 +2,16 @@ package dev.ivborrezo.shoppinglist.product.service.product.controller;
 
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateUserProductRequest;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReferenceDto;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateUserProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.service.UserFavoriteProductService;
 import dev.ivborrezo.shoppinglist.product.service.product.service.UserProductService;
+import dev.ivborrezo.shoppinglist.product.service.product.service.UserRecentProductService;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
@@ -22,15 +27,34 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Controller REST para la consulta y creación de productos de usuario del catálogo personal. */
+/**
+ * Controller REST para la consulta y creación de productos de usuario del catálogo personal y la
+ * gestión de sus favoritos.
+ */
 @RestController
 @RequestMapping("/user-products")
 public class UserProductController {
 
   private final UserProductService userProductService;
 
-  public UserProductController(UserProductService userProductService) {
+  private final UserFavoriteProductService userFavoriteProductService;
+
+  private final UserRecentProductService userRecentProductService;
+
+  /**
+   * Construye el controller con los servicios de productos de usuario, favoritos y recientes.
+   *
+   * @param userProductService servicio de productos de usuario
+   * @param userFavoriteProductService servicio de productos favoritos
+   * @param userRecentProductService servicio de productos recientes
+   */
+  public UserProductController(
+      UserProductService userProductService,
+      UserFavoriteProductService userFavoriteProductService,
+      UserRecentProductService userRecentProductService) {
     this.userProductService = userProductService;
+    this.userFavoriteProductService = userFavoriteProductService;
+    this.userRecentProductService = userRecentProductService;
   }
 
   /**
@@ -110,5 +134,50 @@ public class UserProductController {
   public ResponseEntity<Void> delete(@PathVariable Long id, @RequestParam UUID ownerId) {
     userProductService.delete(id, ownerId);
     return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Marca o desmarca como favorito el producto indicado para el propietario.
+   *
+   * <p>Si el producto ya estaba entre los favoritos del usuario, se desmarca y se responde {@code
+   * favorited: false}; si no, se marca, se actualiza el reciente del usuario-producto y se responde
+   * {@code favorited: true}.
+   *
+   * @param id identificador del producto a marcar, base o de usuario según {@code productType}
+   * @param ownerId identificador del propietario del favorito
+   * @param productType tipo de producto ({@code BASE} o {@code USER})
+   * @return DTO con el estado del favorito tras la operación
+   */
+  @PostMapping("/{id}/favorite")
+  public FavoriteToggleResponse toggleFavorite(
+      @PathVariable Long id, @RequestParam UUID ownerId, @RequestParam String productType) {
+    return userFavoriteProductService.toggle(ownerId, id, productType);
+  }
+
+  /**
+   * Lista los productos favoritos del propietario paginados, con el nombre del producto resuelto.
+   *
+   * @param ownerId identificador del propietario de los favoritos
+   * @param pageable parámetros de paginación inyectados por Spring a partir de {@code page} y
+   *     {@code size}
+   * @param locale idioma resuelto desde la cabecera por Spring MVC
+   * @return página de DTOs con las referencias a los productos favoritos del propietario
+   */
+  @GetMapping("/favorites")
+  public PagedResponse<ProductReferenceDto> listFavorites(
+      @RequestParam UUID ownerId, @PageableDefault Pageable pageable, Locale locale) {
+    return userFavoriteProductService.findFavorites(ownerId, pageable, locale);
+  }
+
+  /**
+   * Lista los diez productos más recientes del propietario, con el nombre del producto resuelto.
+   *
+   * @param ownerId identificador del propietario
+   * @param locale idioma resuelto desde la cabecera por Spring MVC
+   * @return lista con las referencias a los diez productos recientes del propietario
+   */
+  @GetMapping("/recents")
+  public List<ProductReferenceDto> listRecents(@RequestParam UUID ownerId, Locale locale) {
+    return userRecentProductService.findRecents(ownerId, locale);
   }
 }
