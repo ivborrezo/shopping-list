@@ -1,11 +1,15 @@
 package dev.ivborrezo.shoppinglist.product.service.product.service;
 
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReferenceDto;
+import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserRecentProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.UserProductRepository;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.UserRecentProductRepository;
 import java.time.Instant;
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,5 +69,44 @@ public class UserRecentProductService {
     recent.setProductType(productType);
     recent.setLastUsedAt(Instant.now());
     userRecentProductRepository.save(recent);
+  }
+
+  /**
+   * Devuelve los diez productos recientes del usuario ordenados de más reciente a más antiguo, con
+   * el nombre del producto resuelto según su tipo.
+   *
+   * <p>Para productos base el nombre se resuelve con el fallback de localización del {@code
+   * Accept-Language}; para productos de usuario se usa el nombre monolingüe almacenado. Si el
+   * producto referenciado ya no existe, la referencia se conserva en el resultado con nombre {@code
+   * null}.
+   *
+   * @param userId identificador del usuario
+   * @param locale idioma en el que se resuelven los nombres de los productos base
+   * @return lista con los diez productos recientes del usuario y sus nombres resueltos
+   */
+  public List<ProductReferenceDto> findRecents(UUID userId, Locale locale) {
+    return userRecentProductRepository.findTop10ByUserIdOrderByLastUsedAtDesc(userId).stream()
+        .map(recent -> ProductReferenceDto.from(recent, resolveName(recent, locale)))
+        .toList();
+  }
+
+  /**
+   * Resuelve el nombre mostrable del producto referenciado por el reciente según su tipo.
+   *
+   * @param recent entidad de reciente de la que se lee la referencia al producto
+   * @param locale idioma en el que se resuelve el nombre de los productos base
+   * @return nombre localizado o monolingüe según el tipo; {@code null} si el producto ya no existe
+   */
+  private String resolveName(UserRecentProduct recent, Locale locale) {
+    if (recent.getProductType() == ProductType.BASE) {
+      return baseProductRepository
+          .findById(recent.getProductId())
+          .map(base -> baseProductService.resolveName(base, locale))
+          .orElse(null);
+    }
+    return userProductRepository
+        .findById(recent.getProductId())
+        .map(UserProduct::getName)
+        .orElse(null);
   }
 }

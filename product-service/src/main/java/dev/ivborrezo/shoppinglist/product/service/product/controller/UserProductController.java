@@ -8,8 +8,10 @@ import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateUserProductR
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
 import dev.ivborrezo.shoppinglist.product.service.product.service.UserFavoriteProductService;
 import dev.ivborrezo.shoppinglist.product.service.product.service.UserProductService;
+import dev.ivborrezo.shoppinglist.product.service.product.service.UserRecentProductService;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
@@ -37,11 +39,22 @@ public class UserProductController {
 
   private final UserFavoriteProductService userFavoriteProductService;
 
+  private final UserRecentProductService userRecentProductService;
+
+  /**
+   * Construye el controller con los servicios de productos de usuario, favoritos y recientes.
+   *
+   * @param userProductService servicio de productos de usuario
+   * @param userFavoriteProductService servicio de productos favoritos
+   * @param userRecentProductService servicio de productos recientes
+   */
   public UserProductController(
       UserProductService userProductService,
-      UserFavoriteProductService userFavoriteProductService) {
+      UserFavoriteProductService userFavoriteProductService,
+      UserRecentProductService userRecentProductService) {
     this.userProductService = userProductService;
     this.userFavoriteProductService = userFavoriteProductService;
+    this.userRecentProductService = userRecentProductService;
   }
 
   /**
@@ -154,5 +167,17 @@ public class UserProductController {
   public PagedResponse<ProductReferenceDto> listFavorites(
       @RequestParam UUID ownerId, @PageableDefault Pageable pageable, Locale locale) {
     return userFavoriteProductService.findFavorites(ownerId, pageable, locale);
+  }
+
+  /**
+   * Lista los diez productos más recientes del propietario, con el nombre del producto resuelto.
+   *
+   * @param ownerId identificador del propietario
+   * @param locale idioma resuelto desde la cabecera por Spring MVC
+   * @return lista con las referencias a los diez productos recientes del propietario
+   */
+  @GetMapping("/recents")
+  public List<ProductReferenceDto> listRecents(@RequestParam UUID ownerId, Locale locale) {
+    return userRecentProductService.findRecents(ownerId, locale);
   }
 }
