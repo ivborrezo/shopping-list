@@ -44,7 +44,11 @@ local está definida como código mediante Docker Compose.
 > completo de `/categories` (con paginación) y `/base-products`
 > con soporte multiidioma (es/en/eu), búsqueda textual y filtros, y de
 > `/user-products` con snapshot copy-on-create desde un producto base.
-> CI en verde (Testcontainers + failsafe), git hooks y 12 ADRs
+> También gestiona favoritos y recientes de usuario: `POST
+> /user-products/{id}/favorite` como toggle, `GET /user-products/favorites`
+> paginado con nombres resueltos y `GET /user-products/recents` con el top
+> 10 más reciente.
+> CI en verde (Testcontainers + failsafe), git hooks y 13 ADRs
 > documentando las decisiones de arquitectura. `list-service` es un
 > placeholder con su contrato de API definido (Design-First).
 
@@ -78,7 +82,7 @@ shopping-list/
 ├── githooks/                # pre-commit + commit-msg
 ├── config/checkstyle/       # Google Java Style (compartido)
 ├── docs/
-│   ├── adr/                 # 12 ADRs
+│   ├── adr/                 # 13 ADRs
 │   ├── architecture/        # C4 Level 2
 │   ├── cicd/                # Estrategia CI/CD
 │   ├── events/
@@ -138,6 +142,8 @@ curl -s http://localhost:8081/actuator/health
 curl -s http://localhost:8081/categories | head -c 200
 curl -s 'http://localhost:8081/base-products?page=0&size=3' | head -c 200
 curl -s 'http://localhost:8081/user-products?ownerId=00000000-0000-0000-0000-000000000000' | head -c 200
+curl -s 'http://localhost:8081/user-products/favorites?ownerId=00000000-0000-0000-0000-000000000000' | head -c 200
+curl -s 'http://localhost:8081/user-products/recents?ownerId=00000000-0000-0000-0000-000000000000' | head -c 200
 ```
 
 Para desarrollo local (tests, IDE, Maven), consulta
@@ -182,7 +188,7 @@ como snapshot histórico de diseño.
 | Documento | Descripción |
 |---|---|
 | [Setup local de `product-service`](./product-service/docs/local-setup.md) | Prerrequisitos, variables de entorno, escenarios de ejecución (CLI, VSCode, Docker Compose), tests y troubleshooting |
-| [Esquema de BD de `product-service`](./product-service/docs/database-schema.md) | Tablas `category`, `category_translation`, `base_product`, `base_product_translation` con migraciones Flyway |
+| [Esquema de BD de `product-service`](./product-service/docs/database-schema.md) | Tablas `category`, `category_translation`, `base_product`, `base_product_translation`, `user_product`, `user_favorite_product` y `user_recent_product` con migraciones Flyway |
 
 ### Estrategia de CI/CD
 
@@ -218,7 +224,7 @@ en cada fase; la tabla refleja el estado actual de las mismas.
 
 ## Roadmap
 
-- [x] **Fase 1** — MVP Core: `product-service` (categories + base-products + user-products), [ ] `list-service`
+- [x] **Fase 1** — MVP Core: `product-service` (categories + base-products + user-products + favoritos y recientes), [ ] `list-service`
 - [ ] **Fase 2** — `frontend` (React)
 - [ ] **Fase 3** — `api-gateway` + `config-service`
 - [ ] **Fase 4** — Seguridad: `auth-service` (Keycloak + OAuth2/OIDC)
