@@ -2,8 +2,10 @@ package dev.ivborrezo.shoppinglist.product.service.product.controller;
 
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateUserProductRequest;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateUserProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.service.UserFavoriteProductService;
 import dev.ivborrezo.shoppinglist.product.service.product.service.UserProductService;
 import jakarta.validation.Valid;
 import java.net.URI;
@@ -22,15 +24,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Controller REST para la consulta y creación de productos de usuario del catálogo personal. */
+/**
+ * Controller REST para la consulta y creación de productos de usuario del catálogo personal y la
+ * gestión de sus favoritos.
+ */
 @RestController
 @RequestMapping("/user-products")
 public class UserProductController {
 
   private final UserProductService userProductService;
 
-  public UserProductController(UserProductService userProductService) {
+  private final UserFavoriteProductService userFavoriteProductService;
+
+  public UserProductController(
+      UserProductService userProductService,
+      UserFavoriteProductService userFavoriteProductService) {
     this.userProductService = userProductService;
+    this.userFavoriteProductService = userFavoriteProductService;
   }
 
   /**
@@ -110,5 +120,23 @@ public class UserProductController {
   public ResponseEntity<Void> delete(@PathVariable Long id, @RequestParam UUID ownerId) {
     userProductService.delete(id, ownerId);
     return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Marca o desmarca como favorito el producto indicado para el propietario.
+   *
+   * <p>Si el producto ya estaba entre los favoritos del usuario, se desmarca y se responde {@code
+   * favorited: false}; si no, se marca, se actualiza el reciente del usuario-producto y se responde
+   * {@code favorited: true}.
+   *
+   * @param id identificador del producto a marcar, base o de usuario según {@code productType}
+   * @param ownerId identificador del propietario del favorito
+   * @param productType tipo de producto ({@code BASE} o {@code USER})
+   * @return DTO con el estado del favorito tras la operación
+   */
+  @PostMapping("/{id}/favorite")
+  public FavoriteToggleResponse toggleFavorite(
+      @PathVariable Long id, @RequestParam UUID ownerId, @RequestParam String productType) {
+    return userFavoriteProductService.toggle(ownerId, id, productType);
   }
 }
