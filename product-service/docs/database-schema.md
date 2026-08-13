@@ -167,6 +167,64 @@ referirse a productos por tipo (BASE|USER) no aplica a esta columna.
 
 - `V9__create_user_product_table.sql` — DDL de la tabla.
 
+### `user_favorite_product`
+
+Productos marcados como favoritos por un usuario. Relación usuario-producto
+con referencia polimórfica al producto. Entidad JPA:
+[`UserFavoriteProduct`](../../product-service/src/main/java/dev/ivborrezo/shoppinglist/product/service/product/entity/UserFavoriteProduct.java).
+
+| Columna | Tipo | Nullable | Default | Descripción |
+|---|---|---|---|---|
+| `user_id` | `UUID` | no | — | Identificador del usuario. Placeholder de ADR-006 (sin FK a usuarios). Parte de la PK compuesta. |
+| `product_id` | `BIGINT` | no | — | Identificador del producto referenciado, base o de usuario según `product_type`. Parte de la PK compuesta. |
+| `product_type` | `VARCHAR(4)` | no | — | Tipo de producto referenciado (`BASE` o `USER`). Parte de la PK compuesta. |
+| `created_at` | `TIMESTAMPTZ` | no | `CURRENT_TIMESTAMP` | Marca de creación; la escribe la capa de aplicación (`Instant.now()`), el DEFAULT queda como red de seguridad. |
+
+**Constraints**
+
+- `PRIMARY KEY (user_id, product_id, product_type)` como constraint nombrada
+  `pk_user_favorite_product`.
+- `CHECK (product_type IN ('BASE', 'USER'))` como constraint nombrada
+  `ck_user_favorite_product_type`.
+- Sin FK física (ver nota de diseño).
+
+**Migraciones**
+
+- `V10__create_user_favorite_product_table.sql` — DDL de la tabla.
+
+### `user_recent_product`
+
+Productos más recientes de un usuario (ranking de recientes). Entidad JPA:
+[`UserRecentProduct`](../../product-service/src/main/java/dev/ivborrezo/shoppinglist/product/service/product/entity/UserRecentProduct.java).
+
+| Columna | Tipo | Nullable | Default | Descripción |
+|---|---|---|---|---|
+| `user_id` | `UUID` | no | — | Identificador del usuario. Placeholder de ADR-006 (sin FK a usuarios). Parte de la PK compuesta. |
+| `product_id` | `BIGINT` | no | — | Identificador del producto referenciado, base o de usuario según `product_type`. Parte de la PK compuesta. |
+| `product_type` | `VARCHAR(4)` | no | — | Tipo de producto referenciado (`BASE` o `USER`). Parte de la PK compuesta. |
+| `last_used_at` | `TIMESTAMPTZ` | no | `CURRENT_TIMESTAMP` | Marca de la última interacción del usuario con el producto; la escribe la capa de aplicación al marcar (`Instant.now()`), el DEFAULT queda como red de seguridad. Criterio de ordenación del ranking (ADR-013). |
+
+**Constraints**
+
+- `PRIMARY KEY (user_id, product_id, product_type)` como constraint nombrada
+  `pk_user_recent_product`.
+- `CHECK (product_type IN ('BASE', 'USER'))` como constraint nombrada
+  `ck_user_recent_product_type`.
+- Sin FK física (ver nota de diseño).
+
+**Migraciones**
+
+- `V11__create_user_recent_product_table.sql` — DDL de la tabla.
+
+**Nota de diseño:** ambas tablas referencian productos de forma polimórfica
+sin constraint físico: `user_id` sin tabla de usuarios que lo respalde
+(placeholder ADR-006) y `product_id`/`product_type` sin FK a `base_product` ni
+`user_product`. La integridad se valida en la capa de aplicación: el toggle de
+favorito resuelve el producto según su tipo y devuelve `404` si no existe. Es
+el patrón database-per-service (ADR-002) aplicado entre agregados del mismo
+servicio, con precedente en `list_item` de `list-service`. El detalle de la
+decisión vive en ADR-013.
+
 ---
 
 ## Relaciones
@@ -270,6 +328,8 @@ registra en la tabla `flyway_schema_history`).
 | `V7` | `V7__seed_base_products.sql` | Seed de 30 productos base + 90 traducciones (es/en/eu). |
 | `V8` | `V8__sync_base_product_sequence.sql` | Sincroniza la secuencia identity tras el seed V7 con IDs explícitos. |
 | `V9` | `V9__create_user_product_table.sql` | DDL de `user_product`. |
+| `V10` | `V10__create_user_favorite_product_table.sql` | DDL de `user_favorite_product`. |
+| `V11` | `V11__create_user_recent_product_table.sql` | DDL de `user_recent_product`. |
 
 El esquema no incluye de momento diagrama ER: la herramienta de diagramación
 está pendiente de decisión (ADR-004), por lo que las relaciones se describen
