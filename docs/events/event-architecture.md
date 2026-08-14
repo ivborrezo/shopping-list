@@ -74,7 +74,7 @@ payload específico:
   que originó el evento, para permitir correlación causal en los logs
   entre la petición de entrada y su(s) efecto(s) asíncrono(s), aunque el
   consumo ocurra en un momento y servicio distintos. Ver
-  `docs/contributing/logging.md` para el ciclo de vida completo del
+  `docs/logging.md` para el ciclo de vida completo del
   `correlationId`.
 
 ### Por qué el evento no lleva `locale` ni lista de destinatarios

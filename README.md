@@ -86,7 +86,8 @@ shopping-list/
 │   ├── architecture/        # C4 Level 2
 │   ├── cicd/                # Estrategia CI/CD
 │   ├── contributing/        # Guías de contribución
-│   └── events/
+│   ├── events/
+│   └── logging.md           # Detalle de logging
 ├── product-service/         # Spring Boot + PostgreSQL
 │   ├── Dockerfile (multi-stage)
 │   ├── src/
@@ -144,7 +145,7 @@ servicio), consulta el [Setup completo](./docs/contributing/setup.md).
 | Documento | Descripción |
 |---|---|
 | [Arquitectura de eventos](./docs/events/event-architecture.md) | Qué eventos existen, quién los publica y quién los consumirá, y por qué. Documento provisional, pendiente de la elección de message broker |
-| [Convenciones de logging](./docs/contributing/logging.md) | Criterio MDC vs. structured key-value, formato de salida por perfil y ciclo de vida del `correlationId`. Documento provisional hasta Fase 6 |
+| [Convenciones de logging](./docs/logging.md) | Detalle completo de logging: criterio MDC vs. structured key-value, formato de salida por perfil y ciclo de vida del `correlationId`. Documento provisional hasta Fase 6 |
 
 ### Contratos de API (diseño, Design-First)
 
