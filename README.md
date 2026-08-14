@@ -85,8 +85,8 @@ shopping-list/
 │   ├── adr/                 # 13 ADRs
 │   ├── architecture/        # C4 Level 2
 │   ├── cicd/                # Estrategia CI/CD
-│   ├── events/
-│   └── logging-conventions.md
+│   ├── contributing/        # Guías de contribución
+│   └── events/
 ├── product-service/         # Spring Boot + PostgreSQL
 │   ├── Dockerfile (multi-stage)
 │   ├── src/
@@ -126,34 +126,8 @@ cp .env.example .env
 docker compose up -d
 ```
 
-> **Githooks (recomendado):** tras clonar, activa los hooks versionados con `git config core.hooksPath githooks` — validan formato de commits y sanity básico (ver [Estrategia de CI/CD §8](./docs/cicd/cicd-strategy.md#instalación)).
-
-Una vez arrancado:
-
-| Servicio | URL local |
-|---|---|
-| `product-service` (API REST) | `http://localhost:8081` |
-| `product-db` (PostgreSQL) | `localhost:5434` |
-| `list-db` (PostgreSQL) | `localhost:5435` |
-
-```bash
-# Verificación rápida
-curl -s http://localhost:8081/actuator/health
-curl -s http://localhost:8081/categories | head -c 200
-curl -s 'http://localhost:8081/base-products?page=0&size=3' | head -c 200
-curl -s 'http://localhost:8081/user-products?ownerId=00000000-0000-0000-0000-000000000000' | head -c 200
-curl -s 'http://localhost:8081/user-products/favorites?ownerId=00000000-0000-0000-0000-000000000000' | head -c 200
-curl -s 'http://localhost:8081/user-products/recents?ownerId=00000000-0000-0000-0000-000000000000' | head -c 200
-```
-
-Para desarrollo local (tests, IDE, Maven), consulta
-[`product-service/docs/local-setup.md`](./product-service/docs/local-setup.md).
-
-Para parar y limpiar los volúmenes de datos:
-
-```bash
-docker compose down -v
-```
+Para el proceso completo (activación de hooks, verificación, setup por
+servicio), consulta el [Setup completo](./docs/contributing/setup.md).
 
 ---
 
@@ -170,7 +144,7 @@ docker compose down -v
 | Documento | Descripción |
 |---|---|
 | [Arquitectura de eventos](./docs/events/event-architecture.md) | Qué eventos existen, quién los publica y quién los consumirá, y por qué. Documento provisional, pendiente de la elección de message broker |
-| [Convenciones de logging](./docs/logging-conventions.md) | Criterio MDC vs. structured key-value, formato de salida por perfil y ciclo de vida del `correlationId`. Documento provisional hasta Fase 6 |
+| [Convenciones de logging](./docs/contributing/logging.md) | Criterio MDC vs. structured key-value, formato de salida por perfil y ciclo de vida del `correlationId`. Documento provisional hasta Fase 6 |
 
 ### Contratos de API (diseño, Design-First)
 
@@ -187,6 +161,7 @@ como snapshot histórico de diseño.
 
 | Documento | Descripción |
 |---|---|
+| [Contribuir a ShoppingList](./CONTRIBUTING.md) | Índice de guías de contribución: setup completo, commits, ramas, estilo de código, testing, logging y entorno local |
 | [Setup local de `product-service`](./product-service/docs/local-setup.md) | Prerrequisitos, variables de entorno, escenarios de ejecución (CLI, VSCode, Docker Compose), tests y troubleshooting |
 | [Esquema de BD de `product-service`](./product-service/docs/database-schema.md) | Tablas `category`, `category_translation`, `base_product`, `base_product_translation`, `user_product`, `user_favorite_product` y `user_recent_product` con migraciones Flyway |
 
