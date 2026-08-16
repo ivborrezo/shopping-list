@@ -3,7 +3,7 @@ package dev.ivborrezo.shoppinglist.product.service.product.service;
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReferenceDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserFavoriteProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
@@ -122,15 +122,16 @@ public class UserFavoriteProductService {
    * @param locale idioma en el que se resuelven los nombres de los productos base
    * @return página de DTOs con las referencias a los productos favoritos y sus nombres resueltos
    */
-  public PagedResponse<ProductReferenceDto> findFavorites(
+  public PagedResponse<ProductReference> findFavorites(
       UUID ownerId, Pageable pageable, Locale locale) {
     Page<UserFavoriteProduct> page =
         userFavoriteProductRepository.findByUserIdOrderByCreatedAtDesc(ownerId, pageable);
-    List<ProductReferenceDto> dtos =
+    List<ProductReference> responses =
         page.getContent().stream()
-            .map(favorite -> ProductReferenceDto.from(favorite, resolveName(favorite, locale)))
+            .map(favorite -> ProductReference.from(favorite, resolveName(favorite, locale)))
             .toList();
-    return new PagedResponse<>(dtos, page.getNumber(), page.getSize(), page.getTotalElements());
+    return new PagedResponse<>(
+        responses, page.getNumber(), page.getSize(), page.getTotalElements());
   }
 
   /**

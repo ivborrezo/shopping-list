@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -93,9 +93,9 @@ class BaseProductCreationIntegrationIT {
             .andExpect(header().exists("Location"))
             .andReturn();
 
-    BaseProductResponseDto created =
+    BaseProductResponse created =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), BaseProductResponseDto.class);
+            result.getResponse().getContentAsByteArray(), BaseProductResponse.class);
 
     assertThat(created.code()).isEqualTo("free_range_eggs");
     assertThat(created.name()).isEqualTo("Arrautzak kanpoan");

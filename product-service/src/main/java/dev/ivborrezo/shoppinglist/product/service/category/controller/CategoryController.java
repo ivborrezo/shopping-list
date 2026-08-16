@@ -1,6 +1,6 @@
 package dev.ivborrezo.shoppinglist.product.service.category.controller;
 
-import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CreateCategoryRequest;
 import dev.ivborrezo.shoppinglist.product.service.category.service.CategoryService;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
@@ -38,8 +38,7 @@ public class CategoryController {
    * @return página de DTOs con las categorías activas y sus nombres localizados
    */
   @GetMapping
-  public PagedResponse<CategoryResponseDto> list(
-      @PageableDefault Pageable pageable, Locale locale) {
+  public PagedResponse<CategoryResponse> list(@PageableDefault Pageable pageable, Locale locale) {
     return categoryService.findActive(locale, pageable);
   }
 
@@ -51,7 +50,7 @@ public class CategoryController {
    * @return DTO de la categoría encontrada con su nombre localizado
    */
   @GetMapping("/{id}")
-  public CategoryResponseDto getById(@PathVariable Long id, Locale locale) {
+  public CategoryResponse getById(@PathVariable Long id, Locale locale) {
     return categoryService.findById(id, locale);
   }
 
@@ -63,9 +62,9 @@ public class CategoryController {
    * @return {@code 201 Created} con DTO y cabecera {@code Location}
    */
   @PostMapping
-  public ResponseEntity<CategoryResponseDto> create(
+  public ResponseEntity<CategoryResponse> create(
       @Valid @RequestBody CreateCategoryRequest request, Locale locale) {
-    CategoryResponseDto created = categoryService.create(request, locale);
+    CategoryResponse created = categoryService.create(request, locale);
     URI location = URI.create("/categories/" + created.id());
     return ResponseEntity.created(location).body(created);
   }

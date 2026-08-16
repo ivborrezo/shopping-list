@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReferenceDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -64,20 +64,20 @@ class UserRecentsListingIntegrationIT {
     markFavorite(2L);
     markFavorite(3L);
 
-    List<ProductReferenceDto> recents = getRecents("es");
+    List<ProductReference> recents = getRecents("es");
 
     assertThat(recents).hasSize(3);
-    assertThat(recents).extracting(ProductReferenceDto::productId).containsExactly(3L, 2L, 1L);
+    assertThat(recents).extracting(ProductReference::productId).containsExactly(3L, 2L, 1L);
     assertThat(recents)
-        .extracting(ProductReferenceDto::name)
+        .extracting(ProductReference::name)
         .containsExactly("Queso curado", "Yogur natural", "Leche entera");
-    assertThat(recents).extracting(ProductReferenceDto::productType).containsOnly(ProductType.BASE);
+    assertThat(recents).extracting(ProductReference::productType).containsOnly(ProductType.BASE);
   }
 
   /** Devuelve un listado vacío cuando el usuario no tiene ninguna interacción registrada. */
   @Test
   void listRecents_empty_returnsEmptyList() throws Exception {
-    List<ProductReferenceDto> recents = getRecents(null);
+    List<ProductReference> recents = getRecents(null);
 
     assertThat(recents).isEmpty();
   }
@@ -92,14 +92,14 @@ class UserRecentsListingIntegrationIT {
     markFavorite(2L);
     markFavorite(3L);
     assertThat(getRecents(null))
-        .extracting(ProductReferenceDto::productId)
+        .extracting(ProductReference::productId)
         .containsExactly(3L, 2L, 1L);
 
     markFavorite(1L);
     markFavorite(1L);
 
-    List<ProductReferenceDto> recents = getRecents(null);
-    assertThat(recents).extracting(ProductReferenceDto::productId).containsExactly(1L, 3L, 2L);
+    List<ProductReference> recents = getRecents(null);
+    assertThat(recents).extracting(ProductReference::productId).containsExactly(1L, 3L, 2L);
   }
 
   /**
@@ -110,7 +110,7 @@ class UserRecentsListingIntegrationIT {
    * @return lista de referencias a producto devuelta por el endpoint
    * @throws Exception si la petición MockMvc o la deserialización fallan
    */
-  private List<ProductReferenceDto> getRecents(String acceptLanguage) throws Exception {
+  private List<ProductReference> getRecents(String acceptLanguage) throws Exception {
     var request = get("/user-products/recents").param("ownerId", OWNER_ID.toString());
     if (acceptLanguage != null) {
       request = request.header("Accept-Language", acceptLanguage);
@@ -119,7 +119,7 @@ class UserRecentsListingIntegrationIT {
 
     return objectMapper.readValue(
         result.getResponse().getContentAsByteArray(),
-        new TypeReference<List<ProductReferenceDto>>() {});
+        new TypeReference<List<ProductReference>>() {});
   }
 
   /**

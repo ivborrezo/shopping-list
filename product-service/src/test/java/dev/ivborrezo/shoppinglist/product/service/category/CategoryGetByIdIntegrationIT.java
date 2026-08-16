@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
@@ -70,9 +70,9 @@ class CategoryGetByIdIntegrationIT {
             .andExpect(status().isOk())
             .andReturn();
 
-    CategoryResponseDto category =
+    CategoryResponse category =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), CategoryResponseDto.class);
+            result.getResponse().getContentAsByteArray(), CategoryResponse.class);
 
     assertThat(category.id()).isEqualTo(1L);
     assertThat(category.code()).isEqualTo("dairy");

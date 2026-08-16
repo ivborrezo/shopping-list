@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -71,12 +71,12 @@ class UserProductListingIntegrationIT {
     UserProduct bread = buildProduct(OWNER_B, "Pan de molde", 1L, true);
     persist(milk, cheese, bread);
 
-    PagedResponse<UserProductResponseDto> page = getUserProducts("ownerId=" + OWNER_A);
+    PagedResponse<UserProductResponse> page = getUserProducts("ownerId=" + OWNER_A);
 
     assertThat(page.content()).hasSize(2);
     assertThat(page.page()).isEqualTo(0);
     assertThat(page.totalElements()).isEqualTo(2);
-    assertThat(page.content()).extracting(UserProductResponseDto::ownerId).containsOnly(OWNER_A);
+    assertThat(page.content()).extracting(UserProductResponse::ownerId).containsOnly(OWNER_A);
   }
 
   /** Filtra por categoría y devuelve solo los productos del propietario de esa categoría. */
@@ -86,7 +86,7 @@ class UserProductListingIntegrationIT {
     UserProduct cheese = buildProduct(OWNER_A, "Queso curado", 2L, true);
     persist(milk, cheese);
 
-    PagedResponse<UserProductResponseDto> page =
+    PagedResponse<UserProductResponse> page =
         getUserProducts("ownerId=" + OWNER_A + "&categoryId=1");
 
     assertThat(page.content()).hasSize(1);
@@ -107,8 +107,7 @@ class UserProductListingIntegrationIT {
    * @return página de productos de usuario devuelta por el endpoint
    * @throws Exception si la petición MockMvc o la deserialización fallan
    */
-  private PagedResponse<UserProductResponseDto> getUserProducts(String queryString)
-      throws Exception {
+  private PagedResponse<UserProductResponse> getUserProducts(String queryString) throws Exception {
     MvcResult result =
         mockMvc
             .perform(get("/user-products?" + queryString))
@@ -117,7 +116,7 @@ class UserProductListingIntegrationIT {
 
     return objectMapper.readValue(
         result.getResponse().getContentAsByteArray(),
-        new TypeReference<PagedResponse<UserProductResponseDto>>() {});
+        new TypeReference<PagedResponse<UserProductResponse>>() {});
   }
 
   /**

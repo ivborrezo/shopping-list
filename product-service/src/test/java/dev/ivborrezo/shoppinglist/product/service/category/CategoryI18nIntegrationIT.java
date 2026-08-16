@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -66,73 +66,73 @@ class CategoryI18nIntegrationIT {
   /** Devuelve el nombre en español de la categoría dairy con la cabecera {@code es}. */
   @Test
   void getCategories_withEsHeader_returnsNamesInSpanish() throws Exception {
-    PagedResponse<CategoryResponseDto> page = getCategories("es");
+    PagedResponse<CategoryResponse> page = getCategories("es");
 
     assertThat(page.totalElements()).isEqualTo(10);
     assertThat(page.content())
         .filteredOn(category -> category.code().equals("dairy"))
         .singleElement()
-        .extracting(CategoryResponseDto::name)
+        .extracting(CategoryResponse::name)
         .isEqualTo("Lácteos");
   }
 
   /** Devuelve el nombre en inglés de la categoría dairy con la cabecera {@code en}. */
   @Test
   void getCategories_withEnHeader_returnsNamesInEnglish() throws Exception {
-    PagedResponse<CategoryResponseDto> page = getCategories("en");
+    PagedResponse<CategoryResponse> page = getCategories("en");
 
     assertThat(page.content())
         .filteredOn(category -> category.code().equals("dairy"))
         .singleElement()
-        .extracting(CategoryResponseDto::name)
+        .extracting(CategoryResponse::name)
         .isEqualTo("Dairy");
   }
 
   /** Devuelve el nombre en euskera de la categoría dairy con la cabecera {@code eu}. */
   @Test
   void getCategories_withEuHeader_returnsNamesInEuskera() throws Exception {
-    PagedResponse<CategoryResponseDto> page = getCategories("eu");
+    PagedResponse<CategoryResponse> page = getCategories("eu");
 
     assertThat(page.content())
         .filteredOn(category -> category.code().equals("dairy"))
         .singleElement()
-        .extracting(CategoryResponseDto::name)
+        .extracting(CategoryResponse::name)
         .isEqualTo("Esnekiak");
   }
 
   /** Aplica fallback a inglés cuando la petición no incluye la cabecera {@code Accept-Language}. */
   @Test
   void getCategories_withoutAcceptLanguageHeader_fallsBackToEnglish() throws Exception {
-    PagedResponse<CategoryResponseDto> page = getCategories(null);
+    PagedResponse<CategoryResponse> page = getCategories(null);
 
     assertThat(page.content())
         .filteredOn(category -> category.code().equals("dairy"))
         .singleElement()
-        .extracting(CategoryResponseDto::name)
+        .extracting(CategoryResponse::name)
         .isEqualTo("Dairy");
   }
 
   /** Aplica fallback a inglés cuando el idioma solicitado no está soportado. */
   @Test
   void getCategories_withUnsupportedLocale_fallsBackToEnglish() throws Exception {
-    PagedResponse<CategoryResponseDto> page = getCategories("fr");
+    PagedResponse<CategoryResponse> page = getCategories("fr");
 
     assertThat(page.content())
         .filteredOn(category -> category.code().equals("dairy"))
         .singleElement()
-        .extracting(CategoryResponseDto::name)
+        .extracting(CategoryResponse::name)
         .isEqualTo("Dairy");
   }
 
   /** Aplica fallback a inglés cuando la cabecera {@code Accept-Language} es inválida. */
   @Test
   void getCategories_withMalformedHeader_fallsBackToEnglish() throws Exception {
-    PagedResponse<CategoryResponseDto> page = getCategories("???");
+    PagedResponse<CategoryResponse> page = getCategories("???");
 
     assertThat(page.content())
         .filteredOn(category -> category.code().equals("dairy"))
         .singleElement()
-        .extracting(CategoryResponseDto::name)
+        .extracting(CategoryResponse::name)
         .isEqualTo("Dairy");
   }
 
@@ -144,7 +144,7 @@ class CategoryI18nIntegrationIT {
    * @return página de categorías activas devuelta por el endpoint
    * @throws Exception si la petición MockMvc o la deserialización fallan
    */
-  private PagedResponse<CategoryResponseDto> getCategories(String acceptLanguage) throws Exception {
+  private PagedResponse<CategoryResponse> getCategories(String acceptLanguage) throws Exception {
     var request = get("/categories");
     if (acceptLanguage != null) {
       request = request.header("Accept-Language", acceptLanguage);
@@ -153,6 +153,6 @@ class CategoryI18nIntegrationIT {
 
     return objectMapper.readValue(
         result.getResponse().getContentAsByteArray(),
-        new TypeReference<PagedResponse<CategoryResponseDto>>() {});
+        new TypeReference<PagedResponse<CategoryResponse>>() {});
   }
 }

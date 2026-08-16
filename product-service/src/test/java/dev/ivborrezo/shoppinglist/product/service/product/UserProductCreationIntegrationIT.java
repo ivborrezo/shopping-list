@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -84,9 +84,9 @@ class UserProductCreationIntegrationIT {
             .andExpect(header().exists("Location"))
             .andReturn();
 
-    UserProductResponseDto created =
+    UserProductResponse created =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), UserProductResponseDto.class);
+            result.getResponse().getContentAsByteArray(), UserProductResponse.class);
 
     assertThat(created.name()).isEqualTo("Leche entera");
     assertThat(created.defaultUnit()).isEqualTo(UnitEnum.L);
@@ -121,9 +121,9 @@ class UserProductCreationIntegrationIT {
             .andExpect(header().exists("Location"))
             .andReturn();
 
-    UserProductResponseDto created =
+    UserProductResponse created =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), UserProductResponseDto.class);
+            result.getResponse().getContentAsByteArray(), UserProductResponse.class);
 
     assertThat(created.name()).isEqualTo("Leche entera");
     assertThat(created.description()).isEqualTo("Leche de vaca entera, sin desnatar");
@@ -153,9 +153,9 @@ class UserProductCreationIntegrationIT {
             .andExpect(status().isCreated())
             .andReturn();
 
-    UserProductResponseDto created =
+    UserProductResponse created =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), UserProductResponseDto.class);
+            result.getResponse().getContentAsByteArray(), UserProductResponse.class);
 
     assertThat(created.name()).isEqualTo("Mi marca de leche");
     assertThat(created.categoryId()).isEqualTo(1L);

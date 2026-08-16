@@ -1,7 +1,7 @@
 package dev.ivborrezo.shoppinglist.product.service.product.service;
 
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReferenceDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserRecentProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
@@ -84,9 +84,9 @@ public class UserRecentProductService {
    * @param locale idioma en el que se resuelven los nombres de los productos base
    * @return lista con los diez productos recientes del usuario y sus nombres resueltos
    */
-  public List<ProductReferenceDto> findRecents(UUID userId, Locale locale) {
+  public List<ProductReference> findRecents(UUID userId, Locale locale) {
     return userRecentProductRepository.findTop10ByUserIdOrderByLastUsedAtDesc(userId).stream()
-        .map(recent -> ProductReferenceDto.from(recent, resolveName(recent, locale)))
+        .map(recent -> ProductReference.from(recent, resolveName(recent, locale)))
         .toList();
   }
 

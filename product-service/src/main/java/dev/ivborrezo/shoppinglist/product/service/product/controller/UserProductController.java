@@ -3,9 +3,9 @@ package dev.ivborrezo.shoppinglist.product.service.product.controller;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateUserProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReferenceDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateUserProductRequest;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.service.UserFavoriteProductService;
 import dev.ivborrezo.shoppinglist.product.service.product.service.UserProductService;
 import dev.ivborrezo.shoppinglist.product.service.product.service.UserRecentProductService;
@@ -67,7 +67,7 @@ public class UserProductController {
    * @return página de DTOs con los productos activos del propietario indicado
    */
   @GetMapping
-  public PagedResponse<UserProductResponseDto> list(
+  public PagedResponse<UserProductResponse> list(
       @RequestParam UUID ownerId,
       @RequestParam(required = false) Long categoryId,
       @PageableDefault Pageable pageable) {
@@ -84,7 +84,7 @@ public class UserProductController {
    * @return DTO del producto encontrado
    */
   @GetMapping("/{id}")
-  public UserProductResponseDto getById(@PathVariable Long id) {
+  public UserProductResponse getById(@PathVariable Long id) {
     return userProductService.findById(id);
   }
 
@@ -101,7 +101,7 @@ public class UserProductController {
    * @return DTO del producto de usuario tras aplicar los cambios
    */
   @PatchMapping("/{id}")
-  public UserProductResponseDto update(
+  public UserProductResponse update(
       @PathVariable Long id, @Valid @RequestBody UpdateUserProductRequest request) {
     return userProductService.update(id, request);
   }
@@ -115,9 +115,9 @@ public class UserProductController {
    * @return respuesta {@code 201} con el DTO del producto creado y la cabecera {@code Location}
    */
   @PostMapping
-  public ResponseEntity<UserProductResponseDto> create(
+  public ResponseEntity<UserProductResponse> create(
       @Valid @RequestBody CreateUserProductRequest request, Locale locale) {
-    UserProductResponseDto created = userProductService.create(request, locale);
+    UserProductResponse created = userProductService.create(request, locale);
     URI location = URI.create("/user-products/" + created.id());
     return ResponseEntity.created(location).body(created);
   }
@@ -164,7 +164,7 @@ public class UserProductController {
    * @return página de DTOs con las referencias a los productos favoritos del propietario
    */
   @GetMapping("/favorites")
-  public PagedResponse<ProductReferenceDto> listFavorites(
+  public PagedResponse<ProductReference> listFavorites(
       @RequestParam UUID ownerId, @PageableDefault Pageable pageable, Locale locale) {
     return userFavoriteProductService.findFavorites(ownerId, pageable, locale);
   }
@@ -177,7 +177,7 @@ public class UserProductController {
    * @return lista con las referencias a los diez productos recientes del propietario
    */
   @GetMapping("/recents")
-  public List<ProductReferenceDto> listRecents(@RequestParam UUID ownerId, Locale locale) {
+  public List<ProductReference> listRecents(@RequestParam UUID ownerId, Locale locale) {
     return userRecentProductService.findRecents(ownerId, locale);
   }
 }
