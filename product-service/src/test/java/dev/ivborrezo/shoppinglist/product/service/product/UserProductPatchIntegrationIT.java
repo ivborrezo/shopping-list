@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -88,9 +88,9 @@ class UserProductPatchIntegrationIT {
             .andExpect(status().isOk())
             .andReturn();
 
-    UserProductResponseDto updated =
+    UserProductResponse updated =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), UserProductResponseDto.class);
+            result.getResponse().getContentAsByteArray(), UserProductResponse.class);
 
     assertThat(updated.id()).isEqualTo(product.getId());
     assertThat(updated.ownerId()).isEqualTo(OWNER_ID);
@@ -151,9 +151,9 @@ class UserProductPatchIntegrationIT {
             .andExpect(status().isOk())
             .andReturn();
 
-    UserProductResponseDto updated =
+    UserProductResponse updated =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), UserProductResponseDto.class);
+            result.getResponse().getContentAsByteArray(), UserProductResponse.class);
 
     assertThat(updated.name()).isEqualTo("Renombrado");
     assertThat(updated.basedOnBaseId()).isEqualTo(1L);

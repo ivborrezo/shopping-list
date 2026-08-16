@@ -5,7 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -75,9 +75,9 @@ class BaseProductPatchIntegrationIT {
             .andExpect(status().isOk())
             .andReturn();
 
-    BaseProductResponseDto updated =
+    BaseProductResponse updated =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), BaseProductResponseDto.class);
+            result.getResponse().getContentAsByteArray(), BaseProductResponse.class);
 
     assertThat(updated.id()).isEqualTo(3L);
     assertThat(updated.code()).isEqualTo("aged_cheese");
@@ -111,9 +111,9 @@ class BaseProductPatchIntegrationIT {
             .andExpect(status().isOk())
             .andReturn();
 
-    BaseProductResponseDto updated =
+    BaseProductResponse updated =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), BaseProductResponseDto.class);
+            result.getResponse().getContentAsByteArray(), BaseProductResponse.class);
 
     assertThat(updated.id()).isEqualTo(10L);
     assertThat(updated.code()).isEqualTo("banana");
@@ -140,9 +140,9 @@ class BaseProductPatchIntegrationIT {
             .andExpect(status().isOk())
             .andReturn();
 
-    BaseProductResponseDto updated =
+    BaseProductResponse updated =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), BaseProductResponseDto.class);
+            result.getResponse().getContentAsByteArray(), BaseProductResponse.class);
 
     assertThat(updated.id()).isEqualTo(4L);
     assertThat(updated.code()).isEqualTo("butter");

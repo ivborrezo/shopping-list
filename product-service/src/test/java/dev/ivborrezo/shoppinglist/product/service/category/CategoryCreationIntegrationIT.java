@@ -5,7 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -91,9 +91,9 @@ class CategoryCreationIntegrationIT {
             .andExpect(header().exists("Location"))
             .andReturn();
 
-    CategoryResponseDto created =
+    CategoryResponse created =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), CategoryResponseDto.class);
+            result.getResponse().getContentAsByteArray(), CategoryResponse.class);
 
     assertThat(created.code()).isEqualTo("cleaning");
     assertThat(created.isActive()).isTrue();

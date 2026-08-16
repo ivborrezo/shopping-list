@@ -6,13 +6,14 @@ import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import java.util.UUID;
 
 /**
- * DTO de respuesta de un producto de usuario.
+ * Respuesta de un producto de usuario.
  *
  * <p>El contenido ({@code name} y {@code description}) es texto libre monolingüe, sin localización.
  * Los campos {@code defaultUnit} y {@code caloriesPer} se exponen como enums de dominio ({@link
- * UnitEnum}, {@link CaloriesPerEnum}) mapeados desde la columna de base de datos en la capa de DTO.
+ * UnitEnum}, {@link CaloriesPerEnum}) mapeados desde la columna de base de datos en la capa de
+ * respuesta.
  */
-public record UserProductResponseDto(
+public record UserProductResponse(
     Long id,
     UUID ownerId,
     String name,
@@ -27,14 +28,14 @@ public record UserProductResponseDto(
     Boolean isActive) {
 
   /**
-   * Construye un DTO de respuesta a partir de la entidad {@link UserProduct}.
+   * Construye una respuesta a partir de la entidad {@link UserProduct}.
    *
-   * @param product entidad fuente de la que se copian los campos del DTO
-   * @return DTO con los valores del producto de usuario, con {@code defaultUnit} y {@code
+   * @param product entidad fuente de la que se copian los campos de la respuesta
+   * @return respuesta con los valores del producto de usuario, con {@code defaultUnit} y {@code
    *     caloriesPer} mapeados a los enums de dominio
    */
-  public static UserProductResponseDto from(UserProduct product) {
-    return new UserProductResponseDto(
+  public static UserProductResponse from(UserProduct product) {
+    return new UserProductResponse(
         product.getId(),
         product.getOwnerId(),
         product.getName(),

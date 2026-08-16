@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReferenceDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserRecentProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
@@ -107,11 +107,10 @@ class UserRecentProductServiceTest {
     when(baseProductRepository.findById(1L)).thenReturn(Optional.of(base1));
     when(baseProductService.resolveName(any(), any())).thenReturn("Leche entera");
 
-    List<ProductReferenceDto> recents =
-        userRecentProductService.findRecents(OWNER_ID, Locale.ENGLISH);
+    List<ProductReference> recents = userRecentProductService.findRecents(OWNER_ID, Locale.ENGLISH);
 
     assertThat(recents).hasSize(2);
-    assertThat(recents).extracting(ProductReferenceDto::productId).containsExactly(3L, 1L);
+    assertThat(recents).extracting(ProductReference::productId).containsExactly(3L, 1L);
     assertThat(recents.get(0).name()).isEqualTo("Leche entera");
     assertThat(recents.get(0).productType()).isEqualTo(ProductType.BASE);
   }
@@ -122,8 +121,7 @@ class UserRecentProductServiceTest {
     when(userRecentProductRepository.findTop10ByUserIdOrderByLastUsedAtDesc(OWNER_ID))
         .thenReturn(List.of());
 
-    List<ProductReferenceDto> recents =
-        userRecentProductService.findRecents(OWNER_ID, Locale.ENGLISH);
+    List<ProductReference> recents = userRecentProductService.findRecents(OWNER_ID, Locale.ENGLISH);
 
     assertThat(recents).isEmpty();
   }
@@ -139,8 +137,7 @@ class UserRecentProductServiceTest {
         .thenReturn(List.of(recent));
     when(baseProductRepository.findById(1L)).thenReturn(Optional.empty());
 
-    List<ProductReferenceDto> recents =
-        userRecentProductService.findRecents(OWNER_ID, Locale.ENGLISH);
+    List<ProductReference> recents = userRecentProductService.findRecents(OWNER_ID, Locale.ENGLISH);
 
     assertThat(recents).hasSize(1);
     assertThat(recents.get(0).productId()).isEqualTo(1L);

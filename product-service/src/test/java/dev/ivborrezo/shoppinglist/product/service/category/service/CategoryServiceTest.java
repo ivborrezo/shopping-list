@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.CategoryTranslation;
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
@@ -42,7 +42,7 @@ class CategoryServiceTest {
     when(categoryRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(dairy)));
 
-    PagedResponse<CategoryResponseDto> page =
+    PagedResponse<CategoryResponse> page =
         categoryService.findActive(Locale.forLanguageTag("eu"), PageRequest.of(0, 20));
 
     assertThat(page.content()).hasSize(1);
@@ -58,7 +58,7 @@ class CategoryServiceTest {
     when(categoryRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(dairy)));
 
-    PagedResponse<CategoryResponseDto> page =
+    PagedResponse<CategoryResponse> page =
         categoryService.findActive(Locale.forLanguageTag("eu"), PageRequest.of(0, 20));
 
     assertThat(page.content()).hasSize(1);
@@ -71,7 +71,7 @@ class CategoryServiceTest {
     when(categoryRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(dairy)));
 
-    PagedResponse<CategoryResponseDto> page =
+    PagedResponse<CategoryResponse> page =
         categoryService.findActive(Locale.forLanguageTag("eu"), PageRequest.of(0, 20));
 
     assertThat(page.content()).hasSize(1);
@@ -87,7 +87,7 @@ class CategoryServiceTest {
     when(categoryRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(dairy, bakery, produce)));
 
-    PagedResponse<CategoryResponseDto> page =
+    PagedResponse<CategoryResponse> page =
         categoryService.findActive(Locale.forLanguageTag("es"), PageRequest.of(0, 20));
 
     assertThat(page.content()).hasSize(3);
@@ -98,7 +98,7 @@ class CategoryServiceTest {
     when(categoryRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of()));
 
-    PagedResponse<CategoryResponseDto> page =
+    PagedResponse<CategoryResponse> page =
         categoryService.findActive(Locale.forLanguageTag("es"), PageRequest.of(0, 20));
 
     assertThat(page.content()).isEmpty();

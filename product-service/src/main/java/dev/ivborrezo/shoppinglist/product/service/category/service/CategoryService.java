@@ -1,6 +1,6 @@
 package dev.ivborrezo.shoppinglist.product.service.category.service;
 
-import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CreateCategoryRequest;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.CategoryTranslation;
@@ -39,13 +39,14 @@ public class CategoryService {
    * @param pageable parámetros de paginación (número de página, tamaño)
    * @return página de DTOs con las categorías activas y sus nombres localizados; vacía si no hay
    */
-  public PagedResponse<CategoryResponseDto> findActive(Locale locale, Pageable pageable) {
+  public PagedResponse<CategoryResponse> findActive(Locale locale, Pageable pageable) {
     Page<Category> page = categoryRepository.findByIsActiveTrue(pageable);
-    List<CategoryResponseDto> dtos =
+    List<CategoryResponse> responses =
         page.getContent().stream()
-            .map(c -> CategoryResponseDto.from(c, resolveName(c, locale)))
+            .map(c -> CategoryResponse.from(c, resolveName(c, locale)))
             .toList();
-    return new PagedResponse<>(dtos, page.getNumber(), page.getSize(), page.getTotalElements());
+    return new PagedResponse<>(
+        responses, page.getNumber(), page.getSize(), page.getTotalElements());
   }
 
   /**
@@ -56,10 +57,10 @@ public class CategoryService {
    * @return DTO de la categoría encontrada con su nombre localizado
    * @throws ResponseStatusException con {@code 404} si la categoría no existe
    */
-  public CategoryResponseDto findById(Long id, Locale locale) {
+  public CategoryResponse findById(Long id, Locale locale) {
     return categoryRepository
         .findById(id)
-        .map(c -> CategoryResponseDto.from(c, resolveName(c, locale)))
+        .map(c -> CategoryResponse.from(c, resolveName(c, locale)))
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
   }
 
@@ -72,7 +73,7 @@ public class CategoryService {
    * @throws IllegalArgumentException si alguna traducción usa un locale no soportado
    */
   @Transactional
-  public CategoryResponseDto create(CreateCategoryRequest request, Locale locale) {
+  public CategoryResponse create(CreateCategoryRequest request, Locale locale) {
     validateSupportedLocales(request.translations());
 
     Category category = new Category();
@@ -88,7 +89,7 @@ public class CategoryService {
     }
 
     Category saved = categoryRepository.save(category);
-    return CategoryResponseDto.from(saved, resolveName(saved, locale));
+    return CategoryResponse.from(saved, resolveName(saved, locale));
   }
 
   private void validateSupportedLocales(List<CreateCategoryRequest.Translation> translations) {

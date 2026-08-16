@@ -6,7 +6,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateUserProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateUserProductRequest;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
@@ -61,7 +61,7 @@ public class UserProductService {
    * @param pageable parámetros de paginación
    * @return página de DTOs con los productos activos del propietario indicado
    */
-  public PagedResponse<UserProductResponseDto> findByOwner(UUID ownerId, Pageable pageable) {
+  public PagedResponse<UserProductResponse> findByOwner(UUID ownerId, Pageable pageable) {
     Page<UserProduct> page = userProductRepository.findByOwnerIdAndIsActiveTrue(ownerId, pageable);
     return toPagedResponse(page);
   }
@@ -74,7 +74,7 @@ public class UserProductService {
    * @param categoryId identificador de la categoría por la que filtrar
    * @return página de DTOs con los productos activos del propietario y categoría indicados
    */
-  public PagedResponse<UserProductResponseDto> findByOwner(
+  public PagedResponse<UserProductResponse> findByOwner(
       UUID ownerId, Pageable pageable, Long categoryId) {
     Page<UserProduct> page =
         userProductRepository.findByOwnerIdAndIsActiveTrueAndCategoryId(
@@ -89,7 +89,7 @@ public class UserProductService {
    * @return DTO del producto encontrado
    * @throws ResponseStatusException con {@code 404} si el producto no existe o está inactivo
    */
-  public UserProductResponseDto findById(Long id) {
+  public UserProductResponse findById(Long id) {
     UserProduct product =
         userProductRepository
             .findById(id)
@@ -97,7 +97,7 @@ public class UserProductService {
     if (!product.getIsActive()) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
-    return UserProductResponseDto.from(product);
+    return UserProductResponse.from(product);
   }
 
   /**
@@ -106,10 +106,11 @@ public class UserProductService {
    * @param page página de entidades devuelta por el repositorio
    * @return envoltorio con los DTOs y los metadatos de paginación
    */
-  private PagedResponse<UserProductResponseDto> toPagedResponse(Page<UserProduct> page) {
-    List<UserProductResponseDto> dtos =
-        page.getContent().stream().map(UserProductResponseDto::from).toList();
-    return new PagedResponse<>(dtos, page.getNumber(), page.getSize(), page.getTotalElements());
+  private PagedResponse<UserProductResponse> toPagedResponse(Page<UserProduct> page) {
+    List<UserProductResponse> responses =
+        page.getContent().stream().map(UserProductResponse::from).toList();
+    return new PagedResponse<>(
+        responses, page.getNumber(), page.getSize(), page.getTotalElements());
   }
 
   /**
@@ -129,7 +130,7 @@ public class UserProductService {
    *     falta algún campo obligatorio sin producto base, o si la categoría indicada no existe
    */
   @Transactional
-  public UserProductResponseDto create(CreateUserProductRequest request, Locale locale) {
+  public UserProductResponse create(CreateUserProductRequest request, Locale locale) {
     BaseProduct base = null;
     if (request.basedOnBaseId() != null) {
       base =
@@ -198,7 +199,7 @@ public class UserProductService {
     product.setIsActive(true);
 
     UserProduct saved = userProductRepository.save(product);
-    return UserProductResponseDto.from(saved);
+    return UserProductResponse.from(saved);
   }
 
   /**
@@ -219,7 +220,7 @@ public class UserProductService {
    * @throws ResponseStatusException con {@code 400} si la categoría indicada no existe
    */
   @Transactional
-  public UserProductResponseDto update(Long id, UpdateUserProductRequest request) {
+  public UserProductResponse update(Long id, UpdateUserProductRequest request) {
     UserProduct product =
         userProductRepository
             .findById(id)
@@ -269,7 +270,7 @@ public class UserProductService {
     }
 
     UserProduct saved = userProductRepository.save(product);
-    return UserProductResponseDto.from(saved);
+    return UserProductResponse.from(saved);
   }
 
   /**

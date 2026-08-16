@@ -1,7 +1,7 @@
 package dev.ivborrezo.shoppinglist.product.service.product.controller;
 
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateBaseProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateBaseProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.service.BaseProductService;
@@ -44,7 +44,7 @@ public class BaseProductController {
    * @return página de DTOs con los productos activos y sus textos localizados
    */
   @GetMapping
-  public PagedResponse<BaseProductResponseDto> list(
+  public PagedResponse<BaseProductResponse> list(
       @RequestParam(required = false) Long categoryId,
       @RequestParam(required = false) String text,
       @PageableDefault Pageable pageable,
@@ -61,7 +61,7 @@ public class BaseProductController {
    * @return DTO del producto encontrado con sus textos localizados
    */
   @GetMapping("/{id}")
-  public BaseProductResponseDto getById(@PathVariable Long id, Locale locale) {
+  public BaseProductResponse getById(@PathVariable Long id, Locale locale) {
     return baseProductService.findById(id, locale);
   }
 
@@ -74,9 +74,9 @@ public class BaseProductController {
    * @return {@code 201 Created} con DTO y cabecera {@code Location}
    */
   @PostMapping
-  public ResponseEntity<BaseProductResponseDto> create(
+  public ResponseEntity<BaseProductResponse> create(
       @Valid @RequestBody CreateBaseProductRequest request, Locale locale) {
-    BaseProductResponseDto created = baseProductService.create(request, locale);
+    BaseProductResponse created = baseProductService.create(request, locale);
     URI location = URI.create("/base-products/" + created.id());
     return ResponseEntity.created(location).body(created);
   }
@@ -90,7 +90,7 @@ public class BaseProductController {
    * @return DTO del producto base tras aplicar los cambios, con sus textos localizados
    */
   @PatchMapping("/{id}")
-  public BaseProductResponseDto update(
+  public BaseProductResponse update(
       @PathVariable Long id, @Valid @RequestBody UpdateBaseProductRequest request, Locale locale) {
     return baseProductService.update(id, request, locale);
   }

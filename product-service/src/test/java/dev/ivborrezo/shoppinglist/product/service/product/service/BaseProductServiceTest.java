@@ -8,7 +8,7 @@ import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRe
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProductTranslation;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
@@ -66,7 +66,7 @@ class BaseProductServiceTest {
     when(baseProductRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(java.util.List.of(milk)));
 
-    PagedResponse<BaseProductResponseDto> page =
+    PagedResponse<BaseProductResponse> page =
         baseProductService.findActive(Locale.forLanguageTag("eu"), PageRequest.of(0, 20));
 
     assertThat(page.content()).hasSize(1);
@@ -88,7 +88,7 @@ class BaseProductServiceTest {
     when(baseProductRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(java.util.List.of(milk)));
 
-    PagedResponse<BaseProductResponseDto> page =
+    PagedResponse<BaseProductResponse> page =
         baseProductService.findActive(Locale.forLanguageTag("eu"), PageRequest.of(0, 20));
 
     assertThat(page.content()).hasSize(1);
@@ -104,7 +104,7 @@ class BaseProductServiceTest {
     when(baseProductRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(java.util.List.of(milk)));
 
-    PagedResponse<BaseProductResponseDto> page =
+    PagedResponse<BaseProductResponse> page =
         baseProductService.findActive(Locale.forLanguageTag("eu"), PageRequest.of(0, 20));
 
     assertThat(page.content()).hasSize(1);
@@ -127,7 +127,7 @@ class BaseProductServiceTest {
     when(baseProductRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(java.util.List.of(milk)));
 
-    PagedResponse<BaseProductResponseDto> page =
+    PagedResponse<BaseProductResponse> page =
         baseProductService.findActive(Locale.forLanguageTag("en"), PageRequest.of(0, 20));
 
     assertThat(page.content().get(0).description()).isEqualTo("Full-fat cow milk");
@@ -142,7 +142,7 @@ class BaseProductServiceTest {
     when(baseProductRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(java.util.List.of(milk)));
 
-    PagedResponse<BaseProductResponseDto> page =
+    PagedResponse<BaseProductResponse> page =
         baseProductService.findActive(Locale.forLanguageTag("en"), PageRequest.of(0, 20));
 
     assertThat(page.content().get(0).description()).isNull();
@@ -158,7 +158,7 @@ class BaseProductServiceTest {
         new PageImpl<>(java.util.List.of(milk), PageRequest.of(2, 10), 42);
     when(baseProductRepository.findByIsActiveTrue(any(Pageable.class))).thenReturn(springPage);
 
-    PagedResponse<BaseProductResponseDto> page =
+    PagedResponse<BaseProductResponse> page =
         baseProductService.findActive(Locale.forLanguageTag("es"), PageRequest.of(2, 10));
 
     assertThat(page.page()).isEqualTo(2);
@@ -181,7 +181,7 @@ class BaseProductServiceTest {
     when(baseProductRepository.findByIsActiveTrue(any(Pageable.class)))
         .thenReturn(new PageImpl<>(java.util.List.of(milk)));
 
-    PagedResponse<BaseProductResponseDto> page =
+    PagedResponse<BaseProductResponse> page =
         baseProductService.findActive(Locale.forLanguageTag("eu"), PageRequest.of(0, 20));
 
     assertThat(page.content().get(0).name()).isEqualTo("Whole milk");

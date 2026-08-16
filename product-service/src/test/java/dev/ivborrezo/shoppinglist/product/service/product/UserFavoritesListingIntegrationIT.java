@@ -9,7 +9,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReferenceDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -77,15 +77,15 @@ class UserFavoritesListingIntegrationIT {
     entityManager.flush();
     markFavorite(product.getId(), "USER", null);
 
-    PagedResponse<ProductReferenceDto> page = getFavorites("ownerId=" + OWNER_ID, "es");
+    PagedResponse<ProductReference> page = getFavorites("ownerId=" + OWNER_ID, "es");
 
     assertThat(page.content()).hasSize(2);
     assertThat(page.totalElements()).isEqualTo(2);
     assertThat(page.content())
-        .extracting(ProductReferenceDto::name)
+        .extracting(ProductReference::name)
         .containsExactlyInAnyOrder("Leche entera", "Mi producto");
     assertThat(page.content())
-        .extracting(ProductReferenceDto::productType)
+        .extracting(ProductReference::productType)
         .containsExactlyInAnyOrder(ProductType.BASE, ProductType.USER);
   }
 
@@ -99,19 +99,19 @@ class UserFavoritesListingIntegrationIT {
     markFavorite(2L, "BASE", null);
     markFavorite(3L, "BASE", null);
 
-    PagedResponse<ProductReferenceDto> page = getFavorites("ownerId=" + OWNER_ID + "&size=2", null);
+    PagedResponse<ProductReference> page = getFavorites("ownerId=" + OWNER_ID + "&size=2", null);
 
     assertThat(page.content()).hasSize(2);
     assertThat(page.totalElements()).isEqualTo(3);
     assertThat(page.page()).isZero();
     assertThat(page.size()).isEqualTo(2);
-    assertThat(page.content()).extracting(ProductReferenceDto::productId).containsExactly(3L, 2L);
+    assertThat(page.content()).extracting(ProductReference::productId).containsExactly(3L, 2L);
   }
 
   /** Devuelve una página vacía cuando el usuario no tiene ningún favorito. */
   @Test
   void listFavorites_empty_returnsEmptyPage() throws Exception {
-    PagedResponse<ProductReferenceDto> page = getFavorites("ownerId=" + OWNER_ID, null);
+    PagedResponse<ProductReference> page = getFavorites("ownerId=" + OWNER_ID, null);
 
     assertThat(page.content()).isEmpty();
     assertThat(page.totalElements()).isZero();
@@ -127,7 +127,7 @@ class UserFavoritesListingIntegrationIT {
    * @return página de referencias a producto devuelta por el endpoint
    * @throws Exception si la petición MockMvc o la deserialización fallan
    */
-  private PagedResponse<ProductReferenceDto> getFavorites(String queryString, String acceptLanguage)
+  private PagedResponse<ProductReference> getFavorites(String queryString, String acceptLanguage)
       throws Exception {
     var request = get("/user-products/favorites?" + queryString);
     if (acceptLanguage != null) {
@@ -137,7 +137,7 @@ class UserFavoritesListingIntegrationIT {
 
     return objectMapper.readValue(
         result.getResponse().getContentAsByteArray(),
-        new TypeReference<PagedResponse<ProductReferenceDto>>() {});
+        new TypeReference<PagedResponse<ProductReference>>() {});
   }
 
   /**

@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
@@ -68,9 +68,9 @@ class BaseProductGetByIdIntegrationIT {
             .andExpect(status().isOk())
             .andReturn();
 
-    BaseProductResponseDto product =
+    BaseProductResponse product =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), BaseProductResponseDto.class);
+            result.getResponse().getContentAsByteArray(), BaseProductResponse.class);
 
     assertThat(product.id()).isEqualTo(1L);
     assertThat(product.code()).isEqualTo("whole_milk");
@@ -94,9 +94,9 @@ class BaseProductGetByIdIntegrationIT {
             .andExpect(status().isOk())
             .andReturn();
 
-    BaseProductResponseDto product =
+    BaseProductResponse product =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), BaseProductResponseDto.class);
+            result.getResponse().getContentAsByteArray(), BaseProductResponse.class);
 
     assertThat(product.id()).isEqualTo(3L);
     assertThat(product.code()).isEqualTo("cured_cheese");

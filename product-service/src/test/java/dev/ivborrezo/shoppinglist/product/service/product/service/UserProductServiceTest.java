@@ -11,7 +11,7 @@ import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRe
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.UserProductRepository;
@@ -65,13 +65,13 @@ class UserProductServiceTest {
     when(userProductRepository.findByOwnerIdAndIsActiveTrue(eq(OWNER_ID), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(product)));
 
-    PagedResponse<UserProductResponseDto> page =
+    PagedResponse<UserProductResponse> page =
         userProductService.findByOwner(OWNER_ID, PageRequest.of(0, 20));
 
     assertThat(page.content()).hasSize(1);
     assertThat(page.page()).isEqualTo(0);
     assertThat(page.totalElements()).isEqualTo(1);
-    UserProductResponseDto dto = page.content().get(0);
+    UserProductResponse dto = page.content().get(0);
     assertThat(dto.ownerId()).isEqualTo(OWNER_ID);
     assertThat(dto.name()).isEqualTo("Leche entera");
     assertThat(dto.categoryId()).isEqualTo(1L);
@@ -89,7 +89,7 @@ class UserProductServiceTest {
             eq(OWNER_ID), eq(2L), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(product)));
 
-    PagedResponse<UserProductResponseDto> page =
+    PagedResponse<UserProductResponse> page =
         userProductService.findByOwner(OWNER_ID, PageRequest.of(0, 20), 2L);
 
     verify(userProductRepository)
@@ -100,12 +100,12 @@ class UserProductServiceTest {
 
   /** Devuelve el DTO del producto activo existente, con {@code isActive} a {@code true}. */
   @Test
-  void findById_existingAndActive_returnsDto() {
+  void findById_existingAndActive_returnsResponse() {
     UserProduct product = buildProduct(OWNER_ID, "Leche entera", 1L, true);
     product.setId(1L);
     when(userProductRepository.findById(1L)).thenReturn(Optional.of(product));
 
-    UserProductResponseDto dto = userProductService.findById(1L);
+    UserProductResponse dto = userProductService.findById(1L);
 
     assertThat(dto.id()).isEqualTo(1L);
     assertThat(dto.ownerId()).isEqualTo(OWNER_ID);

@@ -2,7 +2,7 @@ package dev.ivborrezo.shoppinglist.product.service.product.service;
 
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateBaseProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UpdateBaseProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
@@ -62,7 +62,7 @@ public class BaseProductService {
    * @param pageable parámetros de paginación
    * @return página de DTOs con los productos activos y sus textos localizados
    */
-  public PagedResponse<BaseProductResponseDto> findActive(Locale locale, Pageable pageable) {
+  public PagedResponse<BaseProductResponse> findActive(Locale locale, Pageable pageable) {
     return findActive(locale, pageable, null, null);
   }
 
@@ -77,7 +77,7 @@ public class BaseProductService {
    *     filtrar
    * @return página de DTOs con los productos activos y sus textos localizados
    */
-  public PagedResponse<BaseProductResponseDto> findActive(
+  public PagedResponse<BaseProductResponse> findActive(
       Locale locale, Pageable pageable, Long categoryId, String text) {
     Page<BaseProduct> page;
     if (text != null && !text.isBlank()) {
@@ -88,15 +88,16 @@ public class BaseProductService {
       page = baseProductRepository.findByIsActiveTrue(pageable);
     }
 
-    List<BaseProductResponseDto> dtos =
+    List<BaseProductResponse> responses =
         page.getContent().stream()
             .map(
                 bp ->
-                    BaseProductResponseDto.from(
+                    BaseProductResponse.from(
                         bp, resolveName(bp, locale), resolveDescription(bp, locale)))
             .toList();
 
-    return new PagedResponse<>(dtos, page.getNumber(), page.getSize(), page.getTotalElements());
+    return new PagedResponse<>(
+        responses, page.getNumber(), page.getSize(), page.getTotalElements());
   }
 
   /**
@@ -107,7 +108,7 @@ public class BaseProductService {
    * @return DTO del producto encontrado con sus textos localizados
    * @throws ResponseStatusException con {@code 404} si el producto no existe o está inactivo
    */
-  public BaseProductResponseDto findById(Long id, Locale locale) {
+  public BaseProductResponse findById(Long id, Locale locale) {
     BaseProduct product =
         baseProductRepository
             .findById(id)
@@ -115,7 +116,7 @@ public class BaseProductService {
     if (!product.getIsActive()) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
-    return BaseProductResponseDto.from(
+    return BaseProductResponse.from(
         product, resolveName(product, locale), resolveDescription(product, locale));
   }
 
@@ -131,7 +132,7 @@ public class BaseProductService {
    * @throws IllegalArgumentException si alguna traducción usa un locale no soportado
    */
   @Transactional
-  public BaseProductResponseDto create(CreateBaseProductRequest request, Locale locale) {
+  public BaseProductResponse create(CreateBaseProductRequest request, Locale locale) {
     if (!categoryRepository.existsById(request.categoryId())) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found");
     }
@@ -161,7 +162,7 @@ public class BaseProductService {
     }
 
     BaseProduct saved = baseProductRepository.save(product);
-    return BaseProductResponseDto.from(
+    return BaseProductResponse.from(
         saved, resolveName(saved, locale), resolveDescription(saved, locale));
   }
 
@@ -183,7 +184,7 @@ public class BaseProductService {
    * @throws IllegalArgumentException si alguna traducción usa un locale no soportado
    */
   @Transactional
-  public BaseProductResponseDto update(Long id, UpdateBaseProductRequest request, Locale locale) {
+  public BaseProductResponse update(Long id, UpdateBaseProductRequest request, Locale locale) {
     BaseProduct product =
         baseProductRepository
             .findById(id)
@@ -240,7 +241,7 @@ public class BaseProductService {
     }
 
     BaseProduct saved = baseProductRepository.save(product);
-    return BaseProductResponseDto.from(
+    return BaseProductResponse.from(
         saved, resolveName(saved, locale), resolveDescription(saved, locale));
   }
 

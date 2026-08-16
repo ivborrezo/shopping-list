@@ -12,7 +12,7 @@ import static org.mockito.Mockito.when;
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReferenceDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserFavoriteProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
@@ -164,7 +164,7 @@ class UserFavoriteProductServiceTest {
     when(baseProductRepository.findById(1L)).thenReturn(Optional.of(base));
     when(baseProductService.resolveName(base, Locale.ENGLISH)).thenReturn("Milk");
 
-    PagedResponse<ProductReferenceDto> page =
+    PagedResponse<ProductReference> page =
         userFavoriteProductService.findFavorites(OWNER_ID, PageRequest.of(0, 20), Locale.ENGLISH);
 
     assertThat(page.content()).hasSize(1);
@@ -188,7 +188,7 @@ class UserFavoriteProductServiceTest {
     userProduct.setName("Mi producto");
     when(userProductRepository.findById(5L)).thenReturn(Optional.of(userProduct));
 
-    PagedResponse<ProductReferenceDto> page =
+    PagedResponse<ProductReference> page =
         userFavoriteProductService.findFavorites(OWNER_ID, PageRequest.of(0, 20), Locale.ENGLISH);
 
     assertThat(page.content()).hasSize(1);
@@ -210,7 +210,7 @@ class UserFavoriteProductServiceTest {
         .thenReturn(new PageImpl<>(List.of(favorite)));
     when(baseProductRepository.findById(1L)).thenReturn(Optional.empty());
 
-    PagedResponse<ProductReferenceDto> page =
+    PagedResponse<ProductReference> page =
         userFavoriteProductService.findFavorites(OWNER_ID, PageRequest.of(0, 20), Locale.ENGLISH);
 
     assertThat(page.content()).hasSize(1);
@@ -224,7 +224,7 @@ class UserFavoriteProductServiceTest {
             eq(OWNER_ID), any(Pageable.class)))
         .thenReturn(Page.empty());
 
-    PagedResponse<ProductReferenceDto> page =
+    PagedResponse<ProductReference> page =
         userFavoriteProductService.findFavorites(OWNER_ID, PageRequest.of(0, 20), Locale.ENGLISH);
 
     assertThat(page.content()).isEmpty();

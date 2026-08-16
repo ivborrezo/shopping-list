@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
-import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponseDto;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -71,9 +71,9 @@ class UserProductGetByIdIntegrationIT {
             .andExpect(status().isOk())
             .andReturn();
 
-    UserProductResponseDto dto =
+    UserProductResponse dto =
         objectMapper.readValue(
-            result.getResponse().getContentAsByteArray(), UserProductResponseDto.class);
+            result.getResponse().getContentAsByteArray(), UserProductResponse.class);
 
     assertThat(dto.id()).isEqualTo(product.getId());
     assertThat(dto.ownerId()).isEqualTo(OWNER_A);
