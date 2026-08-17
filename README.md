@@ -48,7 +48,11 @@ local está definida como código mediante Docker Compose.
 > /user-products/{id}/favorite` como toggle, `GET /user-products/favorites`
 > paginado con nombres resueltos y `GET /user-products/recents` con el top
 > 10 más reciente.
-> CI en verde (Testcontainers + failsafe), git hooks y 13 ADRs
+> Los errores siguen un contrato único: RFC 9457 `ProblemDetail`
+> (`application/problem+json`) con extensión `code` y un catálogo
+> estable de 15 códigos, sin localización de mensajes en el backend
+> (la localización es del frontend).
+> CI en verde (Testcontainers + failsafe), git hooks y 14 ADRs
 > documentando las decisiones de arquitectura. `list-service` es un
 > placeholder con su contrato de API definido (Design-First).
 
@@ -82,7 +86,7 @@ shopping-list/
 ├── githooks/                # pre-commit + commit-msg
 ├── config/checkstyle/       # Google Java Style (compartido)
 ├── docs/
-│   ├── adr/                 # 13 ADRs
+│   ├── adr/                 # 14 ADRs
 │   ├── architecture/        # C4 Level 2
 │   ├── cicd/                # Estrategia CI/CD
 │   ├── contributing/        # Guías de contribución
@@ -192,6 +196,7 @@ Architecture Decision Records (ADR) en [`docs/adr/`](./docs/adr/).
 | [ADR-011 — Estrategia de internacionalización y fallback](./docs/adr/ADR-011-estrategia-de-internacionalizacion-y-fallback.md) | Resolución de `Accept-Language` vía `AcceptHeaderLocaleResolver`, fallback exacto → inglés → primer disponible, resolución del nombre en capa de servicio (no JPQL), validación de `locale` en dos capas (Bean Validation + servicio) | ✅ Redactado |
 | [ADR-012 — Modelo de productos base vs usuario](./docs/adr/ADR-012-modelo-productos-base-vs-usuario.md) | Dos agregados/tablas separados (`base_product` con i18n Table, `user_product` texto libre monolingüe). `based_on_base_id` como snapshot copy-on-create + trazabilidad inmutable. PK externa compuesta `(productId, productType)`. Flags de compartición inertes hasta Fase 4. Detalle de favoritos/recientes diferido a ADR-013 | ✅ Redactado |
 | [ADR-013 — Favoritos y recientes (detalle de implementación)](./docs/adr/ADR-013-favoritos-y-recientes-detalle-de-implementacion.md) | PK compuesta (user_id, product_id, product_type) sin FK física (validación en capa de aplicación, precedente de list_item en list-service), last_used_at como criterio de ordenación de recientes, disparador de recientes solo en el toggle de favorito en Fases 1-3, sin endpoint de touch explícito | ✅ Redactado |
+| [ADR-014 — Estrategia de manejo de errores](./docs/adr/ADR-014-estrategia-de-manejo-de-errores.md) | RFC 9457 `ProblemDetail` con extensión `code` y content-type `application/problem+json`, mensajes en inglés sin i18n en el backend, catálogo `ErrorCode` de 15 códigos (14 de negocio + `VALIDATION_FAILED` reservado), `BusinessException` con un único `GlobalExceptionHandler`, validación con `errors` por campo y fallback 500 con `INTERNAL_ERROR` | ✅ Redactado |
 
 Los ADRs se redactan a medida que se toman decisiones de arquitectura
 en cada fase; la tabla refleja el estado actual de las mismas.
