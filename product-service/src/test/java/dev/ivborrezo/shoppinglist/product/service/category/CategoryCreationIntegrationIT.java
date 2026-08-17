@@ -2,11 +2,11 @@ package dev.ivborrezo.shoppinglist.product.service.category;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
@@ -29,8 +29,8 @@ import tools.jackson.databind.ObjectMapper;
  * Test de integración del endpoint {@code POST /categories}.
  *
  * <p>Verifica la creación de categorías con sus traducciones (es/en/eu), la localización del nombre
- * en la respuesta, y los códigos de error que produce Spring por defecto sin manejo global de
- * excepciones.
+ * en la respuesta, la validación Bean Validation de campos obligatorios y el contrato de error
+ * {@code ProblemDetail} del {@code api-contract.yaml} (locale no soportado y código duplicado).
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -118,16 +118,13 @@ class CategoryCreationIntegrationIT {
   }
 
   /**
-   * Sin manejo global de errores, un locale no soportado se traduce en 500.
+   * Rechaza con 400 la creación cuando alguna traducción usa un locale no soportado.
    *
-   * <p>Deshabilitado hasta Rama 6: MockMvc en modo MOCK no tiene el filtro de errores del
-   * contenedor Servlet, por lo que las excepciones no manejadas se propagan como error de test en
-   * lugar de devolver 500. Se reactivará cuando exista {@code @RestControllerAdvice}.
+   * <p>La respuesta cumple el shape {@code ProblemDetail} del contrato: content-type {@code
+   * application/problem+json} y código {@code UNSUPPORTED_LOCALE}.
    */
-  @Disabled(
-      "Requiere @ControllerAdvice (Rama 6): MockMvc en modo MOCK no despacha errores del contenedor")
   @Test
-  void createCategory_withUnsupportedLocale_returns500() throws Exception {
+  void createCategory_withUnsupportedLocale_returns400() throws Exception {
     String body =
         """
         {
@@ -139,23 +136,30 @@ class CategoryCreationIntegrationIT {
         }
         """;
 
-    mockMvc
-        .perform(post("/categories").contentType(MediaType.APPLICATION_JSON).content(body))
-        .andExpect(status().isInternalServerError());
+    MvcResult result =
+        mockMvc
+            .perform(post("/categories").contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andReturn();
+
+    ProblemDetailResponse response =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), ProblemDetailResponse.class);
+
+    assertThat(response.code()).isEqualTo("UNSUPPORTED_LOCALE");
+    assertThat(response.title()).isEqualTo("Unsupported locale");
+    assertThat(response.status()).isEqualTo(400);
   }
 
   /**
-   * Sin manejo global de errores, un code duplicado se traduce en 500.
+   * Rechaza con 409 la creación cuando el código ya existe en el catálogo.
    *
-   * <p>Deshabilitado hasta Rama 6: MockMvc en modo MOCK no tiene el filtro de errores del
-   * contenedor Servlet, por lo que las excepciones no manejadas se propagan como error de test en
-   * lugar de devolver 500. Se reactivará cuando exista {@code @RestControllerAdvice}. En Rama 6 el
-   * status esperado migrará a 409 según {@code api-contract.yaml}.
+   * <p>La respuesta cumple el shape {@code ProblemDetail} del contrato: content-type {@code
+   * application/problem+json} y código {@code DUPLICATE_CATEGORY_CODE}.
    */
-  @Disabled(
-      "Requiere @ControllerAdvice (Rama 6): MockMvc en modo MOCK no despacha errores del contenedor")
   @Test
-  void createCategory_withDuplicateCode_returns500() throws Exception {
+  void createCategory_withDuplicateCode_returns409() throws Exception {
     String body =
         """
         {
@@ -167,9 +171,20 @@ class CategoryCreationIntegrationIT {
         }
         """;
 
-    mockMvc
-        .perform(post("/categories").contentType(MediaType.APPLICATION_JSON).content(body))
-        .andExpect(status().isInternalServerError());
+    MvcResult result =
+        mockMvc
+            .perform(post("/categories").contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isConflict())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andReturn();
+
+    ProblemDetailResponse response =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), ProblemDetailResponse.class);
+
+    assertThat(response.code()).isEqualTo("DUPLICATE_CATEGORY_CODE");
+    assertThat(response.title()).isEqualTo("Duplicate category code");
+    assertThat(response.status()).isEqualTo(409);
   }
 
   /** Rechaza la petición con {@code code} vacío con 400. */
@@ -190,4 +205,7 @@ class CategoryCreationIntegrationIT {
         .perform(post("/categories").contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isBadRequest());
   }
+
+  /** Deserialización parcial del shape {@code ProblemDetail} para los asserts de los tests. */
+  record ProblemDetailResponse(String code, String title, Integer status) {}
 }

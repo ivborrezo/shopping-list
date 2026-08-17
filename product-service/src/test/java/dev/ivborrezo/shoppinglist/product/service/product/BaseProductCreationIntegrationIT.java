@@ -2,13 +2,13 @@ package dev.ivborrezo.shoppinglist.product.service.product;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
@@ -31,9 +31,9 @@ import tools.jackson.databind.ObjectMapper;
  * Test de integración del endpoint {@code POST /base-products}.
  *
  * <p>Verifica la creación de productos base con sus traducciones (es/en/eu), la localización del
- * nombre en la respuesta, validación de campos obligatorios vía Bean Validation, y los códigos de
- * error de negocio (código duplicado, locale no soportado) pendientes de {@code @ControllerAdvice}
- * en Rama 7.
+ * nombre en la respuesta, la validación de campos obligatorios vía Bean Validation y el contrato de
+ * error {@code ProblemDetail} del {@code api-contract.yaml} (locale no soportado y código
+ * duplicado).
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -131,13 +131,11 @@ class BaseProductCreationIntegrationIT {
   }
 
   /**
-   * Sin manejo global de errores, un locale no soportado se traduce en 500.
+   * Rechaza con 400 la creación cuando alguna traducción usa un locale no soportado.
    *
-   * <p>Deshabilitado hasta Rama 7: MockMvc en modo MOCK no tiene el filtro de errores del
-   * contenedor Servlet, por lo que las excepciones no manejadas se propagan como error de test.
+   * <p>La respuesta cumple el shape {@code ProblemDetail} del contrato: content-type {@code
+   * application/problem+json} y código {@code UNSUPPORTED_LOCALE}.
    */
-  @Disabled(
-      "Requiere @ControllerAdvice (Rama 7): MockMvc en modo MOCK no despacha errores del contenedor")
   @Test
   void createBaseProduct_withUnsupportedLocale_returns400() throws Exception {
     String body =
@@ -154,19 +152,28 @@ class BaseProductCreationIntegrationIT {
         }
         """;
 
-    mockMvc
-        .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
-        .andExpect(status().isBadRequest());
+    MvcResult result =
+        mockMvc
+            .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andReturn();
+
+    ProblemDetailResponse response =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), ProblemDetailResponse.class);
+
+    assertThat(response.code()).isEqualTo("UNSUPPORTED_LOCALE");
+    assertThat(response.title()).isEqualTo("Unsupported locale");
+    assertThat(response.status()).isEqualTo(400);
   }
 
   /**
-   * Sin manejo global de errores, un código duplicado se traduce en 500.
+   * Rechaza con 409 la creación cuando el código ya existe en el catálogo.
    *
-   * <p>Deshabilitado hasta Rama 7: MockMvc en modo MOCK no tiene el filtro de errores del
-   * contenedor Servlet. En Rama 7 el status migrará a 409 según {@code api-contract.yaml}.
+   * <p>La respuesta cumple el shape {@code ProblemDetail} del contrato: content-type {@code
+   * application/problem+json} y código {@code DUPLICATE_PRODUCT_CODE}.
    */
-  @Disabled(
-      "Requiere @ControllerAdvice (Rama 7): MockMvc en modo MOCK no despacha errores del contenedor")
   @Test
   void createBaseProduct_withDuplicateCode_returns409() throws Exception {
     String body =
@@ -183,9 +190,20 @@ class BaseProductCreationIntegrationIT {
         }
         """;
 
-    mockMvc
-        .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
-        .andExpect(status().isConflict());
+    MvcResult result =
+        mockMvc
+            .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isConflict())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andReturn();
+
+    ProblemDetailResponse response =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), ProblemDetailResponse.class);
+
+    assertThat(response.code()).isEqualTo("DUPLICATE_PRODUCT_CODE");
+    assertThat(response.title()).isEqualTo("Duplicate product code");
+    assertThat(response.status()).isEqualTo(409);
   }
 
   /** Rechaza la petición con {@code code} vacío con 400 vía Bean Validation. */
@@ -228,4 +246,7 @@ class BaseProductCreationIntegrationIT {
         .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isBadRequest());
   }
+
+  /** Deserialización parcial del shape {@code ProblemDetail} para los asserts de los tests. */
+  record ProblemDetailResponse(String code, String title, Integer status) {}
 }
