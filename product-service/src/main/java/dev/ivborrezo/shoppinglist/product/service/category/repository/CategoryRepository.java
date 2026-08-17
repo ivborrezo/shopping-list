@@ -15,4 +15,12 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
    * @return página de categorías activas
    */
   Page<Category> findByIsActiveTrue(Pageable pageable);
+
+  /**
+   * Comprueba si existe una categoría con el código dado.
+   *
+   * @param code código de la categoría a comprobar
+   * @return true si ya existe una categoría con ese código
+   */
+  boolean existsByCode(String code);
 }

@@ -1,6 +1,8 @@
 package dev.ivborrezo.shoppinglist.product.service.product.service;
 
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
+import dev.ivborrezo.shoppinglist.product.service.common.BusinessException;
+import dev.ivborrezo.shoppinglist.product.service.common.ErrorCode;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateBaseProductRequest;
@@ -15,10 +17,8 @@ import java.util.Locale;
 import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Servicio de gestión de productos base del catálogo con resolución de nombres y descripciones
@@ -106,15 +106,16 @@ public class BaseProductService {
    * @param id identificador del producto base a recuperar
    * @param locale idioma en el que se quieren los textos localizados
    * @return DTO del producto encontrado con sus textos localizados
-   * @throws ResponseStatusException con {@code 404} si el producto no existe o está inactivo
+   * @throws BusinessException con ErrorCode.BASE_PRODUCT_NOT_FOUND si el producto no existe o está
+   *     inactivo
    */
   public BaseProductResponse findById(Long id, Locale locale) {
     BaseProduct product =
         baseProductRepository
             .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new BusinessException(ErrorCode.BASE_PRODUCT_NOT_FOUND));
     if (!product.getIsActive()) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+      throw new BusinessException(ErrorCode.BASE_PRODUCT_NOT_FOUND);
     }
     return BaseProductResponse.from(
         product, resolveName(product, locale), resolveDescription(product, locale));
@@ -127,18 +128,21 @@ public class BaseProductService {
    * @param request petición con los datos del producto base y sus traducciones
    * @param locale idioma en el que se devuelven los textos localizados del producto creado
    * @return DTO del producto base recién creado con sus textos localizados
-   * @throws ResponseStatusException con {@code 400} si la categoría no existe
-   * @throws ResponseStatusException con {@code 409} si ya existe un producto con ese código
-   * @throws IllegalArgumentException si alguna traducción usa un locale no soportado
+   * @throws BusinessException con ErrorCode.INVALID_CATEGORY si la categoría indicada no existe
+   * @throws BusinessException con ErrorCode.DUPLICATE_PRODUCT_CODE si ya existe un producto con ese
+   *     código
+   * @throws BusinessException con ErrorCode.UNSUPPORTED_LOCALE si alguna traducción usa un locale
+   *     no soportado
    */
   @Transactional
   public BaseProductResponse create(CreateBaseProductRequest request, Locale locale) {
     if (!categoryRepository.existsById(request.categoryId())) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found");
+      throw new BusinessException(
+          ErrorCode.INVALID_CATEGORY, "Category with id " + request.categoryId() + " not found");
     }
 
     if (baseProductRepository.existsByCode(request.code())) {
-      throw new ResponseStatusException(HttpStatus.CONFLICT, "Product code already exists");
+      throw new BusinessException(ErrorCode.DUPLICATE_PRODUCT_CODE, "Product code already exists");
     }
 
     validateSupportedLocales(request.translations());
@@ -177,29 +181,32 @@ public class BaseProductService {
    * @param request petición con los campos a modificar; solo los no nulos se aplican
    * @param locale idioma en el que se devuelven los textos localizados del producto editado
    * @return DTO del producto base tras aplicar los cambios, con sus textos localizados
-   * @throws ResponseStatusException con {@code 404} si el producto no existe
-   * @throws ResponseStatusException con {@code 400} si la categoría indicada no existe
-   * @throws ResponseStatusException con {@code 409} si el nuevo código ya está en uso por otro
-   *     producto
-   * @throws IllegalArgumentException si alguna traducción usa un locale no soportado
+   * @throws BusinessException con ErrorCode.BASE_PRODUCT_NOT_FOUND si el producto no existe
+   * @throws BusinessException con ErrorCode.INVALID_CATEGORY si la categoría indicada no existe
+   * @throws BusinessException con ErrorCode.DUPLICATE_PRODUCT_CODE si el nuevo código ya está en
+   *     uso por otro producto
+   * @throws BusinessException con ErrorCode.UNSUPPORTED_LOCALE si alguna traducción usa un locale
+   *     no soportado
    */
   @Transactional
   public BaseProductResponse update(Long id, UpdateBaseProductRequest request, Locale locale) {
     BaseProduct product =
         baseProductRepository
             .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new BusinessException(ErrorCode.BASE_PRODUCT_NOT_FOUND));
 
     if (request.code() != null && !request.code().equals(product.getCode())) {
       if (baseProductRepository.existsByCode(request.code())) {
-        throw new ResponseStatusException(HttpStatus.CONFLICT, "Product code already exists");
+        throw new BusinessException(
+            ErrorCode.DUPLICATE_PRODUCT_CODE, "Product code already exists");
       }
       product.setCode(request.code());
     }
 
     if (request.categoryId() != null) {
       if (!categoryRepository.existsById(request.categoryId())) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found");
+        throw new BusinessException(
+            ErrorCode.INVALID_CATEGORY, "Category with id " + request.categoryId() + " not found");
       }
       product.setCategoryId(request.categoryId());
     }
@@ -223,7 +230,7 @@ public class BaseProductService {
     if (request.translations() != null) {
       for (UpdateBaseProductRequest.ProductTranslation t : request.translations()) {
         if (!SUPPORTED_LOCALES.contains(t.locale())) {
-          throw new IllegalArgumentException("Unsupported locale");
+          throw new BusinessException(ErrorCode.UNSUPPORTED_LOCALE);
         }
       }
 
@@ -249,14 +256,14 @@ public class BaseProductService {
    * Elimina físicamente un producto base y sus traducciones en cascada.
    *
    * @param id identificador del producto base a eliminar
-   * @throws ResponseStatusException con {@code 404} si el producto no existe
+   * @throws BusinessException con ErrorCode.BASE_PRODUCT_NOT_FOUND si el producto no existe
    */
   @Transactional
   public void delete(Long id) {
     BaseProduct product =
         baseProductRepository
             .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new BusinessException(ErrorCode.BASE_PRODUCT_NOT_FOUND));
     baseProductRepository.delete(product);
   }
 
@@ -265,7 +272,7 @@ public class BaseProductService {
     boolean allSupported =
         translations.stream().allMatch(t -> SUPPORTED_LOCALES.contains(t.locale()));
     if (!allSupported) {
-      throw new IllegalArgumentException("Unsupported locale");
+      throw new BusinessException(ErrorCode.UNSUPPORTED_LOCALE);
     }
   }
 

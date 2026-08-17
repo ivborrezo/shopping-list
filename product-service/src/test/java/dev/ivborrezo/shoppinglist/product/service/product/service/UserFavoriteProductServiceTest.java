@@ -9,6 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.ivborrezo.shoppinglist.product.service.common.BusinessException;
+import dev.ivborrezo.shoppinglist.product.service.common.ErrorCode;
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
@@ -32,8 +34,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Test unitario de {@link UserFavoriteProductService}.
@@ -79,8 +79,8 @@ class UserFavoriteProductServiceTest {
   void toggle_withInvalidProductType_throwsBadRequest() {
     assertThatThrownBy(() -> userFavoriteProductService.toggle(OWNER_ID, 1L, "CATALOG"))
         .isInstanceOfSatisfying(
-            ResponseStatusException.class,
-            e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_PRODUCT_TYPE));
 
     verifyNoInteractions(
         userFavoriteProductRepository, baseProductRepository, userProductRepository);
@@ -94,8 +94,8 @@ class UserFavoriteProductServiceTest {
 
     assertThatThrownBy(() -> userFavoriteProductService.toggle(OWNER_ID, 1L, "BASE"))
         .isInstanceOfSatisfying(
-            ResponseStatusException.class,
-            e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_NOT_FOUND));
   }
 
   /** Lanza {@code 404} cuando el producto de usuario indicado no existe. */
@@ -105,8 +105,8 @@ class UserFavoriteProductServiceTest {
 
     assertThatThrownBy(() -> userFavoriteProductService.toggle(OWNER_ID, 5L, "USER"))
         .isInstanceOfSatisfying(
-            ResponseStatusException.class,
-            e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_NOT_FOUND));
   }
 
   /**
