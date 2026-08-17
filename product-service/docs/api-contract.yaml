@@ -68,9 +68,9 @@ paths:
         '409':
           description: Ya existe una categoría con ese code.
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ProblemDetail'
 
   /categories/{id}:
     get:
@@ -154,6 +154,10 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '409':
           description: Ya existe un producto base con ese code.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
 
   /base-products/{id}:
     get:
@@ -207,6 +211,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           description: Ya existe otro producto base con ese code.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     delete:
       tags: [base-products]
       summary: Eliminar un producto base
@@ -339,6 +347,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '403':
           description: El ownerId del body no coincide con el propietario del producto.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     delete:
       tags: [user-products]
       summary: Eliminar un producto de usuario
@@ -364,6 +376,10 @@ paths:
           description: Producto de usuario eliminado.
         '403':
           description: El ownerId del query param no coincide con el propietario del producto.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -497,15 +513,19 @@ components:
     NotFound:
       description: El recurso solicitado no existe.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemDetail'
     ValidationError:
-      description: Error de validación en la petición.
+      description: >
+        Error de validación de la petición. Los errores de Bean Validation
+        responden con code VALIDATION_FAILED y el array errors por campo; los
+        errores de negocio 400 (categoría inexistente, locale no soportado,
+        etc.) usan el shape ProblemDetail sin errors.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ValidationProblemDetail'
 
   schemas:
     Category:
@@ -875,11 +895,59 @@ components:
       type: string
       enum: [BASE, USER]
 
-    ErrorResponse:
+    ProblemDetail:
       type: object
+      description: >
+        Respuesta de error según RFC 9457 (application/problem+json) con la
+        extensión code del contrato. El catálogo completo de códigos vive en
+        el enum ErrorCode (ver ADR-014); las excepciones no controladas
+        responden 500 con code INTERNAL_ERROR, fuera del catálogo.
+      properties:
+        type:
+          type: string
+          format: uri
+          default: about:blank
+        title:
+          type: string
+          description: Resumen estable del error en inglés, el mismo para todas las ocurrencias.
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+          description: Mensaje específico en inglés; puede incluir el identificador del recurso implicado.
+        instance:
+          type: string
+          format: uri
+          nullable: true
+          description: URI del recurso de la petición que produjo el error.
+        code:
+          type: string
+          enum: [CATEGORY_NOT_FOUND, INVALID_CATEGORY, BASE_PRODUCT_NOT_FOUND, USER_PRODUCT_NOT_FOUND, PRODUCT_NOT_FOUND, DUPLICATE_PRODUCT_CODE, DUPLICATE_CATEGORY_CODE, UNSUPPORTED_LOCALE, NAME_REQUIRED, DEFAULT_UNIT_REQUIRED, CALORIES_PER_REQUIRED, OWNER_MISMATCH, INVALID_PRODUCT_TYPE, INVALID_BASE_PRODUCT, VALIDATION_FAILED]
+          description: Identificador machine-readable del error; el contrato entre el backend y el frontend.
+
+    FieldError:
+      type: object
+      description: Error de validación de un campo concreto de la petición.
       properties:
         code:
           type: string
+          description: Nombre de la constraint que falla (FieldError.getCode(), p.ej. NotBlank).
+        field:
+          type: string
+          description: Nombre del campo que falla.
         message:
           type: string
-          description: Mensaje localizado vía Spring MessageSource según Accept-Language.
+          description: Mensaje de la constraint en inglés (FieldError.getDefaultMessage()).
+
+    ValidationProblemDetail:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetail'
+        - type: object
+          properties:
+            errors:
+              type: array
+              description: Errores por campo; presente solo en errores de validación Bean Validation.
+              items:
+                $ref: '#/components/schemas/FieldError'
