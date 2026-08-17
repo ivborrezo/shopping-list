@@ -2,11 +2,11 @@ package dev.ivborrezo.shoppinglist.product.service.product;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
@@ -150,13 +150,11 @@ class BaseProductPatchIntegrationIT {
   }
 
   /**
-   * Rechaza un código duplicado con 409.
+   * Rechaza con 409 la edición cuando el código indicado ya pertenece a otro producto.
    *
-   * <p>Deshabilitado por consistencia con el test homólogo de POST: el servicio usa {@code
-   * ResponseStatusException(CONFLICT)}, que técnicamente funciona sin {@code @ControllerAdvice},
-   * pero la reactivación de todos los tests de errores de negocio se hará en bloque en Rama 7.
+   * <p>La respuesta cumple el shape {@code ProblemDetail} del contrato: content-type {@code
+   * application/problem+json} y código {@code DUPLICATE_PRODUCT_CODE}.
    */
-  @Disabled("Se reactiva en Rama 7 junto con los tests homólogos de POST y categorías")
   @Test
   void patchBaseProduct_withDuplicateCode_returns409() throws Exception {
     String body =
@@ -166,9 +164,21 @@ class BaseProductPatchIntegrationIT {
         }
         """;
 
-    mockMvc
-        .perform(patch("/base-products/3").contentType(MediaType.APPLICATION_JSON).content(body))
-        .andExpect(status().isConflict());
+    MvcResult result =
+        mockMvc
+            .perform(
+                patch("/base-products/3").contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isConflict())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andReturn();
+
+    ProblemDetailResponse response =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), ProblemDetailResponse.class);
+
+    assertThat(response.code()).isEqualTo("DUPLICATE_PRODUCT_CODE");
+    assertThat(response.title()).isEqualTo("Duplicate product code");
+    assertThat(response.status()).isEqualTo(409);
   }
 
   /** Devuelve 404 cuando el identificador de producto base no existe. */
@@ -185,4 +195,7 @@ class BaseProductPatchIntegrationIT {
         .perform(patch("/base-products/9999").contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isNotFound());
   }
+
+  /** Deserialización parcial del shape {@code ProblemDetail} para los asserts de los tests. */
+  record ProblemDetailResponse(String code, String title, Integer status) {}
 }

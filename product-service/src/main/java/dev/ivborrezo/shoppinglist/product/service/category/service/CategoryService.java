@@ -5,16 +5,16 @@ import dev.ivborrezo.shoppinglist.product.service.category.dto.CreateCategoryReq
 import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.CategoryTranslation;
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
+import dev.ivborrezo.shoppinglist.product.service.common.BusinessException;
+import dev.ivborrezo.shoppinglist.product.service.common.ErrorCode;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 /** Servicio de gestión de categorías del catálogo con resolución de nombres localizados. */
 @Service
@@ -55,13 +55,13 @@ public class CategoryService {
    * @param id identificador de la categoría a recuperar
    * @param locale idioma en el que se quiere el nombre de la categoría
    * @return DTO de la categoría encontrada con su nombre localizado
-   * @throws ResponseStatusException con {@code 404} si la categoría no existe
+   * @throws BusinessException con ErrorCode.CATEGORY_NOT_FOUND si la categoría no existe
    */
   public CategoryResponse findById(Long id, Locale locale) {
     return categoryRepository
         .findById(id)
         .map(c -> CategoryResponse.from(c, resolveName(c, locale)))
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
   }
 
   /**
@@ -70,11 +70,18 @@ public class CategoryService {
    * @param request petición con el código, estado activo y lista de traducciones
    * @param locale idioma en el que se devuelve el nombre de la categoría creada
    * @return DTO de la categoría recién creada con el nombre localizado al idioma solicitado
-   * @throws IllegalArgumentException si alguna traducción usa un locale no soportado
+   * @throws BusinessException con ErrorCode.DUPLICATE_CATEGORY_CODE si ya existe una categoría con
+   *     ese code
+   * @throws BusinessException con ErrorCode.UNSUPPORTED_LOCALE si alguna traducción usa un locale
+   *     no soportado
    */
   @Transactional
   public CategoryResponse create(CreateCategoryRequest request, Locale locale) {
     validateSupportedLocales(request.translations());
+
+    if (categoryRepository.existsByCode(request.code())) {
+      throw new BusinessException(ErrorCode.DUPLICATE_CATEGORY_CODE);
+    }
 
     Category category = new Category();
     category.setCode(request.code());
@@ -96,7 +103,7 @@ public class CategoryService {
     boolean allSupported =
         translations.stream().allMatch(t -> SUPPORTED_LOCALES.contains(t.locale()));
     if (!allSupported) {
-      throw new IllegalArgumentException("Unsupported locale");
+      throw new BusinessException(ErrorCode.UNSUPPORTED_LOCALE);
     }
   }
 

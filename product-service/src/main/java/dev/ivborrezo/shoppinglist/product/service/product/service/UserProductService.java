@@ -1,7 +1,9 @@
 package dev.ivborrezo.shoppinglist.product.service.product.service;
 
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
+import dev.ivborrezo.shoppinglist.product.service.common.BusinessException;
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
+import dev.ivborrezo.shoppinglist.product.service.common.ErrorCode;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateUserProductRequest;
@@ -16,10 +18,8 @@ import java.util.Locale;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 /** Servicio de gestión de los productos de usuario del catálogo personal. */
 @Service
@@ -87,15 +87,16 @@ public class UserProductService {
    *
    * @param id identificador del producto a recuperar
    * @return DTO del producto encontrado
-   * @throws ResponseStatusException con {@code 404} si el producto no existe o está inactivo
+   * @throws BusinessException con ErrorCode.USER_PRODUCT_NOT_FOUND si el producto no existe o está
+   *     inactivo
    */
   public UserProductResponse findById(Long id) {
     UserProduct product =
         userProductRepository
             .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new BusinessException(ErrorCode.USER_PRODUCT_NOT_FOUND));
     if (!product.getIsActive()) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+      throw new BusinessException(ErrorCode.USER_PRODUCT_NOT_FOUND);
     }
     return UserProductResponse.from(product);
   }
@@ -126,8 +127,14 @@ public class UserProductService {
    * @param request petición con los datos del producto de usuario
    * @param locale idioma en el que se resuelven el nombre y la descripción del producto base
    * @return DTO del producto de usuario recién creado
-   * @throws ResponseStatusException con {@code 400} si el producto base indicado no existe, si
-   *     falta algún campo obligatorio sin producto base, o si la categoría indicada no existe
+   * @throws BusinessException con ErrorCode.INVALID_BASE_PRODUCT si el producto base indicado no
+   *     existe
+   * @throws BusinessException con ErrorCode.NAME_REQUIRED si falta el nombre sin producto base
+   * @throws BusinessException con ErrorCode.INVALID_CATEGORY si la categoría indicada no existe
+   * @throws BusinessException con ErrorCode.DEFAULT_UNIT_REQUIRED si falta la unidad por defecto
+   *     sin producto base
+   * @throws BusinessException con ErrorCode.CALORIES_PER_REQUIRED si falta el {@code caloriesPer}
+   *     sin producto base
    */
   @Transactional
   public UserProductResponse create(CreateUserProductRequest request, Locale locale) {
@@ -138,8 +145,9 @@ public class UserProductService {
               .findById(request.basedOnBaseId())
               .orElseThrow(
                   () ->
-                      new ResponseStatusException(
-                          HttpStatus.BAD_REQUEST, "Base product not found"));
+                      new BusinessException(
+                          ErrorCode.INVALID_BASE_PRODUCT,
+                          "Base product with id " + request.basedOnBaseId() + " not found"));
     }
 
     String name = request.name();
@@ -148,7 +156,7 @@ public class UserProductService {
         name = baseProductService.resolveName(base, locale);
       }
       if (name == null || name.isBlank()) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
+        throw new BusinessException(ErrorCode.NAME_REQUIRED);
       }
     }
 
@@ -160,7 +168,8 @@ public class UserProductService {
     Long categoryId = request.categoryId();
     if (categoryId != null) {
       if (!categoryRepository.existsById(categoryId)) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found");
+        throw new BusinessException(
+            ErrorCode.INVALID_CATEGORY, "Category with id " + categoryId + " not found");
       }
     } else if (base != null) {
       categoryId = base.getCategoryId();
@@ -169,7 +178,7 @@ public class UserProductService {
     UnitEnum defaultUnit =
         request.defaultUnit() != null ? request.defaultUnit() : base.getDefaultUnit();
     if (defaultUnit == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "defaultUnit is required");
+      throw new BusinessException(ErrorCode.DEFAULT_UNIT_REQUIRED);
     }
 
     Integer calories = request.calories();
@@ -180,7 +189,7 @@ public class UserProductService {
     CaloriesPerEnum caloriesPer =
         request.caloriesPer() != null ? request.caloriesPer() : base.getCaloriesPer();
     if (caloriesPer == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "caloriesPer is required");
+      throw new BusinessException(ErrorCode.CALORIES_PER_REQUIRED);
     }
 
     UserProduct product = new UserProduct();
@@ -214,20 +223,20 @@ public class UserProductService {
    * @param id identificador del producto de usuario a editar
    * @param request petición con los campos a modificar; solo los no nulos se aplican
    * @return DTO del producto de usuario tras aplicar los cambios
-   * @throws ResponseStatusException con {@code 404} si el producto no existe
-   * @throws ResponseStatusException con {@code 403} si el {@code ownerId} del request no coincide
-   *     con el propietario almacenado
-   * @throws ResponseStatusException con {@code 400} si la categoría indicada no existe
+   * @throws BusinessException con ErrorCode.USER_PRODUCT_NOT_FOUND si el producto no existe
+   * @throws BusinessException con ErrorCode.OWNER_MISMATCH si el {@code ownerId} del request no
+   *     coincide con el propietario almacenado
+   * @throws BusinessException con ErrorCode.INVALID_CATEGORY si la categoría indicada no existe
    */
   @Transactional
   public UserProductResponse update(Long id, UpdateUserProductRequest request) {
     UserProduct product =
         userProductRepository
             .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new BusinessException(ErrorCode.USER_PRODUCT_NOT_FOUND));
 
     if (!product.getOwnerId().equals(request.ownerId())) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+      throw new BusinessException(ErrorCode.OWNER_MISMATCH);
     }
 
     if (request.name() != null) {
@@ -240,7 +249,8 @@ public class UserProductService {
 
     if (request.categoryId() != null) {
       if (!categoryRepository.existsById(request.categoryId())) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found");
+        throw new BusinessException(
+            ErrorCode.INVALID_CATEGORY, "Category with id " + request.categoryId() + " not found");
       }
       product.setCategoryId(request.categoryId());
     }
@@ -281,8 +291,8 @@ public class UserProductService {
    *
    * @param id identificador del producto de usuario a eliminar
    * @param ownerId identificador del propietario que solicita el borrado
-   * @throws ResponseStatusException con {@code 404} si el producto no existe
-   * @throws ResponseStatusException con {@code 403} si el {@code ownerId} no coincide con el
+   * @throws BusinessException con ErrorCode.USER_PRODUCT_NOT_FOUND si el producto no existe
+   * @throws BusinessException con ErrorCode.OWNER_MISMATCH si el {@code ownerId} no coincide con el
    *     propietario almacenado
    */
   @Transactional
@@ -290,9 +300,9 @@ public class UserProductService {
     UserProduct product =
         userProductRepository
             .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            .orElseThrow(() -> new BusinessException(ErrorCode.USER_PRODUCT_NOT_FOUND));
     if (!product.getOwnerId().equals(ownerId)) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+      throw new BusinessException(ErrorCode.OWNER_MISMATCH);
     }
     userProductRepository.delete(product);
   }

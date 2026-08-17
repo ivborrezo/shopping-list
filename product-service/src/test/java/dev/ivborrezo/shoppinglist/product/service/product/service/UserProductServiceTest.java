@@ -8,7 +8,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
+import dev.ivborrezo.shoppinglist.product.service.common.BusinessException;
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
+import dev.ivborrezo.shoppinglist.product.service.common.ErrorCode;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
@@ -26,8 +28,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Test unitario de {@link UserProductService}.
@@ -119,8 +119,8 @@ class UserProductServiceTest {
 
     assertThatThrownBy(() -> userProductService.findById(1L))
         .isInstanceOfSatisfying(
-            ResponseStatusException.class,
-            e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.USER_PRODUCT_NOT_FOUND));
   }
 
   /** Lanza {@code 404} cuando el producto existe pero está inactivo. */
@@ -132,8 +132,8 @@ class UserProductServiceTest {
 
     assertThatThrownBy(() -> userProductService.findById(1L))
         .isInstanceOfSatisfying(
-            ResponseStatusException.class,
-            e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.USER_PRODUCT_NOT_FOUND));
   }
 
   /**
