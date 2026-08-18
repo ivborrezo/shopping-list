@@ -82,6 +82,14 @@ herramientas externas.
   evaluarán caso por caso cuando se redacten, sin asumir Mermaid por
   defecto.
 
+**Resolución posterior:** el esquema ER de `product-service` se generó
+con **draw.io** (consistente con el C4 Nivel 2), conservando el fuente
+editable (`.drawio.xml`) junto al `.svg` exportado. El diagrama se
+mantiene como **snapshot a hitos**, no generado automáticamente: se
+refresca al cerrar una rama que añada tablas o claves foráneas, o antes
+de una demo. La fuente de verdad del esquema sigue siendo
+`src/main/resources/db/migration/`.
+
 ### Consecuencias
 - **Positivas:** el diagrama C4 alcanza un nivel de pulido visual
   adecuado para su uso en entrevistas técnicas y como pieza de

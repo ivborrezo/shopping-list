@@ -1,0 +1,108 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="ER product-service" id="er-product-service">
+    <mxGraphModel dx="1285" dy="686" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="cat-hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a0522d;strokeColor=#6D1F00;strokeWidth=2;fontSize=12;fontStyle=1;align=center;fontColor=light-dark(#FFFFFF,#121212);" value="category" vertex="1">
+          <mxGeometry height="28" width="220" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="cat-body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#FAD7AC,#FFF2CC);strokeWidth=1;fontSize=11;align=left;spacingLeft=6;verticalAlign=top;strokeColor=#b46504;fontColor=light-dark(#FFFFFF,#121212);" value="id PK&lt;br&gt;code UQ&lt;br&gt;is_active&lt;br&gt;created_at&lt;br&gt;updated_at" vertex="1">
+          <mxGeometry height="98" width="220" x="40" y="68" as="geometry" />
+        </mxCell>
+        <mxCell id="catt-hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a0522d;strokeColor=#6D1F00;strokeWidth=2;fontColor=light-dark(#FFFFFF,#121212);fontSize=12;fontStyle=1;align=center;" value="category_translation" vertex="1">
+          <mxGeometry height="28" width="220" x="40" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="catt-body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#FAD7AC,#FFF2CC);strokeWidth=1;fontSize=11;align=left;spacingLeft=6;verticalAlign=top;strokeColor=#b46504;fontColor=light-dark(#FFFFFF,#121212);" value="category_id PK FK&lt;br&gt;locale PK&lt;br&gt;name" vertex="1">
+          <mxGeometry height="62" width="220" x="40" y="348" as="geometry" />
+        </mxCell>
+        <mxCell id="bp-hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a0522d;strokeColor=#6D1F00;strokeWidth=2;fontSize=12;fontStyle=1;align=center;fontColor=light-dark(#FFFFFF,#121212);" value="base_product" vertex="1">
+          <mxGeometry height="28" width="220" x="400" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="bp-body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#FAD7AC,#FFF2CC);strokeWidth=1;fontSize=11;align=left;spacingLeft=6;verticalAlign=top;strokeColor=#b46504;fontColor=light-dark(#FFFFFF,#121212);" value="id PK&lt;br&gt;code UQ&lt;br&gt;category_id FK&lt;br&gt;default_unit&lt;br&gt;calories&lt;br&gt;calories_per&lt;br&gt;is_active&lt;br&gt;created_at&lt;br&gt;updated_at" vertex="1">
+          <mxGeometry height="170" width="220" x="400" y="68" as="geometry" />
+        </mxCell>
+        <mxCell id="bpt-hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a0522d;strokeColor=#6D1F00;strokeWidth=2;fontColor=light-dark(#FFFFFF,#121212);fontSize=12;fontStyle=1;align=center;" value="base_product_translation" vertex="1">
+          <mxGeometry height="28" width="220" x="400" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="bpt-body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#FAD7AC,#FFF2CC);strokeWidth=1;fontSize=11;align=left;spacingLeft=6;verticalAlign=top;strokeColor=#b46504;fontColor=light-dark(#FFFFFF,#121212);" value="product_id PK FK&lt;br&gt;locale PK&lt;br&gt;name&lt;br&gt;description" vertex="1">
+          <mxGeometry height="80" width="220" x="400" y="348" as="geometry" />
+        </mxCell>
+        <mxCell id="up-hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a0522d;strokeColor=#6D1F00;strokeWidth=2;fontSize=12;fontStyle=1;align=center;fontColor=light-dark(#FFFFFF,#121212);" value="user_product" vertex="1">
+          <mxGeometry height="28" width="260" x="760" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="up-body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#FAD7AC,#FFF2CC);strokeWidth=1;fontSize=11;align=left;spacingLeft=6;verticalAlign=top;strokeColor=#b46504;fontColor=light-dark(#FFFFFF,#121212);" value="id PK&lt;br&gt;owner_id UUID&lt;br&gt;name&lt;br&gt;description&lt;br&gt;category_id FK&lt;br&gt;based_on_base_id FK&lt;br&gt;default_unit&lt;br&gt;calories&lt;br&gt;calories_per&lt;br&gt;share_with_list_members&lt;br&gt;share_with_friends&lt;br&gt;is_active&lt;br&gt;created_at&lt;br&gt;updated_at" vertex="1">
+          <mxGeometry height="278" width="260" x="760" y="68" as="geometry" />
+        </mxCell>
+        <mxCell id="fav-hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;fillColor=#a0522d;strokeColor=#6D1F00;strokeWidth=2;fontColor=light-dark(#FFFFFF,#121212);fontSize=12;fontStyle=1;align=center;" value="user_favorite_product" vertex="1">
+          <mxGeometry height="28" width="260" x="760" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="fav-body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;fillColor=light-dark(#FAD7AC,#FFF2CC);strokeWidth=1;fontSize=11;align=left;spacingLeft=6;verticalAlign=top;strokeColor=#b46504;fontColor=light-dark(#FFFFFF,#121212);" value="user_id UUID PK&lt;br&gt;product_id PK&lt;br&gt;product_type PK · CHECK (BASE|USER)&lt;br&gt;created_at" vertex="1">
+          <mxGeometry height="80" width="260" x="760" y="488" as="geometry" />
+        </mxCell>
+        <mxCell id="rec-hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;fillColor=#a0522d;strokeColor=#6D1F00;strokeWidth=2;fontColor=light-dark(#FFFFFF,#121212);fontSize=12;fontStyle=1;align=center;" value="user_recent_product" vertex="1">
+          <mxGeometry height="28" width="260" x="760" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="rec-body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;fillColor=light-dark(#FAD7AC,#FFF2CC);strokeWidth=1;fontSize=11;align=left;spacingLeft=6;verticalAlign=top;strokeColor=#b46504;fontColor=light-dark(#FFFFFF,#121212);" value="user_id UUID PK&lt;br&gt;product_id PK&lt;br&gt;product_type PK · CHECK (BASE|USER)&lt;br&gt;last_used_at" vertex="1">
+          <mxGeometry height="80" width="260" x="760" y="648" as="geometry" />
+        </mxCell>
+        <mxCell id="note-poly" parent="1" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=light-dark(#FAD7AC,#FFF2CC);strokeWidth=1;fontSize=10;align=left;verticalAlign=top;spacing=6;strokeColor=#b46504;fontColor=light-dark(#FFFFFF,#121212);" value="&lt;b&gt;Referencia polimórfica (sin FK física)&lt;/b&gt;&lt;br&gt;user_favorite_product y user_recent_product referencian un producto BASE|USER vía (product_id, product_type). Integridad validada en la capa de aplicación (ADR-013)." vertex="1">
+          <mxGeometry height="120" width="340" x="40" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="e-cat-catt" edge="1" parent="1" source="cat-body" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6D1F00;strokeWidth=1.5;fontColor=light-dark(#FFFFFF,#FFF2CC);fontSize=10;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fillColor=#a0522d;" target="catt-hdr" value="1 : N · ON DELETE CASCADE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-bp-bpt" edge="1" parent="1" source="bp-body" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6D1F00;strokeWidth=1.5;fontColor=light-dark(#FFFFFF,#FFF2CC);fontSize=10;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fillColor=#a0522d;" target="bpt-hdr" value="1 : N · ON DELETE CASCADE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-cat-bp" edge="1" parent="1" source="cat-body" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6D1F00;strokeWidth=1.5;fontColor=light-dark(#FFFFFF,#FFF2CC);fontSize=10;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fillColor=#a0522d;" target="bp-body" value="1 : N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-cat-up" edge="1" parent="1" source="cat-hdr" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6D1F00;strokeWidth=1.5;fontColor=light-dark(#FFFFFF,#FFF2CC);fontSize=10;endArrow=block;endFill=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fillColor=#a0522d;" target="up-hdr" value="1 : N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="150" y="15" />
+              <mxPoint x="890" y="15" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-bp-up" edge="1" parent="1" source="bp-body" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6D1F00;strokeWidth=1.5;fontColor=light-dark(#FFFFFF,#FFF2CC);fontSize=10;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fillColor=#a0522d;" target="up-body" value="1 : N · ON DELETE SET NULL">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-fav-up" edge="1" parent="1" source="fav-hdr" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6D1F00;strokeWidth=1.5;fontColor=light-dark(#FFFFFF,#FFF2CC);fontSize=9;endArrow=open;endFill=0;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;fillColor=#a0522d;" target="up-body" value="BASE|USER">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-fav-bp" edge="1" parent="1" source="fav-body" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6D1F00;strokeWidth=1.5;fontColor=light-dark(#FFFFFF,#FFF2CC);fontSize=9;endArrow=open;endFill=0;dashed=1;exitX=0;exitY=0.3;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;fillColor=#a0522d;" target="bp-body" value="referencia polimórfica (sin FK física)">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="760" y="492" />
+              <mxPoint x="670" y="492" />
+              <mxPoint x="670" y="260" />
+              <mxPoint x="565" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-rec-up" edge="1" parent="1" source="rec-hdr" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6D1F00;strokeWidth=1.5;fontColor=light-dark(#FFFFFF,#FFF2CC);fontSize=9;endArrow=open;endFill=0;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fillColor=#a0522d;" target="up-body" value="BASE|USER">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1020" y="674" />
+              <mxPoint x="1050" y="674" />
+              <mxPoint x="1050" y="207" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-rec-bp" edge="1" parent="1" source="rec-body" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6D1F00;strokeWidth=1.5;fontColor=light-dark(#FFFFFF,#FFF2CC);fontSize=9;endArrow=open;endFill=0;dashed=1;exitX=0;exitY=0.3;exitDx=0;exitDy=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;fillColor=#a0522d;" target="bp-body" value="referencia polimórfica (sin FK física)">
+          <mxGeometry relative="1" x="0.2244" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="760" y="652" />
+              <mxPoint x="390" y="652" />
+              <mxPoint x="390" y="260" />
+              <mxPoint x="455" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -97,7 +97,9 @@ shopping-list/
 │   ├── src/
 │   └── docs/
 │       ├── api-contract.yaml
-│       └── local-setup.md
+│       ├── database-schema.md
+│       ├── local-setup.md
+│       └── img/             # Diagrama ER (draw.io + SVG)
 └── list-service/            # Placeholder (contrato de API)
     └── docs/
         └── api-contract.yaml
@@ -143,6 +145,7 @@ servicio), consulta el [Setup completo](./docs/contributing/setup.md).
 | Documento | Descripción |
 |---|---|
 | [C4 Nivel 2 — Diagrama de Contenedores](./docs/architecture/c4-level2-containers.md) | Vista de contenedores del sistema completo (arquitectura objetivo por fases, codificada por color según estado de implementación) |
+| [Diagrama ER de `product-service`](./product-service/docs/img/er-diagram.svg) | Esquema entidad-relación de las 7 tablas de `product-service` (snapshot a Flyway V11) |
 
 ### Arquitectura de eventos y convenciones
 

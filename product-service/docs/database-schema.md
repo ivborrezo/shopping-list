@@ -331,6 +331,12 @@ registra en la tabla `flyway_schema_history`).
 | `V10` | `V10__create_user_favorite_product_table.sql` | DDL de `user_favorite_product`. |
 | `V11` | `V11__create_user_recent_product_table.sql` | DDL de `user_recent_product`. |
 
-El esquema no incluye de momento diagrama ER: la herramienta de diagramación
-está pendiente de decisión (ADR-004), por lo que las relaciones se describen
-en Markdown como texto diffable.
+---
+
+## Diagrama ER
+
+[Diagrama ER del esquema](./img/er-diagram.svg) (fuente editable
+[`er-diagram.drawio.xml`](./img/er-diagram.drawio.xml)).
+
+Diagrama ER — snapshot a Flyway V11. Fuente de verdad:
+`src/main/resources/db/migration/`.

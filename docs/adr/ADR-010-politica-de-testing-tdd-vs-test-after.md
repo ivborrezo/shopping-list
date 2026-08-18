@@ -24,7 +24,7 @@ especulativa: hay casos concretos de logica de negocio que se prestan a
 ser testeados antes de implementarse (ej. el metodo `resolveName` que
 busca una traduccion en un `Set<CategoryTranslation>` con fallback a
 ingles) y flujos E2E que requieren tests de integracion (ej.
-`POST /categories` con validacion y mensajes de error i18nizados).
+`POST /categories` con validacion y mensajes de error).
 
 El proyecto ya fija en [ADR-008](ADR-008-testcontainers-para-testing-de-integracion.md)
 la herramienta de integracion (Testcontainers con PostgreSQL real) y en
@@ -101,8 +101,8 @@ atraviesan todas las capas (controller, servicio, repositorio,
 PostgreSQL). El test levanta el contexto de Spring completo, arranca un
 contenedor PostgreSQL efimero con Testcontainers, aplica las
 migraciones Flyway, y verifica el comportamiento contra la API HTTP.
-Ejemplo concreto: `POST /categories` con validacion y mensajes de
-error i18nizados, donde interesa probar que Spring
+Ejemplo concreto: `POST /categories` con validacion y mensajes de error,
+donde interesa probar que Spring
 `AcceptHeaderLocaleResolver`, nuestro `CategoryService`, las
 validaciones de Jakarta Bean Validation y las traducciones en BD
 funcionan juntos.
