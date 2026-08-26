@@ -22,6 +22,7 @@ Java 21 · Spring Boot 4.x · PostgreSQL · Docker
   - [Diagramas de arquitectura](#diagramas-de-arquitectura)
   - [Arquitectura de eventos y convenciones](#arquitectura-de-eventos-y-convenciones)
   - [Contratos de API](#contratos-de-api-diseño-design-first)
+  - [Fichas por servicio](#fichas-por-servicio)
   - [Guías de desarrollo](#guías-de-desarrollo)
   - [Estrategia de CI/CD](#estrategia-de-cicd)
   - [Architecture Decision Records (ADR)](#architecture-decision-records-adr)
@@ -38,23 +39,9 @@ colaborativa. El sistema está diseñado siguiendo principios
 independiente con su propia base de datos, y toda la infraestructura
 local está definida como código mediante Docker Compose.
 
-> **Estado actual:** Fase 1 (MVP Core) en desarrollo. `docker compose up`
-> levanta `product-db`, `list-db` y `product-service` (Spring Boot,
-> build multi-stage desde `Dockerfile`). `product-service` expone CRUD
-> completo de `/categories` (con paginación) y `/base-products`
-> con soporte multiidioma (es/en/eu), búsqueda textual y filtros, y de
-> `/user-products` con snapshot copy-on-create desde un producto base.
-> También gestiona favoritos y recientes de usuario: `POST
-> /user-products/{id}/favorite` como toggle, `GET /user-products/favorites`
-> paginado con nombres resueltos y `GET /user-products/recents` con el top
-> 10 más reciente.
-> Los errores siguen un contrato único: RFC 9457 `ProblemDetail`
-> (`application/problem+json`) con extensión `code` y un catálogo
-> estable de 15 códigos, sin localización de mensajes en el backend
-> (la localización es del frontend).
-> CI en verde (Testcontainers + failsafe), git hooks y 14 ADRs
-> documentando las decisiones de arquitectura. `list-service` es un
-> placeholder con su contrato de API definido (Design-First).
+> **Estado actual:** Fase 1 (MVP Core) en desarrollo. `product-service`
+> operativo — [overview](./services/product-service/docs/overview.md);
+> `list-service` placeholder — [overview](./services/list-service/docs/overview.md).
 
 ---
 
@@ -165,6 +152,13 @@ como snapshot histórico de diseño.
 |---|---|
 | `product-service` | [OpenAPI](./services/product-service/docs/api-contract.yaml) |
 | `list-service` | [OpenAPI](./services/list-service/docs/api-contract.yaml) |
+
+### Fichas por servicio
+
+| Servicio | Ficha de estado |
+|---|---|
+| `product-service` | [overview](./services/product-service/docs/overview.md) |
+| `list-service` | [overview](./services/list-service/docs/overview.md) |
 
 ### Guías de desarrollo
 
