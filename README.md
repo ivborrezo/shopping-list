@@ -203,12 +203,8 @@ en cada fase; la tabla refleja el estado actual de las mismas.
 
 ## Roadmap
 
-- [x] **Fase 1** — MVP Core: `product-service` (categories + base-products + user-products + favoritos y recientes), [ ] `list-service`
-- [ ] **Fase 2** — `frontend` (React)
-- [ ] **Fase 3** — `api-gateway` + `config-service`
-- [ ] **Fase 4** — Seguridad: `auth-service` (Keycloak + OAuth2/OIDC)
-- [ ] **Fase 5** — Comunicación asíncrona: `notification-service`
-- [ ] **Fase 6** — Observabilidad: OpenTelemetry + Prometheus + Grafana + Loki
+El roadmap del proyecto (fases, deudas técnicas diferidas y ADRs pendientes)
+vive en [ROADMAP.md](./ROADMAP.md).
 
 ---
 
