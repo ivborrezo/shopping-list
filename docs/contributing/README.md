@@ -16,5 +16,11 @@ justificaciones ni trade-offs: los motivos de las decisiones viven en los
 | Testing | [testing.md](./testing.md) |
 | Convenciones de logging | [logging.md](./logging.md) |
 | Entorno local | [local-environment.md](./local-environment.md) |
+| Plantilla de overview de servicio | [service-overview-template.md](./service-overview-template.md) |
+
+## Layout del monorepo
+
+El backend vive bajo `services/<servicio>/`; el frontend vive en la raíz
+(`frontend/`). Es una convención de layout, no una decisión de arquitectura.
 
 El índice de contribución del proyecto es [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
