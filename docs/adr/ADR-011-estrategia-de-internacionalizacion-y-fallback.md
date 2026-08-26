@@ -24,7 +24,7 @@ creación.
 ### D1 — Estrategia de fallback: exacto → inglés → primer disponible
 
 Algoritmo implementado en
-[`CategoryService.resolveName()`](../../product-service/src/main/java/dev/ivborrezo/shoppinglist/product/service/category/service/CategoryService.java):
+[`CategoryService.resolveName()`](../../services/product-service/src/main/java/dev/ivborrezo/shoppinglist/product/service/category/service/CategoryService.java):
 se busca la traducción cuyo locale coincida exactamente con el
 `Locale` resuelto de la petición. Si no existe, se aplica fallback a
 inglés (`en`). Si inglés tampoco existe, se devuelve la primera
@@ -51,7 +51,7 @@ malformada. Reimplementar este comportamiento en el controller sería
 duplicar funcionalidad probada del framework.
 
 La configuración vive en
-[`LocaleConfig`](../../product-service/src/main/java/dev/ivborrezo/shoppinglist/product/service/config/LocaleConfig.java):
+[`LocaleConfig`](../../services/product-service/src/main/java/dev/ivborrezo/shoppinglist/product/service/config/LocaleConfig.java):
 `setSupportedLocales(es, en, eu)`, `setDefaultLocale(en)`. El
 controller recibe el `Locale` ya resuelto como parámetro de método,
 sin lógica manual.
@@ -86,7 +86,7 @@ optimización prematura sin datos de carga real.
 ### D4 — Validación de locale en dos capas: Bean Validation + servicio
 
 Bean Validation en el DTO
-([`CreateCategoryRequest`](../../product-service/src/main/java/dev/ivborrezo/shoppinglist/product/service/category/dto/CreateCategoryRequest.java),
+([`CreateCategoryRequest`](../../services/product-service/src/main/java/dev/ivborrezo/shoppinglist/product/service/category/dto/CreateCategoryRequest.java),
 `@Size(min = 2, max = 5)`) garantiza que el string tiene formato de
 locale (longitud plausible) y produce un 400 Bad Request temprano para
 valores claramente inválidos. El servicio

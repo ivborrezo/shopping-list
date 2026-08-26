@@ -54,7 +54,7 @@ set -a; source .env; set +a       # bash/zsh
 # o bien: export $(grep -v '^#' .env | xargs)
 
 # 3. Arrancar el servicio
-./product-service/mvnw -f product-service/pom.xml spring-boot:run
+./services/product-service/mvnw -f services/product-service/pom.xml spring-boot:run
 ```
 
 El servicio arranca en `http://localhost:8081`, conectando a PostgreSQL en
@@ -160,7 +160,7 @@ docker compose down -v
 ## Ejecución de tests de integración
 
 ```bash
-./product-service/mvnw -f product-service/pom.xml clean verify
+./services/product-service/mvnw -f services/product-service/pom.xml clean verify
 ```
 
 Testcontainers levanta un PostgreSQL `postgres:16-alpine` efímero — no

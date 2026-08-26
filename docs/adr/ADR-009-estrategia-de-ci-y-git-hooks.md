@@ -132,7 +132,7 @@ El workflow de `product-service` se dispara con:
 
 ```
 paths:
-  - product-service/**
+  - services/product-service/**
   - config/checkstyle/**
   - .github/workflows/product-service.yml
 ```
@@ -365,7 +365,7 @@ solapado, nada solapado).
 ruleset silencioso → fallo tardío" anclado en el incidente de checkstyle
 9.3 de la Rama 1: el stock de esa versión dejó de incluir
 `RegexpHeader`, descubierto solo al ejecutar. Esperar a que un commit
-no relacionado tocara `product-service/**` días después para detectar
+no relacionado tocara `services/product-service/**` días después para detectar
 el fallo es un patrón de debugging caro.
 
 **Workflow separado para paths compartidos (descartada).** Sobre-ingeniería

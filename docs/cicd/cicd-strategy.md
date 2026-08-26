@@ -83,15 +83,15 @@ steps:
       java-version: 21
       cache: maven
   - name: Spotless check
-    run: ./product-service/mvnw -f product-service/pom.xml spotless:check
+    run: ./services/product-service/mvnw -f services/product-service/pom.xml spotless:check
   - name: Checkstyle check
-    run: ./product-service/mvnw -f product-service/pom.xml checkstyle:check
+    run: ./services/product-service/mvnw -f services/product-service/pom.xml checkstyle:check
   - name: Compile
-    run: ./product-service/mvnw -f product-service/pom.xml -q compile
+    run: ./services/product-service/mvnw -f services/product-service/pom.xml -q compile
   - name: Verify (Testcontainers)
-    run: ./product-service/mvnw -f product-service/pom.xml clean verify
+    run: ./services/product-service/mvnw -f services/product-service/pom.xml clean verify
   - name: Docker build (valida Dockerfile)
-    run: docker build -t shopping-list/product-service:ci product-service/
+    run: docker build -t shopping-list/product-service:ci services/product-service/
     env:
       DOCKER_BUILDKIT: 1
 ```
@@ -237,7 +237,7 @@ cache backend (límite 10 GB por repo, holgado para el monorepo).
 - name: Docker build (valida Dockerfile)
   uses: docker/build-push-action@v5
   with:
-    context: product-service/
+    context: services/product-service/
     push: false
     cache-from: type=gha
     cache-to: type=gha,mode=max

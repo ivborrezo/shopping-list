@@ -166,6 +166,6 @@ a mantener.
   productos base vs usuario que motiva la PK externa compuesta
   `(product_id, product_type)` y que difiere a este ADR el detalle de
   favoritos y recientes.
-- **[`product-service/docs/database-schema.md`](../product-service/docs/database-schema.md)** —
+- **[`services/product-service/docs/database-schema.md`](../../services/product-service/docs/database-schema.md)** —
   detalle físico de las tablas `user_favorite_product` y
   `user_recent_product` (migraciones V10 y V11).

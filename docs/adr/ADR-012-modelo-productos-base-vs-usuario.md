@@ -73,7 +73,7 @@ auditoría. Las de `user_product` serán `id`, `owner_id`, `name`, `description`
 de auditoría. Respecto al modelo original, el contrato incorpora
 `description`, `category_id`, `default_unit`, `calories`, `calories_per`,
 `share_with_list_members` y `share_with_friends`. El detalle físico de las
-columnas y constraints se documentará en `product-service/docs/database-schema.md`
+columnas y constraints se documentará en `services/product-service/docs/database-schema.md`
 cuando se escriban las migraciones.
 
 `base_product` conservará la estrategia i18n Table mediante

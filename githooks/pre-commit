@@ -134,31 +134,33 @@ if ((${#staged[@]})); then
   fi
 fi
 
-# ─── Dispatch Java: servicios afectados con pom.xml en su raíz ──
+# ─── Dispatch Java: servicios afectados bajo services/ con pom.xml ──
 services=()
 for f in "${staged[@]+"${staged[@]}"}"; do
   [[ -z "$f" ]] && continue
-  top="${f%%/*}"
-  [[ "$top" == "$f" ]] && continue
-  if [[ -f "$top/pom.xml" ]]; then
+  [[ "$f" == services/* ]] || continue
+  rel="${f#services/}"
+  svc="${rel%%/*}"
+  [[ "$svc" == "$rel" ]] && continue
+  if [[ -f "services/$svc/pom.xml" ]]; then
     already=0
     for s in "${services[@]+"${services[@]}"}"; do
-      if [[ "$s" == "$top" ]]; then already=1; break; fi
+      if [[ "$s" == "$svc" ]]; then already=1; break; fi
     done
-    [[ $already -eq 0 ]] && services+=("$top")
+    [[ $already -eq 0 ]] && services+=("$svc")
   fi
 done
 
 # ─── Capa 2 — Spotless ─────────────────────────────────────────
 for svc in "${services[@]+"${services[@]}"}"; do
   echo "[spotless] $svc"
-  ./"$svc"/mvnw -f "$svc"/pom.xml spotless:check
+  ./services/"$svc"/mvnw -f services/"$svc"/pom.xml spotless:check
 done
 
 # ─── Capa 3 — Checkstyle ───────────────────────────────────────
 for svc in "${services[@]+"${services[@]}"}"; do
   echo "[checkstyle] $svc"
-  ./"$svc"/mvnw -f "$svc"/pom.xml checkstyle:check
+  ./services/"$svc"/mvnw -f services/"$svc"/pom.xml checkstyle:check
 done
 
 exit 0

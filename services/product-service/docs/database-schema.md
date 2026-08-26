@@ -298,7 +298,7 @@ decisión vive en ADR-013.
 Los nombres de las entidades del catálogo se sirven según el idioma
 solicitado por el cliente (cabecera `Accept-Language`) mediante el patrón
 i18n Table, documentado en
-[ADR-011](../../docs/adr/ADR-011-estrategia-de-internacionalizacion-y-fallback.md).
+[ADR-011](../../../docs/adr/ADR-011-estrategia-de-internacionalizacion-y-fallback.md).
 
 La estrategia de fallback (coincidencia exacta con el locale solicitado →
 inglés → primer idioma disponible) se implementa en

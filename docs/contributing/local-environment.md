@@ -25,5 +25,5 @@ instalación y arranque del repositorio se describe en el
 - Configuración por servicio en `.env` (plantilla `.env.example`):
   `PRODUCT_DB_*` y `LIST_DB_*` (`NAME`, `USER`, `PASSWORD`, `PORT_OUT`).
 
-Referencias: [Setup local de product-service](../../product-service/docs/local-setup.md) ·
+Referencias: [Setup local de product-service](../../services/product-service/docs/local-setup.md) ·
 [Estrategia de CI/CD](../cicd/cicd-strategy.md).

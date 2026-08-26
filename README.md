@@ -92,17 +92,18 @@ shopping-list/
 │   ├── contributing/        # Guías de contribución
 │   ├── events/
 │   └── logging.md           # Detalle de logging
-├── product-service/         # Spring Boot + PostgreSQL
-│   ├── Dockerfile (multi-stage)
-│   ├── src/
-│   └── docs/
-│       ├── api-contract.yaml
-│       ├── database-schema.md
-│       ├── local-setup.md
-│       └── img/             # Diagrama ER (draw.io + SVG)
-└── list-service/            # Placeholder (contrato de API)
-    └── docs/
-        └── api-contract.yaml
+├── services/
+│   ├── product-service/       # Spring Boot + PostgreSQL
+│   │   ├── Dockerfile (multi-stage)
+│   │   ├── src/
+│   │   └── docs/
+│   │       ├── api-contract.yaml
+│   │       ├── database-schema.md
+│   │       ├── local-setup.md
+│   │       └── img/             # Diagrama ER (draw.io + SVG)
+│   └── list-service/            # Placeholder (contrato de API)
+│       └── docs/
+│           └── api-contract.yaml
 ```
 
 `product-service` ya es operacionalmente independiente: build Maven,
@@ -145,7 +146,7 @@ servicio), consulta el [Setup completo](./docs/contributing/setup.md).
 | Documento | Descripción |
 |---|---|
 | [C4 Nivel 2 — Diagrama de Contenedores](./docs/architecture/c4-level2-containers.md) | Vista de contenedores del sistema completo (arquitectura objetivo por fases, codificada por color según estado de implementación) |
-| [Diagrama ER de `product-service`](./product-service/docs/img/er-diagram.svg) | Esquema entidad-relación de las 7 tablas de `product-service` (snapshot a Flyway V11) |
+| [Diagrama ER de `product-service`](./services/product-service/docs/img/er-diagram.svg) | Esquema entidad-relación de las 7 tablas de `product-service` (snapshot a Flyway V11) |
 
 ### Arquitectura de eventos y convenciones
 
@@ -162,16 +163,16 @@ como snapshot histórico de diseño.
 
 | Servicio | Contrato |
 |---|---|
-| `product-service` | [OpenAPI](./product-service/docs/api-contract.yaml) |
-| `list-service` | [OpenAPI](./list-service/docs/api-contract.yaml) |
+| `product-service` | [OpenAPI](./services/product-service/docs/api-contract.yaml) |
+| `list-service` | [OpenAPI](./services/list-service/docs/api-contract.yaml) |
 
 ### Guías de desarrollo
 
 | Documento | Descripción |
 |---|---|
 | [Contribuir a ShoppingList](./CONTRIBUTING.md) | Índice de guías de contribución: setup completo, commits, ramas, estilo de código, testing, logging y entorno local |
-| [Setup local de `product-service`](./product-service/docs/local-setup.md) | Prerrequisitos, variables de entorno, escenarios de ejecución (CLI, VSCode, Docker Compose), tests y troubleshooting |
-| [Esquema de BD de `product-service`](./product-service/docs/database-schema.md) | Tablas `category`, `category_translation`, `base_product`, `base_product_translation`, `user_product`, `user_favorite_product` y `user_recent_product` con migraciones Flyway |
+| [Setup local de `product-service`](./services/product-service/docs/local-setup.md) | Prerrequisitos, variables de entorno, escenarios de ejecución (CLI, VSCode, Docker Compose), tests y troubleshooting |
+| [Esquema de BD de `product-service`](./services/product-service/docs/database-schema.md) | Tablas `category`, `category_translation`, `base_product`, `base_product_translation`, `user_product`, `user_favorite_product` y `user_recent_product` con migraciones Flyway |
 
 ### Estrategia de CI/CD
 

@@ -23,7 +23,7 @@ services:
 
   # ── product-service ──────────────────────────────────────────────
   product-service:
-    build: ./product-service
+    build: ./services/product-service
     container_name: shopping-list-product-service
     ports:
       - "8081:8081"

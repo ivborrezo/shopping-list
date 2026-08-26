@@ -22,5 +22,5 @@ rápido, consulta el [README](./README.md).
 | Logging (detalle e implementación) | [logging.md](./docs/logging.md) |
 | Entorno local | [local-environment.md](./docs/contributing/local-environment.md) |
 | Estrategia de CI/CD | [cicd-strategy.md](./docs/cicd/cicd-strategy.md) |
-| Setup local de product-service | [local-setup.md](./product-service/docs/local-setup.md) |
+| Setup local de product-service | [local-setup.md](./services/product-service/docs/local-setup.md) |
 | Decisiones de arquitectura (ADRs) | [docs/adr/](./docs/adr/) |
