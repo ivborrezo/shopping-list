@@ -46,6 +46,10 @@ esquema detallado vive en [`database-schema.md`](./database-schema.md)._
 
 ## Deudas abiertas
 
+> El catálogo central de deudas técnicas diferidas vive en el `TECH_DEBT.md`
+> de la raíz; aquí se resumen solo las específicas del servicio (enlazar, no
+> volcar).
+
 - _Deuda — contexto breve y, si se sabe, plan para resolverla._
 - _Deuda — contexto breve y, si se sabe, plan para resolverla._
 

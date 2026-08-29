@@ -27,6 +27,7 @@ Java 21 · Spring Boot 4.x · PostgreSQL · Docker
   - [Estrategia de CI/CD](#estrategia-de-cicd)
   - [Architecture Decision Records (ADR)](#architecture-decision-records-adr)
 - [Roadmap](#roadmap)
+- [Deuda técnica](#deuda-técnica)
 - [Autor](#autor)
 
 ---
@@ -203,8 +204,13 @@ en cada fase; la tabla refleja el estado actual de las mismas.
 
 ## Roadmap
 
-El roadmap del proyecto (fases, deudas técnicas diferidas y ADRs pendientes)
-vive en [ROADMAP.md](./ROADMAP.md).
+El roadmap del proyecto (fases y ADRs pendientes) vive en
+[ROADMAP.md](./ROADMAP.md).
+
+## Deuda técnica
+
+Las deudas técnicas aceptadas de forma consciente durante las fases ya
+implementadas viven en [TECH_DEBT.md](./TECH_DEBT.md).
 
 ---
 

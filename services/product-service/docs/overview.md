@@ -58,6 +58,10 @@ base. El esquema detallado, las relaciones y el diagrama ER viven en
 
 ## Deudas abiertas
 
+> El catálogo central de deudas técnicas diferidas vive en
+> [TECH_DEBT.md](../../../TECH_DEBT.md); aquí se resumen las específicas del
+> servicio.
+
 - Disparador de recientes limitado al toggle de favorito y sin endpoint de
   touch: `last_used_at` solo se actualiza al marcar un favorito; no hay otro
   camino hacia la marca de reciente hasta que `list-service` publique el
