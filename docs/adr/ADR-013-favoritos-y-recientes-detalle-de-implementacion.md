@@ -10,7 +10,7 @@ Redactado
 recientes viven en `product-service` porque son relaciones usuario-producto,
 no usuario-lista, y dejó aplazado a este ADR el detalle de su implementación.
 Llega el momento de cerrarlo: las tablas `user_favorite_product` y
-`user_recent_product` se incorporan al esquema del servicio en esta rama, y
+`user_recent_product` se incorporan al esquema del servicio, y
 con ellas las decisiones que las modelan. Documento aquí lo que decido, no lo
 que el código permite hacer de forma obvia.
 

@@ -13,8 +13,8 @@ productos personalizados para miembros y amigos del propietario, y de los
 campos funcionales necesarios para el catálogo (descripción, categoría,
 unidad por defecto y calorías), revisé por completo el modelo.
 
-Documento esta decisión antes de implementar las migraciones de la Rama 4 y
-posteriores, porque el diseño ya es concreto y costoso de revertir. Este ADR
+Documento esta decisión antes de implementar las migraciones que
+materializan el modelo, porque el diseño ya es concreto y costoso de revertir. Este ADR
 formaliza y cierra el placeholder
 `ADR-XXF1-modelo-productos-base-vs-usuario` que figuraba como pendiente en
 `contexto.md` y en la tabla de ADRs del README.
@@ -117,7 +117,7 @@ como máximo una de las dos trazabilidades podrá estar poblada.
 Favoritos y recientes viven en product-service porque son relaciones
 usuario-producto, no usuario-lista. Quedan fuera del alcance inmediato y se
 detallarán en `ADR-013-favoritos-y-recientes-detalle-de-implementacion`, que
-se redactará cuando llegue su rama. Sus tablas usarán PK
+se redactará cuando se aborde su implementación. Sus tablas usarán PK
 `(user_id, product_id, product_type)` y referencia polimórfica sin constraint
 físico, con validación en aplicación.
 

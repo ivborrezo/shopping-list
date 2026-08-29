@@ -114,7 +114,7 @@ Justificación del orden:
 - **Docker build (validación de Dockerfile)**: sin push de imagen, sin
   despliegue. Valida que el `Dockerfile` construye en cada push. Sin
   este step, regresiones del `Dockerfile` se detectarían tarde (Fase 3
-  al desplegar); el smoke manual del paso 8 de la Rama 1 verificó el
+  al desplegar); un smoke manual verificó el
   `Dockerfile` una vez a mano, pero cualquier cambio posterior
   queda sin validación automática sin este step.
 
@@ -129,8 +129,7 @@ El `pom.xml` de cada servicio Java fija `violationSeverity=error` en
 `maven-checkstyle-plugin` (solo las violaciones de severity `error`
 fallan el build). El `config/checkstyle/checkstyle.xml` compartido
 en la raíz del monorepo es una copia física del stock
-`google_checks.xml` de checkstyle 9.3 (copia física desde la Rama 1,
-ver ADR-004 §Decisión 3) con el root `Checker` dejando `severity=
+`google_checks.xml` de checkstyle 9.3 (ver ADR-004 §Decisión 3) con el root `Checker` dejando `severity=
 warning` como default — lo que heredan todos los módulos que no lo
 sobreescriben. Sobre ese default, 35 módulos se elevan explícitamente
 a `severity=error`, agrupados en tres buckets según el motivo de la
@@ -243,7 +242,7 @@ cache backend (límite 10 GB por repo, holgado para el monorepo).
     cache-to: type=gha,mode=max
 ```
 
-El `Dockerfile` ya incluye `# syntax=docker/dockerfile:1.4` (Rama 1)
+El `Dockerfile` ya incluye `# syntax=docker/dockerfile:1.4`
 y `--mount=type=cache,target=/root/.m2` para el cache mount del stage
 builder. Con `type=gha`, ese cache mount persiste entre runs de CI
 vía el backend de GitHub Actions cache.
@@ -298,10 +297,8 @@ git config core.hooksPath githooks
 La carga de variables de entorno del servicio (datasource, puertos)
 se redactará en `<servicio>/docs/local-setup.md`, ya que es
 específica de cada servicio. Para `product-service`, ese documento
-se redacta en el paso 8 de la Rama 2
-(`docs(product-service): redactar local-setup.md con variables de entorno y source .env`),
-una vez que todo lo anterior (wiring en `docker-compose.yml` incluido)
-esté verificado y se pueda documentar con precisión.
+se redactará una vez que todo lo anterior (wiring en `docker-compose.yml`
+incluido) esté verificado y se pueda documentar con precisión.
 
 ### Contenido del hook
 
@@ -415,7 +412,7 @@ Lo que **no** cubre esta estrategia, coherente con ADR-009:
 
 - **CD (continuos deployment):** no hay target de despliegue todavía
   (`product-service` no está ni integrado en `docker-compose.yml`
-  raíz — es el paso 7 de Rama 2; AWS Fargate llegaría en Fase 3
+  raíz; AWS Fargate llegaría en Fase 3
   o posterior). Definir ahora si el deploy es continuo/gated/manual
   es especular sobre infraestructura inexistente. Revisitar cuando
   exista target de despliegue (AWS o equivalente).
@@ -431,8 +428,8 @@ Lo que **no** cubre esta estrategia, coherente con ADR-009:
   revisita en ADR-009, Decisión 8.
 - **Smoke runtime del contenedor en CI:** `docker build` valida que el
   `Dockerfile` compila, no que el contenedor arranca y responde
-  (`/actuator/health` UP, SIGTERM limpio → graceful shutdown). El smoke
-  manual del paso 8 de la Rama 1 verificó el runtime una vez a mano.
+  (`/actuator/health` UP, SIGTERM limpio → graceful shutdown). Un smoke
+  manual verificó el runtime una vez a mano.
   Reproducirlo en CI requiere levantar el contenedor con datasource
   accesible — vía service container (contradice ADR-009, Decisión 6:
   paridad local↔CI estricta, sin `services:`) o como smoke parcial

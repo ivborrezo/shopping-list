@@ -10,8 +10,8 @@ ShoppingList es un sistema multiidioma. Las entidades gestionadas por
 el sistema (categorías en `product-service`, futuras entidades en
 `list-service`) tienen nombres que deben servirse en español, inglés
 y euskera, según lo solicite el cliente vía la cabecera
-`Accept-Language`. El endpoint `GET /categories` existente desde la
-Rama 2 no devolvía nombres localizados. La Rama 3 añade el soporte
+`Accept-Language`. El endpoint `GET /categories` existente no
+devolvía nombres localizados. Este ADR fija el soporte
 completo mediante el patrón i18n Table y requiere decidir cuatro
 aspectos del mecanismo de internacionalización: la estrategia de
 fallback ante traducciones ausentes, el mecanismo de resolución del
@@ -101,7 +101,8 @@ responsabilidades de infraestructura con la capa de presentación.
 
 **Alternativa descartada: solo validación en servicio.** Pierde el 400
 temprano para locale malformado; la petición llegaría al servicio y la
-excepción se traduciría a 500 (hasta Rama 6).
+excepción se traduciría a 500 (hasta que el manejo de errores esté
+unificado, ver ADR-014).
 
 ## Consecuencias
 

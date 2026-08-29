@@ -17,8 +17,8 @@ lo resuelve: el `code` no es un identificador de dominio estable y el
 `message` se sirve localizado, así que el consumidor no tiene una señal
 estable a la que acoplarse.
 
-La decisión se toma tras la sesión de redefinición de las Ramas 7 y 8,
-donde se cerraban las cuatro decisiones siguientes: el idioma de los
+La decisión se toma tras redefinir el alcance,
+cerrando las cuatro decisiones siguientes: el idioma de los
 mensajes, el shape del error, el mecanismo para lanzarlo y el shape de la
 validación de peticiones.
 

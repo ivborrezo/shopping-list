@@ -15,7 +15,7 @@ tipo(scope): resumen
 Ejemplos:
 
 - `feat(product-service): implementar listado de recientes`
-- `docs(readme): actualizar estado tras Rama 6`
+- `docs(readme): actualizar estado del README tras un hito`
 - `test(product-service): tests red para listado de favoritos`
 
 El hook `commit-msg` valida este formato en cada commit (activación en el
