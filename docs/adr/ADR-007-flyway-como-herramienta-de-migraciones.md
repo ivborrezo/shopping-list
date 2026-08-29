@@ -69,7 +69,7 @@ versiones vive en el `pom.xml` y en el BOM.
 Se adopta **Flyway** (edición Community) como herramienta de
 migraciones versionadas para todos los microservicios Spring del
 monorepo: `product-service` en el estado actual y `list-service`
-cuando llegue su rama de scaffold. La edición Community, distribuida
+cuando se implemente su scaffold. La edición Community, distribuida
 libremente, cubre el caso de uso del proyecto (migraciones
 versionadas en SQL) sin necesidad de funcionalidades de pago
 (migraciones repeatable con checksum, undo de migraciones aplicadas,

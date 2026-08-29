@@ -6,16 +6,16 @@ Redactado
 
 ## Contexto
 
-Hasta la Rama 2 de `product-service`, el proyecto no habia escrito
-logica de negocio no trivial que justificara decidir una politica de
-testing. La Rama 1 fue un scaffold de directorios y configuracion, y
-la Rama 2 un walking skeleton (`GET /categories` sin i18n). En ambas
-el codigo de implementacion existia antes que los tests (test-after),
-y era suficiente para el proposito de esas ramas: validar que el wiring
+Hasta introducir la primera logica de negocio no trivial, el proyecto
+no habia escrito codigo que justificara decidir una politica de
+testing. El scaffold inicial de directorios y configuracion y el
+walking skeleton (`GET /categories` sin i18n) escribieron el codigo de
+implementacion antes que los tests (test-after), y era suficiente para
+el proposito de esos hitos: validar que el wiring
 de Spring, el contenedor PostgreSQL, las migraciones Flyway y el
 pipeline de CI funcionaban juntos.
 
-La Rama 3 de `product-service` introduce la primera logica de negocio
+La internacionalizacion del catalogo introduce la primera logica de negocio
 no trivial del proyecto: resolucion de la cabecera `Accept-Language`
 con fallback a ingles, validaciones en dos capas (controller y
 servicio), y el primer endpoint de escritura (`POST /categories`). En
@@ -37,9 +37,9 @@ error por endpoint. Lo que ninguno de esos documentos fija es el
 test para que caso).
 
 Este ADR cierra ese vacio. Se redacta en este momento, no antes ni
-despues: antes de la Rama 3 habria sido especular sobre algo no
-implementado; despues de la Rama 3 habria sido una decision tomada de
-facto sin documentar. La primera tarea de la Rama 3 que implique
+despues: antes habria sido especular sobre algo no
+implementado; despues habria sido una decision tomada de
+facto sin documentar. La primera tarea que implique
 escribir tests (test de `resolveName`, test de integracion de
 `POST /categories`) se convierte en el primer ejercicio real de esta
 politica.
@@ -82,8 +82,8 @@ proyecto:
 - No cambia lo que ya exige AGENTS.md seccion 4: los tests siguen
   siendo parte del entregable de cada tarea. Este ADR anade el *cuando*
   (antes del codigo), no sustituye el *que* (tests obligatorios).
-- No obliga a reescribir tests de codigo existente. Las Ramas 1 y 2 de
-  `product-service` fueron test-after y se respetan tal cual. La
+- No obliga a reescribir tests de codigo existente. El scaffold y el
+  walking skeleton de `product-service` fueron test-after y se respetan tal cual. La
   politica TDD aplica hacia adelante, no retroactivamente.
 
 ### Decision 2 — Tipos de test y su ambito
@@ -133,8 +133,8 @@ separacion de plugins Surefire/Failsafe sin migracion de nombres.
 TDD es el default, pero no es dogma. Se reconocen estas excepciones:
 
 - **(a) Walking skeleton / scaffold:** cuando la forma final de las
-  clases no se conoce de antemano y emerge incrementalmente (ej. la
-  Rama 2 de `product-service`). Escribir tests antes habria sido
+  clases no se conoce de antemano y emerge incrementalmente (ej. el
+  walking skeleton de `product-service`). Escribir tests antes habria sido
   especular sobre una estructura de clases que aun no estaba definida.
 - **(b) CRUD sin logica de negocio:** mapeo entidad-DTO, endpoints que
   solo delegan en el servicio sin transformacion ni validacion mas alla
@@ -147,9 +147,9 @@ TDD es el default, pero no es dogma. Se reconocen estas excepciones:
 
 Toda excepcion debe declararse **antes** de empezar la implementacion:
 
-- Si la excepcion afecta a una rama entera: se documenta en el plan de
-  la rama.
-- Si la excepcion afecta a un paso concreto dentro de una rama que por
+- Si la excepcion afecta a una unidad de trabajo completa: se documenta en el plan de
+  esa unidad de trabajo.
+- Si la excepcion afecta a un paso concreto dentro de una unidad de trabajo que por
   lo demas sigue TDD: se indica en el paso correspondiente.
 
 No hace falta un ADR por cada excepcion; basta con que quede registrada
@@ -212,14 +212,14 @@ migracion trivial cuando llegue el momento. No se reabre ADR-009.
 ### Test-after uniforme (descartada)
 
 Escribir todos los tests despues del codigo de implementacion, como se
-hizo en las Ramas 1 y 2.
+hizo en el scaffold y el walking skeleton.
 
 **Por que se descarto:** mas rapido inicialmente (no hay fase Red
 explicita), pero el codigo se escribe sin un contrato ejecutable previo
 que defina el comportamiento esperado, y no demuestra TDD en el
-historial de commits del portafolio. Para las Ramas 1 y 2
-era la opcion correcta (no habia logica que testear); a partir de la
-Rama 3, la logica de negocio existe y TDD aporta valor real.
+historial de commits del portafolio. Para el scaffold y el walking
+skeleton era la opcion correcta (no habia logica que testear); a partir de la
+primera logica de negocio, TDD aporta valor real.
 
 ### TDD dogmatico sin excepciones (descartada)
 

@@ -64,7 +64,7 @@ el BOM.
 Se adopta **Testcontainers** con el módulo PostgreSQL como herramienta
 de testing de integración para todos los microservicios Spring del
 monorepo: `product-service` en el estado actual y `list-service`
-cuando llegue su rama de scaffold.
+cuando se implemente su scaffold.
 
 Cada test de integración arranca un **contenedor PostgreSQL efímero y
 aislado**: la base de datos se crea limpia al inicio del test (o de la

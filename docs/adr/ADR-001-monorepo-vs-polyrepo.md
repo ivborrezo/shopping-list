@@ -38,7 +38,7 @@ Cada microservicio mantiene independencia operacional *dentro* del
 monorepo: su propio sistema de build (`pom.xml` o `package.json`), su
 propio `Dockerfile`, sus propios tests y su propio pipeline de CI/CD,
 activado mediante path filters de GitHub Actions
-(`on: push: paths: ['product-service/**']`).
+(`on: push: paths: ['services/product-service/**']`).
 
 Se descarta explícitamente adoptar herramientas de tooling de monorepo
 dedicado (Bazel, Nx, Turborepo, etc.) — las mismas que usan

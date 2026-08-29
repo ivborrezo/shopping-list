@@ -36,8 +36,7 @@ Este ADR cierra las tres delegaciones y caveats en un único documento,
 coherente con la regla de timing de ADRs del proyecto: la decisión se
 redacta cuando es concreta y cara de revertir, ni antes (especularía
 sobre algo no implementado) ni después (perdería el contexto real de
-los trade-offs vividos). El momento es el paso 5 de la Rama 2 de
-`product-service`: ya existe el primer test de integración real
+los trade-offs vividos). El momento: ya existe el primer test de integración real
 (`CategoryIntegrationTest`, con Testcontainers singleton + `@ServiceConnection`),
 el primer `Dockerfile` multi-stage verificado y el primer slice E2E
 (`GET /categories`) en verde, por lo que la estrategia de CI se decide
@@ -132,7 +131,7 @@ El workflow de `product-service` se dispara con:
 
 ```
 paths:
-  - product-service/**
+  - services/product-service/**
   - config/checkstyle/**
   - .github/workflows/product-service.yml
 ```
@@ -143,7 +142,7 @@ Tres motivos distintos para los paths no-service:
   compartido puede romper el build de cualquier servicio que lo use.
   Revalidarlo evita que el fallo se descubra tardíamente cuando un
   commit no relacionado toque el servicio días después. Anclado en
-  incidente real del proyecto (Rama 1: el stock de checkstyle 9.3
+  incidente real del proyecto (el stock de checkstyle 9.3
   dejó de incluir `RegexpHeader`, descubierto solo al ejecutar).
 - **`.github/workflows/product-service.yml` (self-validation):** un
   cambio del propio workflow debe re-ejecutarse para validar la
@@ -220,16 +219,15 @@ en `docs/cicd/cicd-strategy.md`, no reabren este ADR.
    contenedor + compilación del jar) entre runs vía GitHub Actions
    cache backend (límite 10 GB por repo, holgado para el monorepo
    actual). Requiere `# syntax=docker/dockerfile:1.4`, ya presente en
-   el `Dockerfile` de `product-service` desde la Rama 1. Cierra el
+   el `Dockerfile` de `product-service`. Cierra el
    caveat "cache mount no persiste en CI efímero sin backend externo"
-   anotado durante la implementación del `Dockerfile` multi-stage en
-   la Rama 1.
+   anotado durante la implementación del `Dockerfile` multi-stage.
 
 Como consecuencia de activar caching de Docker, el workflow incluye un
 step de `docker build` (sin push de imagen, sin despliegue) que valida
 que el `Dockerfile` construye en cada push. Sin este step, regresiones
-del `Dockerfile` se detectarían tarde (Fase 3 al desplegar); el smoke
-manual del paso 8 de la Rama 1 verificó el `Dockerfile` una vez a mano,
+del `Dockerfile` se detectarían tarde (Fase 3 al desplegar); un smoke
+manual verificó el `Dockerfile` una vez a mano,
 pero sin reproducirse en CI, cualquier cambio del `Dockerfile` queda
 sin validación automática.
 
@@ -286,8 +284,8 @@ Failsafe será trivial.
 - **Cierre de caveats pendientes:** ADR-008 ("Docker-in-Docker en CI a
   vigilar" + "gate de calidad en CI"), ADR-004 ("integración concreta
   en pipeline… pendiente de definir en cicd-strategy.md") y el caveat
-  "cache-to: type=gha pendiente" anotado en la Rama 1 sobre el
-  `Dockerfile` multi-stage quedan resueltos por este ADR y
+  "cache-to: type=gha pendiente" anotado durante la implementación
+  del `Dockerfile` multi-stage quedan resueltos por este ADR y
   su materialización operativa en `docs/cicd/cicd-strategy.md`.
 - **Escalado por duplicación:** cada servicio añadido al monorepo
   replica el patrón (su propio workflow, su propio hook dispatch, su
@@ -363,9 +361,9 @@ solapado, nada solapado).
 
 **Solo paths del servicio (descartada).** Riesgo real de "cambio del
 ruleset silencioso → fallo tardío" anclado en el incidente de checkstyle
-9.3 de la Rama 1: el stock de esa versión dejó de incluir
+9.3: el stock de esa versión dejó de incluir
 `RegexpHeader`, descubierto solo al ejecutar. Esperar a que un commit
-no relacionado tocara `product-service/**` días después para detectar
+no relacionado tocara `services/product-service/**` días después para detectar
 el fallo es un patrón de debugging caro.
 
 **Workflow separado para paths compartidos (descartada).** Sobre-ingeniería
@@ -412,8 +410,8 @@ workflow).
 
 **Solo Maven sin Docker cache (descartada).** Más simple, pierde
 ~60-90s/run de rebuild Docker desde cero. En Fase 1 sin CD no duele
-mucho, pero el caveat "cache-to: type=gha" anotado en la Rama 1
-sobre el `Dockerfile` multi-stage quedaría abierto. No dejar deuda
+mucho, pero el caveat "cache-to: type=gha" anotado durante la
+implementación del `Dockerfile` multi-stage quedaría abierto. No dejar deuda
 diferida.
 
 ### Decisión 8 — Aislamiento Surefire/Failsafe

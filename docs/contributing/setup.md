@@ -60,7 +60,7 @@ docker compose down -v
 
 Cada microservicio documenta su propio entorno de desarrollo aislado:
 
-- [Setup local de product-service](../../product-service/docs/local-setup.md)
+- [Setup local de product-service](../../services/product-service/docs/local-setup.md)
 
 Referencias: [Convenciones del entorno local](local-environment.md) ·
 [Estrategia de CI/CD](../cicd/cicd-strategy.md).

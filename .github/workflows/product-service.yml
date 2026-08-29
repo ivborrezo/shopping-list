@@ -9,7 +9,7 @@ name: product-service CI
 on:
   push:
     paths:
-      - product-service/**
+      - services/product-service/**
       - config/checkstyle/**
       - docs/cicd/**
       - .github/workflows/product-service.yml
@@ -36,20 +36,20 @@ jobs:
       # Orden fail-fast (ADR-009 §4 / cicd-strategy.md §4): lo barato
       # antes que lo caro. Cada step es bloqueante.
       - name: Spotless check
-        run: ./product-service/mvnw -f product-service/pom.xml spotless:check
+        run: ./services/product-service/mvnw -f services/product-service/pom.xml spotless:check
 
       - name: Checkstyle check
-        run: ./product-service/mvnw -f product-service/pom.xml checkstyle:check
+        run: ./services/product-service/mvnw -f services/product-service/pom.xml checkstyle:check
 
       - name: Compile
-        run: ./product-service/mvnw -f product-service/pom.xml -q compile
+        run: ./services/product-service/mvnw -f services/product-service/pom.xml -q compile
 
       # Verify con Testcontainers (ADR-008/ADR-009 Decisión 6): runner
       # ubuntu-latest hosted, Docker nativo del runner (no DinD real,
       # no jobs.<id>.container:, no services:). Paridad local↔CI
       # estricta vía @ServiceConnection, sin perfil de test de CI.
       - name: Verify (Testcontainers)
-        run: ./product-service/mvnw -f product-service/pom.xml clean verify
+        run: ./services/product-service/mvnw -f services/product-service/pom.xml clean verify
 
       # Caching BuildKit (ADR-009, Decisión 7): reutiliza las capas
       # del stage builder entre runs vía el backend de GitHub Actions
@@ -60,7 +60,7 @@ jobs:
       - name: Docker build (valida Dockerfile)
         uses: docker/build-push-action@v7
         with:
-          context: product-service/
+          context: services/product-service/
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max

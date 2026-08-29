@@ -12,13 +12,13 @@ para un código machine-readable, los mensajes no siguen un vocabulario
 estable y el consumidor de la API —el frontend react-i18next y el futuro
 API Gateway— no tiene un contrato de errores contraprestable. El
 `ErrorResponse` custom (`{code, message}`) que documenta el
-[`api-contract.yaml`](../product-service/docs/api-contract.yaml) tampoco
+[`api-contract.yaml`](../../services/product-service/docs/api-contract.yaml) tampoco
 lo resuelve: el `code` no es un identificador de dominio estable y el
 `message` se sirve localizado, así que el consumidor no tiene una señal
 estable a la que acoplarse.
 
-La decisión se toma tras la sesión de redefinición de las Ramas 7 y 8,
-donde se cerraban las cuatro decisiones siguientes: el idioma de los
+La decisión se toma tras redefinir el alcance,
+cerrando las cuatro decisiones siguientes: el idioma de los
 mensajes, el shape del error, el mecanismo para lanzarlo y el shape de la
 validación de peticiones.
 
@@ -85,7 +85,7 @@ estructurados por error que la justifiquen, así que una clase por error
 sería código sin valor añadido.
 
 `ErrorCode` es el catálogo del contrato: contrastable con
-[`api-contract.yaml`](../product-service/docs/api-contract.yaml), que
+[`api-contract.yaml`](../../services/product-service/docs/api-contract.yaml), que
 materializa el shape y la lista completa de códigos. El catálogo queda
 así:
 
@@ -232,7 +232,7 @@ que el frontend pueda traducir. El array `errors` con `code`, `field` y
 
 ## Documentación relacionada
 
-- **[`api-contract.yaml`](../product-service/docs/api-contract.yaml)** —
+- **[`api-contract.yaml`](../../services/product-service/docs/api-contract.yaml)** —
   el contrato que materializa el shape ProblemDetail y el catálogo de
   códigos de la Decisión 3.
 - **[ADR-010](../adr/ADR-010-politica-de-testing-tdd-vs-test-after.md)** —
