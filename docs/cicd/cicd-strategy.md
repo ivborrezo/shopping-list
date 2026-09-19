@@ -274,7 +274,7 @@ Consecuencias prácticas:
   por defecto.
 
 Testcontainers arranca el contenedor singleton (estático por JVM/Surefire,
-patrón `static final PostgreSQLContainer<?>` + `@Container` compartido
+patrón `static final PostgreSQLContainer` + `@Container` compartido
 en el JVM) con `@ServiceConnection` para wiring automático con Spring.
 El mismo `CategoryIntegrationTest` que funciona en local corre
 idéntico en CI, sin profile de test específico, sin overrides del
