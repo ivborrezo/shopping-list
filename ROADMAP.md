@@ -24,6 +24,7 @@ implementadas vive en [TECH_DEBT.md](./TECH_DEBT.md).
 | `ADR-XXF1` | Elección de message broker (Kafka vs RabbitMQ). Define el canal físico de transporte de eventos; la publicación se mantiene desacoplada del broker vía Ports and Adapters ([event-architecture](./docs/events/event-architecture.md)). |
 | `ADR-XXF4` | Keycloak como Identity Provider. Superará al ADR-006, que queda como registro histórico del placeholder `ownerId` ([ADR-006](./docs/adr/ADR-006-identificacion-propietario-sin-autenticacion.md)). |
 | `ADR-XXFX` | Gestión de transacciones distribuidas con Saga. Resolverá la deuda técnica aceptada explícitamente en [ADR-002](./docs/adr/ADR-002-database-per-service-pattern.md). |
+| `ADR-XXN` | Estrategia de nulabilidad de Java con JSpecify (`@NullMarked`/`@Nullable`). Da señal de nulabilidad uniforme y neutra al IDE (VSCode, IntelliJ, CI vía NullAway/Checker) sobre los DTOs y entidades, sin depender del análisis de nulabilidad de un IDE concreto. |
 
 ## Servicios futuros (sin crear directorios aún)
 
