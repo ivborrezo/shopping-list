@@ -13,11 +13,13 @@ import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.ErrorCode;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
+import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateUserProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.UserProductRepository;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,8 +34,9 @@ import org.springframework.data.domain.Pageable;
 /**
  * Test unitario de {@link UserProductService}.
  *
- * <p>Ejercita el listado paginado de productos del propietario, con y sin filtro por categoría, y
- * la recuperación por identificador, cubriendo los {@code 404} por producto inexistente o inactivo.
+ * <p>Ejercita el listado paginado de productos del propietario, con y sin filtro por categoría, la
+ * recuperación por identificador (cubriendo los {@code 404} por producto inexistente o inactivo) y
+ * la validación condicional de campos obligatorios en la creación.
  */
 @ExtendWith(MockitoExtension.class)
 class UserProductServiceTest {
@@ -134,6 +137,38 @@ class UserProductServiceTest {
         .isInstanceOfSatisfying(
             BusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.USER_PRODUCT_NOT_FOUND));
+  }
+
+  /**
+   * Lanza {@code DEFAULT_UNIT_REQUIRED} al crear un producto sin {@code basedOnBaseId} que aporte
+   * la unidad por defecto.
+   */
+  @Test
+  void create_withoutBasedOnBaseIdAndWithoutDefaultUnit_throwsDefaultUnitRequired() {
+    CreateUserProductRequest request =
+        new CreateUserProductRequest(
+            OWNER_ID, "Leche entera", null, null, null, null, 150, CaloriesPerEnum.G, null, null);
+
+    assertThatThrownBy(() -> userProductService.create(request, Locale.ENGLISH))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.DEFAULT_UNIT_REQUIRED));
+  }
+
+  /**
+   * Lanza {@code CALORIES_PER_REQUIRED} al crear un producto sin {@code basedOnBaseId} que aporte
+   * las calorías por unidad.
+   */
+  @Test
+  void create_withoutBasedOnBaseIdAndWithoutCaloriesPer_throwsCaloriesPerRequired() {
+    CreateUserProductRequest request =
+        new CreateUserProductRequest(
+            OWNER_ID, "Leche entera", null, null, null, UnitEnum.UNIT, 150, null, null, null);
+
+    assertThatThrownBy(() -> userProductService.create(request, Locale.ENGLISH))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.CALORIES_PER_REQUIRED));
   }
 
   /**

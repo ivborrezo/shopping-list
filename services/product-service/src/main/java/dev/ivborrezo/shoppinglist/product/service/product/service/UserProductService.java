@@ -175,8 +175,10 @@ public class UserProductService {
       categoryId = base.getCategoryId();
     }
 
-    UnitEnum defaultUnit =
-        request.defaultUnit() != null ? request.defaultUnit() : base.getDefaultUnit();
+    UnitEnum defaultUnit = request.defaultUnit();
+    if (defaultUnit == null && base != null) {
+      defaultUnit = base.getDefaultUnit();
+    }
     if (defaultUnit == null) {
       throw new BusinessException(ErrorCode.DEFAULT_UNIT_REQUIRED);
     }
@@ -186,8 +188,10 @@ public class UserProductService {
       calories = base.getCalories();
     }
 
-    CaloriesPerEnum caloriesPer =
-        request.caloriesPer() != null ? request.caloriesPer() : base.getCaloriesPer();
+    CaloriesPerEnum caloriesPer = request.caloriesPer();
+    if (caloriesPer == null && base != null) {
+      caloriesPer = base.getCaloriesPer();
+    }
     if (caloriesPer == null) {
       throw new BusinessException(ErrorCode.CALORIES_PER_REQUIRED);
     }

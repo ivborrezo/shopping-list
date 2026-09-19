@@ -236,4 +236,46 @@ class UserProductCreationIntegrationIT {
         .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isBadRequest());
   }
+
+  /**
+   * Rechaza con 400 la ausencia de {@code defaultUnit} cuando no hay {@code basedOnBaseId} que lo
+   * copie.
+   */
+  @Test
+  void createUserProduct_withoutDefaultUnitAndWithoutBasedOnBaseId_returns400() throws Exception {
+    String body =
+        """
+        {
+          "ownerId": "%s",
+          "name": "Leche entera",
+          "caloriesPer": "G"
+        }
+        """
+            .formatted(OWNER_ID);
+
+    mockMvc
+        .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
+        .andExpect(status().isBadRequest());
+  }
+
+  /**
+   * Rechaza con 400 la ausencia de {@code caloriesPer} cuando no hay {@code basedOnBaseId} que lo
+   * copie.
+   */
+  @Test
+  void createUserProduct_withoutCaloriesPerAndWithoutBasedOnBaseId_returns400() throws Exception {
+    String body =
+        """
+        {
+          "ownerId": "%s",
+          "name": "Leche entera",
+          "defaultUnit": "UNIT"
+        }
+        """
+            .formatted(OWNER_ID);
+
+    mockMvc
+        .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
+        .andExpect(status().isBadRequest());
+  }
 }
