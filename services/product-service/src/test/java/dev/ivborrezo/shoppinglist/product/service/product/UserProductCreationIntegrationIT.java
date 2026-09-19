@@ -10,8 +10,6 @@ import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -37,7 +35,6 @@ import tools.jackson.databind.ObjectMapper;
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-@AutoConfigureTestEntityManager
 @TestConstructor(autowireMode = AutowireMode.ALL)
 @Transactional
 @Testcontainers
@@ -52,13 +49,9 @@ class UserProductCreationIntegrationIT {
 
   private final ObjectMapper objectMapper;
 
-  private final TestEntityManager entityManager;
-
-  UserProductCreationIntegrationIT(
-      MockMvc mockMvc, ObjectMapper objectMapper, TestEntityManager entityManager) {
+  UserProductCreationIntegrationIT(MockMvc mockMvc, ObjectMapper objectMapper) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
-    this.entityManager = entityManager;
   }
 
   /**

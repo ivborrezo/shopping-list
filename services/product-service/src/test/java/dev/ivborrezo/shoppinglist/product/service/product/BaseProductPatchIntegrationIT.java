@@ -8,8 +8,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -33,7 +31,6 @@ import tools.jackson.databind.ObjectMapper;
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-@AutoConfigureTestEntityManager
 @TestConstructor(autowireMode = AutowireMode.ALL)
 @Transactional
 @Testcontainers
@@ -46,13 +43,9 @@ class BaseProductPatchIntegrationIT {
 
   private final ObjectMapper objectMapper;
 
-  private final TestEntityManager entityManager;
-
-  BaseProductPatchIntegrationIT(
-      MockMvc mockMvc, ObjectMapper objectMapper, TestEntityManager entityManager) {
+  BaseProductPatchIntegrationIT(MockMvc mockMvc, ObjectMapper objectMapper) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
-    this.entityManager = entityManager;
   }
 
   /** Cambia solo el código de un producto y devuelve el DTO actualizado con nombre localizado. */

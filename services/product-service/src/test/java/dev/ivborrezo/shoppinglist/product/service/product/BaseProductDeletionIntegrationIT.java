@@ -4,8 +4,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -27,7 +25,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-@AutoConfigureTestEntityManager
 @TestConstructor(autowireMode = AutowireMode.ALL)
 @Transactional
 @Testcontainers
@@ -38,11 +35,8 @@ class BaseProductDeletionIntegrationIT {
 
   private final MockMvc mockMvc;
 
-  private final TestEntityManager entityManager;
-
-  BaseProductDeletionIntegrationIT(MockMvc mockMvc, TestEntityManager entityManager) {
+  BaseProductDeletionIntegrationIT(MockMvc mockMvc) {
     this.mockMvc = mockMvc;
-    this.entityManager = entityManager;
   }
 
   /** Borra un producto base existente y devuelve 204. */

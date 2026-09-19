@@ -8,8 +8,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -34,7 +32,6 @@ import tools.jackson.databind.ObjectMapper;
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-@AutoConfigureTestEntityManager
 @TestConstructor(autowireMode = AutowireMode.ALL)
 @Transactional
 @Testcontainers
@@ -47,21 +44,16 @@ class CategoryCreationIntegrationIT {
 
   private final ObjectMapper objectMapper;
 
-  private final TestEntityManager entityManager;
-
   /**
    * Inyecta las dependencias de test por constructor, sin {@code @Autowired} por campo, coherente
    * con la convención del resto del monorepo.
    *
    * @param mockMvc cliente MockMvc contra el DispatcherServlet real
    * @param objectMapper mapper Jackson para deserializar el body de las respuestas HTTP
-   * @param entityManager gestor JPA para inserciones ad hoc dentro de la transacción del test
    */
-  CategoryCreationIntegrationIT(
-      MockMvc mockMvc, ObjectMapper objectMapper, TestEntityManager entityManager) {
+  CategoryCreationIntegrationIT(MockMvc mockMvc, ObjectMapper objectMapper) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
-    this.entityManager = entityManager;
   }
 
   /** Crea una categoría con traducciones en los tres idiomas y devuelve el nombre localizado. */
