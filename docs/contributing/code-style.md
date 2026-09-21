@@ -34,6 +34,13 @@
 - Los `@NotNull`/`@NotBlank`/`@Size` de Bean Validation no se duplican con
   JSpecify: son capas distintas (validación en runtime vs. análisis estático).
 - El código de test no se anota.
+- Al crear un paquete nuevo en `main`, crear también su `package-info.java` con
+  `@NullMarked`.
+- En un record, se anota el componente (`@Nullable String x`), lo que cubre el
+  campo, el accessor y el constructor.
+- En entidades JPA con id autogenerado (`@GeneratedValue`), `getId()` es
+  `@Nullable` (no existe antes del `persist`); las columnas con `nullable = false`
+  son non-null.
 
 Referencia: [ADR-015](../adr/ADR-015-estrategia-de-nulabilidad-con-jspecify.md).
 
