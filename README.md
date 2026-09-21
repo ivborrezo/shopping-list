@@ -74,7 +74,7 @@ shopping-list/
 ├── githooks/                # pre-commit + commit-msg
 ├── config/checkstyle/       # Google Java Style (compartido)
 ├── docs/
-│   ├── adr/                 # 14 ADRs
+│   ├── adr/                 # 15 ADRs
 │   ├── architecture/        # C4 Level 2
 │   ├── cicd/                # Estrategia CI/CD
 │   ├── contributing/        # Guías de contribución
@@ -196,6 +196,7 @@ Architecture Decision Records (ADR) en [`docs/adr/`](./docs/adr/).
 | [ADR-012 — Modelo de productos base vs usuario](./docs/adr/ADR-012-modelo-productos-base-vs-usuario.md) | Dos agregados/tablas separados (`base_product` con i18n Table, `user_product` texto libre monolingüe). `based_on_base_id` como snapshot copy-on-create + trazabilidad inmutable. PK externa compuesta `(productId, productType)`. Flags de compartición inertes hasta Fase 4. Detalle de favoritos/recientes diferido a ADR-013 | ✅ Redactado |
 | [ADR-013 — Favoritos y recientes (detalle de implementación)](./docs/adr/ADR-013-favoritos-y-recientes-detalle-de-implementacion.md) | PK compuesta (user_id, product_id, product_type) sin FK física (validación en capa de aplicación, precedente de list_item en list-service), last_used_at como criterio de ordenación de recientes, disparador de recientes solo en el toggle de favorito en Fases 1-3, sin endpoint de touch explícito | ✅ Redactado |
 | [ADR-014 — Estrategia de manejo de errores](./docs/adr/ADR-014-estrategia-de-manejo-de-errores.md) | RFC 9457 `ProblemDetail` con extensión `code` y content-type `application/problem+json`, mensajes en inglés sin i18n en el backend, catálogo `ErrorCode` de 15 códigos (14 de negocio + `VALIDATION_FAILED` reservado), `BusinessException` con un único `GlobalExceptionHandler`, validación con `errors` por campo y fallback 500 con `INTERNAL_ERROR` | ✅ Redactado |
+| [ADR-015 — Estrategia de nulabilidad con JSpecify](./docs/adr/ADR-015-estrategia-de-nulabilidad-con-jspecify.md) | JSpecify como set único de anotaciones, `@NullMarked` por paquete (non-null por defecto), `@Nullable` en la superficie nulable; alcance solo `main` y sin enforcement de build (evolución opcional) | ✅ Redactado |
 
 Los ADRs se redactan a medida que se toman decisiones de arquitectura
 en cada fase; la tabla refleja el estado actual de las mismas.
