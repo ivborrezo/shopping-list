@@ -41,6 +41,14 @@
 - En entidades JPA con id autogenerado (`@GeneratedValue`), `getId()` es
   `@Nullable` (no existe antes del `persist`); las columnas con `nullable = false`
   son non-null.
+- Los avisos `unchecked conversion` que cruzan librerías no anotadas (el JDK,
+  AssertJ) se silencian localmente en JDT con
+  `org.eclipse.jdt.core.compiler.problem.nullUncheckedConversion=ignore` en
+  el `.settings/org.eclipse.jdt.core.prefs` del proyecto (p. ej.
+  `services/product-service/.settings/org.eclipse.jdt.core.prefs`; no
+  versionado; el proyecto sigue
+  IDE-neutral). El análisis de nulabilidad permanece activo para los avisos
+  accionables.
 
 Referencia: [ADR-015](../adr/ADR-015-estrategia-de-nulabilidad-con-jspecify.md).
 

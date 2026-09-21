@@ -10,10 +10,11 @@ La nulabilidad de Java es invisible al sistema de tipos: `String` puede ser
 `null` y el compilador no lo sabe. El proyecto la gestionaba por convenio y
 comprobaciones manuales, con dos costes concretos:
 
-1. **Ruido del analizador de nulabilidad del IDE.** Al usar APIs de
-   librerías anotadas (Spring Data, AssertJ), el IDE generaba del orden de
-   31 advertencias de *"unchecked conversion to @NonNull"*. La respuesta
-   provisional fue desactivar el análisis en el IDE
+1. **Ruido del analizador de nulabilidad del IDE.** Al mezclar las clases
+   propias del proyecto —sin anotar— con APIs de librerías con cobertura de
+   nulidad incompleta (Spring Data, AssertJ, el propio JDK), el IDE generaba
+   del orden de 31 advertencias de *"unchecked conversion to @NonNull"*. La
+   respuesta provisional fue desactivar el análisis en el IDE
    (`java.compile.nullAnalysis.mode: disabled`), silenciando la señal en
    lugar de aprovecharla.
 2. **Los `null` reales se descubrían tarde.** El análisis detectó un NPE
@@ -96,9 +97,11 @@ capas distintas (validación en runtime vs. análisis estático) y conviven.
 
 - Señal de nulabilidad uniforme y neutra al IDE (VSCode, IntelliJ), y
   preparada para un eventual enforcement.
-- Los ~31 warnings de *"unchecked conversion"* desaparecen por la vía
-  correcta: el tipo pasa a non-null por defecto, sin desactivar el
-  análisis.
+- Los warnings de *"unchecked conversion"* del propio código desaparecen por
+  la vía correcta: el tipo pasa a non-null por defecto, sin desactivar el
+  análisis. Queda una categoría residual en las fronteras con librerías no
+  anotadas (el JDK, AssertJ), no accionable desde el código propio; su
+  tratamiento se detalla en los trade-offs.
 - Los `null` indebidos se detectan en tiempo de escritura en vez de en
   producción; el NPE de `UserProductService.create` es la evidencia del
   coste de la situación anterior.
@@ -118,6 +121,17 @@ capas distintas (validación en runtime vs. análisis estático) y conviven.
   tooling.
 - **El código de test queda fuera del análisis**: los `null` deliberados de
   los tests no se revisan; es una evolución opcional.
+- **Fricción con librerías no anotadas (el JDK)**: JDT emite
+  `unchecked conversion` en los *method references* que cruzan genéricos del
+  JDK (`Function`, `Optional`, `Stream`) y las de AssertJ, porque esas
+  librerías no están anotadas. No es accionable desde el código propio; se
+  silencia localmente en JDT
+  (`org.eclipse.jdt.core.compiler.problem.nullUncheckedConversion=ignore` en
+  el `.settings/org.eclipse.jdt.core.prefs` del proyecto, p. ej.
+  `services/product-service/.settings/org.eclipse.jdt.core.prefs`, no
+  versionado), manteniendo el
+  análisis de nulabilidad activo para los avisos accionables. La solución de
+  raíz serían *external annotations* de esas librerías, fuera de alcance.
 
 ## Alternativas consideradas
 
