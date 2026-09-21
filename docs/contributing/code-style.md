@@ -19,6 +19,24 @@
   forma final, sin menciones a features futuros.
 - `package-info.java` documenta cada paquete.
 
+## Nulabilidad
+
+- Set de anotaciones: JSpecify (`org.jspecify:jspecify`), neutro al IDE. La
+  versión la gestiona el BOM de Spring Boot.
+- Cada paquete de `main` con código se marca con `@NullMarked` en su
+  `package-info.java`: todo tipo es non-null por defecto y solo lo
+  explícitamente `@Nullable` admite `null`. `@NullMarked` no se propaga a los
+  subpaquetes, así que cada paquete por capa (`entity/`, `repository/`,
+  `service/`, `dto/`, `controller/`) lleva también su `package-info.java`.
+- Se anota `@Nullable` solo la superficie realmente nulable: columnas de BD sin
+  `nullable = false`, `getId()` de entidades sin persistir, campos opcionales de
+  DTOs, retornos y variables que pueden ser `null`.
+- Los `@NotNull`/`@NotBlank`/`@Size` de Bean Validation no se duplican con
+  JSpecify: son capas distintas (validación en runtime vs. análisis estático).
+- El código de test no se anota.
+
+Referencia: [ADR-015](../adr/ADR-015-estrategia-de-nulabilidad-con-jspecify.md).
+
 ## Inyección de dependencias
 
 Siempre **por constructor**. Nunca field injection (`@Autowired` en
