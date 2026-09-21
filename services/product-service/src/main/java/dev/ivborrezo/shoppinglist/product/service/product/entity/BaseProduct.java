@@ -16,6 +16,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -51,7 +52,7 @@ public class BaseProduct {
   @Column(nullable = false, length = 10)
   private UnitEnum defaultUnit;
 
-  @Column private Integer calories;
+  @Column @Nullable private Integer calories;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 10)
@@ -76,7 +77,7 @@ public class BaseProduct {
   /** Constructor sin argumentos exigido por JPA. */
   public BaseProduct() {}
 
-  public Long getId() {
+  public @Nullable Long getId() {
     return id;
   }
 
@@ -108,11 +109,11 @@ public class BaseProduct {
     this.defaultUnit = defaultUnit;
   }
 
-  public Integer getCalories() {
+  public @Nullable Integer getCalories() {
     return calories;
   }
 
-  public void setCalories(Integer calories) {
+  public void setCalories(@Nullable Integer calories) {
     this.calories = calories;
   }
 

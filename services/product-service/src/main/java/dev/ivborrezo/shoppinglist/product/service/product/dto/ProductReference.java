@@ -3,6 +3,7 @@ package dev.ivborrezo.shoppinglist.product.service.product.dto;
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserFavoriteProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserRecentProduct;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Referencia a un producto del catálogo, con el nombre mostrable resuelto.
@@ -12,7 +13,7 @@ import dev.ivborrezo.shoppinglist.product.service.product.entity.UserRecentProdu
  * monolingüe para los de usuario. {@code name} puede ser {@code null} si el producto referenciado
  * ya no existe (la fila de favorito o reciente se conserva).
  */
-public record ProductReference(Long productId, ProductType productType, String name) {
+public record ProductReference(Long productId, ProductType productType, @Nullable String name) {
 
   /**
    * Construye una referencia a partir de una entidad de favorito y el nombre resuelto del producto.
@@ -21,7 +22,7 @@ public record ProductReference(Long productId, ProductType productType, String n
    * @param name nombre mostrable del producto; {@code null} si el producto ya no existe
    * @return referencia con el nombre indicado
    */
-  public static ProductReference from(UserFavoriteProduct favorite, String name) {
+  public static ProductReference from(UserFavoriteProduct favorite, @Nullable String name) {
     return new ProductReference(favorite.getProductId(), favorite.getProductType(), name);
   }
 
@@ -32,7 +33,7 @@ public record ProductReference(Long productId, ProductType productType, String n
    * @param name nombre mostrable del producto; {@code null} si el producto ya no existe
    * @return referencia con el nombre indicado
    */
-  public static ProductReference from(UserRecentProduct recent, String name) {
+  public static ProductReference from(UserRecentProduct recent, @Nullable String name) {
     return new ProductReference(recent.getProductId(), recent.getProductType(), name);
   }
 }

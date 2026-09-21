@@ -11,7 +11,10 @@
  * capa de aplicación (ADR-013).
  *
  * <p>Convención de subcapas: las subcapas por capa de este feature ({@code entity/}, {@code
- * repository/}, {@code service/}, {@code dto/}, {@code controller/}) son estructurales y no llevan
- * {@code package-info.java} propio; la documentación de paquete vive a este nivel, en el feature.
+ * repository/}, {@code service/}, {@code dto/}, {@code controller/}) llevan su propio {@code
+ * package-info.java} marcado con {@code @NullMarked}; la anotación no se propaga a los subpaquetes.
  */
+@NullMarked
 package dev.ivborrezo.shoppinglist.product.service.product;
+
+import org.jspecify.annotations.NullMarked;

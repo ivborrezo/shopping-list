@@ -16,6 +16,7 @@ import dev.ivborrezo.shoppinglist.product.service.product.repository.UserProduct
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -138,19 +139,20 @@ public class UserProductService {
    */
   @Transactional
   public UserProductResponse create(CreateUserProductRequest request, Locale locale) {
-    BaseProduct base = null;
-    if (request.basedOnBaseId() != null) {
+    @Nullable Long basedOnBaseId = request.basedOnBaseId();
+    @Nullable BaseProduct base = null;
+    if (basedOnBaseId != null) {
       base =
           baseProductRepository
-              .findById(request.basedOnBaseId())
+              .findById(basedOnBaseId)
               .orElseThrow(
                   () ->
                       new BusinessException(
                           ErrorCode.INVALID_BASE_PRODUCT,
-                          "Base product with id " + request.basedOnBaseId() + " not found"));
+                          "Base product with id " + basedOnBaseId + " not found"));
     }
 
-    String name = request.name();
+    @Nullable String name = request.name();
     if (name == null || name.isBlank()) {
       if (base != null) {
         name = baseProductService.resolveName(base, locale);
@@ -160,12 +162,12 @@ public class UserProductService {
       }
     }
 
-    String description = request.description();
+    @Nullable String description = request.description();
     if (description == null && base != null) {
       description = baseProductService.resolveDescription(base, locale);
     }
 
-    Long categoryId = request.categoryId();
+    @Nullable Long categoryId = request.categoryId();
     if (categoryId != null) {
       if (!categoryRepository.existsById(categoryId)) {
         throw new BusinessException(
@@ -175,7 +177,7 @@ public class UserProductService {
       categoryId = base.getCategoryId();
     }
 
-    UnitEnum defaultUnit = request.defaultUnit();
+    @Nullable UnitEnum defaultUnit = request.defaultUnit();
     if (defaultUnit == null && base != null) {
       defaultUnit = base.getDefaultUnit();
     }
@@ -183,12 +185,12 @@ public class UserProductService {
       throw new BusinessException(ErrorCode.DEFAULT_UNIT_REQUIRED);
     }
 
-    Integer calories = request.calories();
+    @Nullable Integer calories = request.calories();
     if (calories == null && base != null) {
       calories = base.getCalories();
     }
 
-    CaloriesPerEnum caloriesPer = request.caloriesPer();
+    @Nullable CaloriesPerEnum caloriesPer = request.caloriesPer();
     if (caloriesPer == null && base != null) {
       caloriesPer = base.getCaloriesPer();
     }
@@ -201,14 +203,14 @@ public class UserProductService {
     product.setName(name);
     product.setDescription(description);
     product.setCategoryId(categoryId);
-    product.setBasedOnBaseId(request.basedOnBaseId());
+    product.setBasedOnBaseId(basedOnBaseId);
     product.setDefaultUnit(defaultUnit);
     product.setCalories(calories);
     product.setCaloriesPer(caloriesPer);
-    product.setShareWithListMembers(
-        request.shareWithListMembers() != null ? request.shareWithListMembers() : false);
-    product.setShareWithFriends(
-        request.shareWithFriends() != null ? request.shareWithFriends() : false);
+    @Nullable Boolean shareWithListMembers = request.shareWithListMembers();
+    @Nullable Boolean shareWithFriends = request.shareWithFriends();
+    product.setShareWithListMembers(shareWithListMembers != null ? shareWithListMembers : false);
+    product.setShareWithFriends(shareWithFriends != null ? shareWithFriends : false);
     product.setIsActive(true);
 
     UserProduct saved = userProductRepository.save(product);
@@ -243,44 +245,53 @@ public class UserProductService {
       throw new BusinessException(ErrorCode.OWNER_MISMATCH);
     }
 
-    if (request.name() != null) {
-      product.setName(request.name());
+    @Nullable String name = request.name();
+    if (name != null) {
+      product.setName(name);
     }
 
-    if (request.description() != null) {
-      product.setDescription(request.description());
+    @Nullable String description = request.description();
+    if (description != null) {
+      product.setDescription(description);
     }
 
-    if (request.categoryId() != null) {
-      if (!categoryRepository.existsById(request.categoryId())) {
+    @Nullable Long categoryId = request.categoryId();
+    if (categoryId != null) {
+      if (!categoryRepository.existsById(categoryId)) {
         throw new BusinessException(
-            ErrorCode.INVALID_CATEGORY, "Category with id " + request.categoryId() + " not found");
+            ErrorCode.INVALID_CATEGORY, "Category with id " + categoryId + " not found");
       }
-      product.setCategoryId(request.categoryId());
+      product.setCategoryId(categoryId);
     }
 
-    if (request.defaultUnit() != null) {
-      product.setDefaultUnit(request.defaultUnit());
+    @Nullable UnitEnum defaultUnit = request.defaultUnit();
+    if (defaultUnit != null) {
+      product.setDefaultUnit(defaultUnit);
     }
 
-    if (request.calories() != null) {
-      product.setCalories(request.calories());
+    @Nullable Integer calories = request.calories();
+    if (calories != null) {
+      product.setCalories(calories);
     }
 
-    if (request.caloriesPer() != null) {
-      product.setCaloriesPer(request.caloriesPer());
+    @Nullable CaloriesPerEnum caloriesPer = request.caloriesPer();
+    if (caloriesPer != null) {
+      product.setCaloriesPer(caloriesPer);
     }
 
-    if (request.shareWithListMembers() != null) {
-      product.setShareWithListMembers(request.shareWithListMembers());
+    @Nullable Boolean shareWithListMembers = request.shareWithListMembers();
+    if (shareWithListMembers != null) {
+      product.setShareWithListMembers(shareWithListMembers);
     }
 
-    if (request.shareWithFriends() != null) {
-      product.setShareWithFriends(request.shareWithFriends());
+    @Nullable Boolean shareWithFriends = request.shareWithFriends();
+    if (shareWithFriends != null) {
+      product.setShareWithFriends(shareWithFriends);
     }
 
-    if (request.isActive() != null) {
-      product.setIsActive(request.isActive());
+    @Nullable Boolean isActive = request.isActive();
+    if (isActive != null) {
+      product.setIsActive(isActive);
     }
 
     UserProduct saved = userProductRepository.save(product);

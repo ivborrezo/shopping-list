@@ -1,12 +1,14 @@
 package dev.ivborrezo.shoppinglist.product.service.category.dto;
 
 import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Respuesta de una categoría del catálogo, con el nombre ya localizado al idioma resuelto según la
  * cabecera {@code Accept-Language}.
  */
-public record CategoryResponse(Long id, String code, String name, boolean isActive) {
+public record CategoryResponse(
+    @Nullable Long id, String code, @Nullable String name, boolean isActive) {
 
   /**
    * Construye una respuesta a partir de la entidad {@link Category} y el nombre ya resuelto al
@@ -16,7 +18,7 @@ public record CategoryResponse(Long id, String code, String name, boolean isActi
    * @param name nombre localizado ya resuelto para el idioma de la petición
    * @return respuesta con los valores de {@code id}, {@code code}, {@code name} e {@code isActive}
    */
-  public static CategoryResponse from(Category category, String name) {
+  public static CategoryResponse from(Category category, @Nullable String name) {
     return new CategoryResponse(category.getId(), category.getCode(), name, category.getIsActive());
   }
 }

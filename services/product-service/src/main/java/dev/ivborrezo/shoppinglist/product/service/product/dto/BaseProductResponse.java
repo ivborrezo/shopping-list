@@ -3,6 +3,7 @@ package dev.ivborrezo.shoppinglist.product.service.product.dto;
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Respuesta de un producto base del catálogo, con el nombre y la descripción ya localizados al
@@ -12,15 +13,15 @@ import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
  * UnitEnum}, {@link CaloriesPerEnum}).
  */
 public record BaseProductResponse(
-    Long id,
+    @Nullable Long id,
     String code,
     Long categoryId,
     UnitEnum defaultUnit,
-    Integer calories,
+    @Nullable Integer calories,
     CaloriesPerEnum caloriesPer,
     Boolean isActive,
-    String name,
-    String description) {
+    @Nullable String name,
+    @Nullable String description) {
 
   /**
    * Construye una respuesta a partir de la entidad {@link BaseProduct} con el nombre y la
@@ -31,7 +32,8 @@ public record BaseProductResponse(
    * @param description descripción localizada ya resuelta; puede ser {@code null}
    * @return respuesta con los valores estructurales del producto base y los textos localizados
    */
-  public static BaseProductResponse from(BaseProduct product, String name, String description) {
+  public static BaseProductResponse from(
+      BaseProduct product, @Nullable String name, @Nullable String description) {
     return new BaseProductResponse(
         product.getId(),
         product.getCode(),

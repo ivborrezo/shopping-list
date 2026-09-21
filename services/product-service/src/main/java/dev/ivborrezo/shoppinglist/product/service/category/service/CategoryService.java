@@ -11,6 +11,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -111,14 +112,14 @@ public class CategoryService {
    * Resuelve el nombre localizado de una categoría aplicando: coincidencia exacta con el locale
    * solicitado → fallback a {@value #FALLBACK_LOCALE} → primer idioma disponible.
    */
-  private String resolveName(Category category, Locale locale) {
+  private @Nullable String resolveName(Category category, Locale locale) {
     Set<CategoryTranslation> translations = category.getTranslations();
     if (translations.isEmpty()) {
       return null;
     }
     String localeTag = locale.toLanguageTag();
 
-    String exact =
+    @Nullable String exact =
         translations.stream()
             .filter(t -> t.getLocale().equals(localeTag))
             .map(CategoryTranslation::getName)
@@ -128,7 +129,7 @@ public class CategoryService {
       return exact;
     }
 
-    String english =
+    @Nullable String english =
         translations.stream()
             .filter(t -> t.getLocale().equals(FALLBACK_LOCALE))
             .map(CategoryTranslation::getName)

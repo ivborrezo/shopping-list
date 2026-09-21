@@ -14,6 +14,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -69,7 +70,7 @@ public class UserProductController {
   @GetMapping
   public PagedResponse<UserProductResponse> list(
       @RequestParam UUID ownerId,
-      @RequestParam(required = false) Long categoryId,
+      @RequestParam(required = false) @Nullable Long categoryId,
       @PageableDefault Pageable pageable) {
     if (categoryId != null) {
       return userProductService.findByOwner(ownerId, pageable, categoryId);

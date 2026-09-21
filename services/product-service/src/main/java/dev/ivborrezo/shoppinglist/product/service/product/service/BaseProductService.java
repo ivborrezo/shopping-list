@@ -2,7 +2,9 @@ package dev.ivborrezo.shoppinglist.product.service.product.service;
 
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.BusinessException;
+import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.ErrorCode;
+import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateBaseProductRequest;
@@ -14,7 +16,9 @@ import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProduct
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -78,7 +82,7 @@ public class BaseProductService {
    * @return página de DTOs con los productos activos y sus textos localizados
    */
   public PagedResponse<BaseProductResponse> findActive(
-      Locale locale, Pageable pageable, Long categoryId, String text) {
+      Locale locale, Pageable pageable, @Nullable Long categoryId, @Nullable String text) {
     Page<BaseProduct> page;
     if (text != null && !text.isBlank()) {
       page = baseProductRepository.findByIsActiveTrueAndText(text, pageable);
@@ -195,49 +199,57 @@ public class BaseProductService {
             .findById(id)
             .orElseThrow(() -> new BusinessException(ErrorCode.BASE_PRODUCT_NOT_FOUND));
 
-    if (request.code() != null && !request.code().equals(product.getCode())) {
-      if (baseProductRepository.existsByCode(request.code())) {
+    @Nullable String code = request.code();
+    if (code != null && !code.equals(product.getCode())) {
+      if (baseProductRepository.existsByCode(code)) {
         throw new BusinessException(
             ErrorCode.DUPLICATE_PRODUCT_CODE, "Product code already exists");
       }
-      product.setCode(request.code());
+      product.setCode(code);
     }
 
-    if (request.categoryId() != null) {
-      if (!categoryRepository.existsById(request.categoryId())) {
+    @Nullable Long categoryId = request.categoryId();
+    if (categoryId != null) {
+      if (!categoryRepository.existsById(categoryId)) {
         throw new BusinessException(
-            ErrorCode.INVALID_CATEGORY, "Category with id " + request.categoryId() + " not found");
+            ErrorCode.INVALID_CATEGORY, "Category with id " + categoryId + " not found");
       }
-      product.setCategoryId(request.categoryId());
+      product.setCategoryId(categoryId);
     }
 
-    if (request.defaultUnit() != null) {
-      product.setDefaultUnit(request.defaultUnit());
+    @Nullable UnitEnum defaultUnit = request.defaultUnit();
+    if (defaultUnit != null) {
+      product.setDefaultUnit(defaultUnit);
     }
 
-    if (request.calories() != null) {
-      product.setCalories(request.calories());
+    @Nullable Integer calories = request.calories();
+    if (calories != null) {
+      product.setCalories(calories);
     }
 
-    if (request.caloriesPer() != null) {
-      product.setCaloriesPer(request.caloriesPer());
+    @Nullable CaloriesPerEnum caloriesPer = request.caloriesPer();
+    if (caloriesPer != null) {
+      product.setCaloriesPer(caloriesPer);
     }
 
-    if (request.isActive() != null) {
-      product.setIsActive(request.isActive());
+    @Nullable Boolean isActive = request.isActive();
+    if (isActive != null) {
+      product.setIsActive(isActive);
     }
 
-    if (request.translations() != null) {
-      for (UpdateBaseProductRequest.ProductTranslation t : request.translations()) {
+    @Nullable List<UpdateBaseProductRequest.ProductTranslation> translations =
+        request.translations();
+    if (translations != null) {
+      for (UpdateBaseProductRequest.ProductTranslation t : translations) {
         if (!SUPPORTED_LOCALES.contains(t.locale())) {
           throw new BusinessException(ErrorCode.UNSUPPORTED_LOCALE);
         }
       }
 
-      translationRepository.deleteAllByProductId(product.getId());
+      translationRepository.deleteAllByProductId(Objects.requireNonNull(product.getId()));
       product.getTranslations().clear();
 
-      for (UpdateBaseProductRequest.ProductTranslation t : request.translations()) {
+      for (UpdateBaseProductRequest.ProductTranslation t : translations) {
         BaseProductTranslation translation = new BaseProductTranslation();
         translation.setLocale(t.locale());
         translation.setName(t.name());
@@ -280,14 +292,14 @@ public class BaseProductService {
    * Resuelve el nombre localizado de un producto base aplicando: coincidencia exacta con el locale
    * solicitado → fallback a {@value #FALLBACK_LOCALE} → primer idioma disponible.
    */
-  String resolveName(BaseProduct product, Locale locale) {
+  @Nullable String resolveName(BaseProduct product, Locale locale) {
     Set<BaseProductTranslation> translations = product.getTranslations();
     if (translations.isEmpty()) {
       return null;
     }
     String localeTag = locale.toLanguageTag();
 
-    String exact =
+    @Nullable String exact =
         translations.stream()
             .filter(t -> t.getLocale().equals(localeTag))
             .map(BaseProductTranslation::getName)
@@ -297,7 +309,7 @@ public class BaseProductService {
       return exact;
     }
 
-    String english =
+    @Nullable String english =
         translations.stream()
             .filter(t -> t.getLocale().equals(FALLBACK_LOCALE))
             .map(BaseProductTranslation::getName)
@@ -315,20 +327,20 @@ public class BaseProductService {
    * {@link #resolveName(BaseProduct, Locale)}. Si la traducción resuelta no tiene descripción,
    * devuelve {@code null}.
    */
-  String resolveDescription(BaseProduct product, Locale locale) {
+  @Nullable String resolveDescription(BaseProduct product, Locale locale) {
     Set<BaseProductTranslation> translations = product.getTranslations();
     if (translations.isEmpty()) {
       return null;
     }
     String localeTag = locale.toLanguageTag();
 
-    BaseProductTranslation exact =
+    @Nullable BaseProductTranslation exact =
         translations.stream().filter(t -> t.getLocale().equals(localeTag)).findFirst().orElse(null);
     if (exact != null) {
       return exact.getDescription();
     }
 
-    BaseProductTranslation english =
+    @Nullable BaseProductTranslation english =
         translations.stream()
             .filter(t -> t.getLocale().equals(FALLBACK_LOCALE))
             .findFirst()

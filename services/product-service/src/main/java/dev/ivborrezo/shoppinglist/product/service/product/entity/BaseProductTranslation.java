@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Traducción localizada del nombre y la descripción de un {@link BaseProduct}.
@@ -35,6 +36,7 @@ public class BaseProductTranslation {
   private String name;
 
   @Column(columnDefinition = "TEXT")
+  @Nullable
   private String description;
 
   @MapsId("productId")
@@ -69,11 +71,11 @@ public class BaseProductTranslation {
     this.name = name;
   }
 
-  public String getDescription() {
+  public @Nullable String getDescription() {
     return description;
   }
 
-  public void setDescription(String description) {
+  public void setDescription(@Nullable String description) {
     this.description = description;
   }
 
