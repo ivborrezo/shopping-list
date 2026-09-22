@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -143,7 +144,7 @@ public class UserFavoriteProductService {
    * @param locale idioma en el que se resuelve el nombre de los productos base
    * @return nombre localizado o monolingüe según el tipo; {@code null} si el producto ya no existe
    */
-  private String resolveName(UserFavoriteProduct favorite, Locale locale) {
+  private @Nullable String resolveName(UserFavoriteProduct favorite, Locale locale) {
     if (favorite.getProductType() == ProductType.BASE) {
       return baseProductRepository
           .findById(favorite.getProductId())

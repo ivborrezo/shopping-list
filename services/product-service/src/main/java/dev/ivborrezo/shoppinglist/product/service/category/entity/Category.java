@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -53,7 +54,7 @@ public class Category {
 
   public Category() {}
 
-  public Long getId() {
+  public @Nullable Long getId() {
     return id;
   }
 

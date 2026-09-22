@@ -8,6 +8,7 @@ import dev.ivborrezo.shoppinglist.product.service.product.service.BaseProductSer
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.Locale;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -45,8 +46,8 @@ public class BaseProductController {
    */
   @GetMapping
   public PagedResponse<BaseProductResponse> list(
-      @RequestParam(required = false) Long categoryId,
-      @RequestParam(required = false) String text,
+      @RequestParam(required = false) @Nullable Long categoryId,
+      @RequestParam(required = false) @Nullable String text,
       @PageableDefault Pageable pageable,
       Locale locale) {
     return baseProductService.findActive(locale, pageable, categoryId, text);

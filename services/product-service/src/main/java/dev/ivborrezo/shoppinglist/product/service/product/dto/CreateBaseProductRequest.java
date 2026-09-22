@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Petición de creación de un producto base del catálogo con sus traducciones.
@@ -21,7 +22,7 @@ public record CreateBaseProductRequest(
     @NotBlank String code,
     @NotNull Long categoryId,
     @NotNull UnitEnum defaultUnit,
-    Integer calories,
+    @Nullable Integer calories,
     @NotNull CaloriesPerEnum caloriesPer,
     boolean isActive,
     @NotNull @Size(min = 1) List<@Valid ProductTranslation> translations) {
@@ -33,5 +34,5 @@ public record CreateBaseProductRequest(
   public record ProductTranslation(
       @NotBlank @Size(min = 2, max = 5) String locale,
       @NotBlank @Size(max = 128) String name,
-      String description) {}
+      @Nullable String description) {}
 }

@@ -4,4 +4,7 @@
  * <p>Destinado a albergar beans de infraestructura: resolvedor de locale ({@code Accept-Language}),
  * {@code MessageSource} para mensajes de error localizados, etc.
  */
+@NullMarked
 package dev.ivborrezo.shoppinglist.product.service.config;
+
+import org.jspecify.annotations.NullMarked;

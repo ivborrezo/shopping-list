@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -46,17 +47,17 @@ public class UserProduct {
   @Column(nullable = false, length = 128)
   private String name;
 
-  @Column private String description;
+  @Column @Nullable private String description;
 
-  @Column private Long categoryId;
+  @Column @Nullable private Long categoryId;
 
-  @Column private Long basedOnBaseId;
+  @Column @Nullable private Long basedOnBaseId;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 10)
   private UnitEnum defaultUnit;
 
-  @Column private Integer calories;
+  @Column @Nullable private Integer calories;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 10)
@@ -82,7 +83,7 @@ public class UserProduct {
   /** Constructor sin argumentos exigido por JPA. */
   public UserProduct() {}
 
-  public Long getId() {
+  public @Nullable Long getId() {
     return id;
   }
 
@@ -106,27 +107,27 @@ public class UserProduct {
     this.name = name;
   }
 
-  public String getDescription() {
+  public @Nullable String getDescription() {
     return description;
   }
 
-  public void setDescription(String description) {
+  public void setDescription(@Nullable String description) {
     this.description = description;
   }
 
-  public Long getCategoryId() {
+  public @Nullable Long getCategoryId() {
     return categoryId;
   }
 
-  public void setCategoryId(Long categoryId) {
+  public void setCategoryId(@Nullable Long categoryId) {
     this.categoryId = categoryId;
   }
 
-  public Long getBasedOnBaseId() {
+  public @Nullable Long getBasedOnBaseId() {
     return basedOnBaseId;
   }
 
-  public void setBasedOnBaseId(Long basedOnBaseId) {
+  public void setBasedOnBaseId(@Nullable Long basedOnBaseId) {
     this.basedOnBaseId = basedOnBaseId;
   }
 
@@ -138,11 +139,11 @@ public class UserProduct {
     this.defaultUnit = defaultUnit;
   }
 
-  public Integer getCalories() {
+  public @Nullable Integer getCalories() {
     return calories;
   }
 
-  public void setCalories(Integer calories) {
+  public void setCalories(@Nullable Integer calories) {
     this.calories = calories;
   }
 

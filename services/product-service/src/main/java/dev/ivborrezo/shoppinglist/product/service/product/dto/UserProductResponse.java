@@ -4,6 +4,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Respuesta de un producto de usuario.
@@ -14,14 +15,14 @@ import java.util.UUID;
  * respuesta.
  */
 public record UserProductResponse(
-    Long id,
+    @Nullable Long id,
     UUID ownerId,
     String name,
-    String description,
-    Long categoryId,
-    Long basedOnBaseId,
+    @Nullable String description,
+    @Nullable Long categoryId,
+    @Nullable Long basedOnBaseId,
     UnitEnum defaultUnit,
-    Integer calories,
+    @Nullable Integer calories,
     CaloriesPerEnum caloriesPer,
     Boolean shareWithListMembers,
     Boolean shareWithFriends,

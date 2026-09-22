@@ -5,6 +5,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Petición de creación de un producto de usuario del catálogo personal.
@@ -19,12 +20,12 @@ import java.util.UUID;
  */
 public record CreateUserProductRequest(
     @NotNull UUID ownerId,
-    @Size(max = 128) String name,
-    String description,
-    Long categoryId,
-    Long basedOnBaseId,
-    UnitEnum defaultUnit,
-    Integer calories,
-    CaloriesPerEnum caloriesPer,
-    Boolean shareWithListMembers,
-    Boolean shareWithFriends) {}
+    @Size(max = 128) @Nullable String name,
+    @Nullable String description,
+    @Nullable Long categoryId,
+    @Nullable Long basedOnBaseId,
+    @Nullable UnitEnum defaultUnit,
+    @Nullable Integer calories,
+    @Nullable CaloriesPerEnum caloriesPer,
+    @Nullable Boolean shareWithListMembers,
+    @Nullable Boolean shareWithFriends) {}

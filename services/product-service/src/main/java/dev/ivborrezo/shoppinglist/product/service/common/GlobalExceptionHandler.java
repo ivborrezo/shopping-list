@@ -3,6 +3,7 @@ package dev.ivborrezo.shoppinglist.product.service.common;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -113,5 +114,5 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   /** Error de un campo de la petición del shape de validación Bean Validation. */
-  private record FieldErrorItem(String code, String field, String message) {}
+  private record FieldErrorItem(@Nullable String code, String field, @Nullable String message) {}
 }

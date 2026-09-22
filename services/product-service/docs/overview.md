@@ -13,6 +13,15 @@ snapshot copy-on-create desde un producto base, favoritos y recientes—.
 Spring Boot + PostgreSQL, con base de datos propia siguiendo el patrón
 database-per-service ([ADR-002](../../../docs/adr/ADR-002-database-per-service-pattern.md)).
 
+## Convenciones de código
+
+El código de `main` es **non-null por defecto** mediante JSpecify: cada
+paquete con código se marca con `@NullMarked` en su `package-info.java` (la
+anotación no se propaga a los subpaquetes) y solo lo explícitamente `@Nullable`
+admite `null`. Los tests no se anotan. Reglas de anotación en
+[code-style.md](../../../docs/contributing/code-style.md) y justificación en
+[ADR-015](../../../docs/adr/ADR-015-estrategia-de-nulabilidad-con-jspecify.md).
+
 ## Endpoints implementados
 
 - `GET /categories` — lista el catálogo de categorías, paginado y traducido según `Accept-Language`.

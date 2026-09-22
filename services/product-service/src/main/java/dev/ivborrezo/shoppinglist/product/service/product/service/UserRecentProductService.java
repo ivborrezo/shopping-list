@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -97,7 +98,7 @@ public class UserRecentProductService {
    * @param locale idioma en el que se resuelve el nombre de los productos base
    * @return nombre localizado o monolingüe según el tipo; {@code null} si el producto ya no existe
    */
-  private String resolveName(UserRecentProduct recent, Locale locale) {
+  private @Nullable String resolveName(UserRecentProduct recent, Locale locale) {
     if (recent.getProductType() == ProductType.BASE) {
       return baseProductRepository
           .findById(recent.getProductId())
