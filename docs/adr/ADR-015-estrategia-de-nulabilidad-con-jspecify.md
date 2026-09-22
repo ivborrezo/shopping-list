@@ -32,7 +32,7 @@ la nulabilidad a una herramienta concreta.
 ### Decisión 1 — JSpecify como único set de anotaciones
 
 Se usa `org.jspecify:jspecify`, el estándar de facto de nulabilidad para
-Java y neutro al IDE. La versión la gestiona el BOM de Spring Boot (1.0.0):
+Java y neutro al IDE. La versión la gestiona el BOM de Spring Boot (1.0.1):
 la dependencia se declara sin versión explícita y con el scope por defecto
 (`compile`). Es un jar de solo anotaciones, sin código **ejecutable**, así
 que no añade peso al artefacto.
