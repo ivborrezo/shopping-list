@@ -3,6 +3,7 @@ package dev.ivborrezo.shoppinglist.product.service.product.dto;
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserFavoriteProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserRecentProduct;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -13,7 +14,8 @@ import org.jspecify.annotations.Nullable;
  * monolingüe para los de usuario. {@code name} puede ser {@code null} si el producto referenciado
  * ya no existe (la fila de favorito o reciente se conserva).
  */
-public record ProductReference(Long productId, ProductType productType, @Nullable String name) {
+public record ProductReference(
+    @Nullable UUID productId, ProductType productType, @Nullable String name) {
 
   /**
    * Construye una referencia a partir de una entidad de favorito y el nombre resuelto del producto.
@@ -23,7 +25,7 @@ public record ProductReference(Long productId, ProductType productType, @Nullabl
    * @return referencia con el nombre indicado
    */
   public static ProductReference from(UserFavoriteProduct favorite, @Nullable String name) {
-    return new ProductReference(favorite.getProductId(), favorite.getProductType(), name);
+    return new ProductReference(favorite.getProductPublicId(), favorite.getProductType(), name);
   }
 
   /**
@@ -34,6 +36,6 @@ public record ProductReference(Long productId, ProductType productType, @Nullabl
    * @return referencia con el nombre indicado
    */
   public static ProductReference from(UserRecentProduct recent, @Nullable String name) {
-    return new ProductReference(recent.getProductId(), recent.getProductType(), name);
+    return new ProductReference(recent.getProductPublicId(), recent.getProductType(), name);
   }
 }
