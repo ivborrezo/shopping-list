@@ -365,6 +365,5 @@ registra en la tabla `flyway_schema_history`).
 [Diagrama ER del esquema](./img/er-diagram.svg) (fuente editable
 [`er-diagram.drawio.xml`](./img/er-diagram.drawio.xml)).
 
-Diagrama ER — snapshot a Flyway V11 (pendiente de actualizar con las
-columnas `public_id` y `product_public_id`). Fuente de verdad:
+Diagrama ER — snapshot a Flyway V13. Fuente de verdad:
 `src/main/resources/db/migration/`.
