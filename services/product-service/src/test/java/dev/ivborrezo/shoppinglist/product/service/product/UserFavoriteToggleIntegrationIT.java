@@ -8,6 +8,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
+import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -53,11 +54,17 @@ class UserFavoriteToggleIntegrationIT {
 
   private final TestEntityManager entityManager;
 
+  private final BaseProductRepository baseProductRepository;
+
   UserFavoriteToggleIntegrationIT(
-      MockMvc mockMvc, ObjectMapper objectMapper, TestEntityManager entityManager) {
+      MockMvc mockMvc,
+      ObjectMapper objectMapper,
+      TestEntityManager entityManager,
+      BaseProductRepository baseProductRepository) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
     this.entityManager = entityManager;
+    this.baseProductRepository = baseProductRepository;
   }
 
   /**
@@ -68,7 +75,7 @@ class UserFavoriteToggleIntegrationIT {
     MvcResult result =
         mockMvc
             .perform(
-                post("/user-products/{id}/favorite", 1L)
+                post("/user-products/{id}/favorite", baseProductPublicId(1L))
                     .param("ownerId", OWNER_ID.toString())
                     .param("productType", "BASE"))
             .andExpect(status().isOk())
@@ -86,9 +93,10 @@ class UserFavoriteToggleIntegrationIT {
    */
   @Test
   void toggleFavorite_whenAlreadyMarked_returnsFavoritedFalse() throws Exception {
+    UUID productId = baseProductPublicId(1L);
     mockMvc
         .perform(
-            post("/user-products/{id}/favorite", 1L)
+            post("/user-products/{id}/favorite", productId)
                 .param("ownerId", OWNER_ID.toString())
                 .param("productType", "BASE"))
         .andExpect(status().isOk());
@@ -96,7 +104,7 @@ class UserFavoriteToggleIntegrationIT {
     MvcResult result =
         mockMvc
             .perform(
-                post("/user-products/{id}/favorite", 1L)
+                post("/user-products/{id}/favorite", productId)
                     .param("ownerId", OWNER_ID.toString())
                     .param("productType", "BASE"))
             .andExpect(status().isOk())
@@ -121,7 +129,7 @@ class UserFavoriteToggleIntegrationIT {
     MvcResult first =
         mockMvc
             .perform(
-                post("/user-products/{id}/favorite", product.getId())
+                post("/user-products/{id}/favorite", product.getPublicId())
                     .param("ownerId", OWNER_ID.toString())
                     .param("productType", "USER"))
             .andExpect(status().isOk())
@@ -135,7 +143,7 @@ class UserFavoriteToggleIntegrationIT {
     MvcResult second =
         mockMvc
             .perform(
-                post("/user-products/{id}/favorite", product.getId())
+                post("/user-products/{id}/favorite", product.getPublicId())
                     .param("ownerId", OWNER_ID.toString())
                     .param("productType", "USER"))
             .andExpect(status().isOk())
@@ -152,7 +160,7 @@ class UserFavoriteToggleIntegrationIT {
   void toggleFavorite_nonexistentProduct_returns404() throws Exception {
     mockMvc
         .perform(
-            post("/user-products/{id}/favorite", 999999L)
+            post("/user-products/{id}/favorite", UUID.randomUUID())
                 .param("ownerId", OWNER_ID.toString())
                 .param("productType", "BASE"))
         .andExpect(status().isNotFound());
@@ -165,7 +173,7 @@ class UserFavoriteToggleIntegrationIT {
   void toggleFavorite_invalidProductType_returns400() throws Exception {
     mockMvc
         .perform(
-            post("/user-products/{id}/favorite", 1L)
+            post("/user-products/{id}/favorite", baseProductPublicId(1L))
                 .param("ownerId", OWNER_ID.toString())
                 .param("productType", "CATALOG"))
         .andExpect(status().isBadRequest());
@@ -186,5 +194,15 @@ class UserFavoriteToggleIntegrationIT {
     product.setShareWithFriends(false);
     product.setIsActive(true);
     return product;
+  }
+
+  /**
+   * Resuelve el identificador público del producto base con el identificador interno indicado.
+   *
+   * @param id identificador interno del producto base del seed
+   * @return identificador público del producto base
+   */
+  private UUID baseProductPublicId(Long id) {
+    return baseProductRepository.findById(id).orElseThrow().getPublicId();
   }
 }

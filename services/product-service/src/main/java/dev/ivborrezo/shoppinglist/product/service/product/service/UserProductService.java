@@ -1,5 +1,6 @@
 package dev.ivborrezo.shoppinglist.product.service.product.service;
 
+import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.BusinessException;
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
@@ -15,7 +16,11 @@ import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProduct
 import dev.ivborrezo.shoppinglist.product.service.product.repository.UserProductRepository;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -72,47 +77,138 @@ public class UserProductService {
    *
    * @param ownerId identificador del propietario de los productos
    * @param pageable parámetros de paginación
-   * @param categoryId identificador de la categoría por la que filtrar
-   * @return página de DTOs con los productos activos del propietario y categoría indicados
+   * @param categoryId identificador público de la categoría por la que filtrar
+   * @return página de DTOs con los productos activos del propietario y categoría indicados; vacía
+   *     si la categoría no existe
    */
   public PagedResponse<UserProductResponse> findByOwner(
-      UUID ownerId, Pageable pageable, Long categoryId) {
+      UUID ownerId, Pageable pageable, UUID categoryId) {
+    @Nullable Long internal =
+        categoryRepository.findByPublicId(categoryId).map(Category::getId).orElse(null);
+    if (internal == null) {
+      return new PagedResponse<>(List.of(), pageable.getPageNumber(), pageable.getPageSize(), 0);
+    }
     Page<UserProduct> page =
         userProductRepository.findByOwnerIdAndIsActiveTrueAndCategoryId(
-            ownerId, categoryId, pageable);
+            ownerId, internal, pageable);
     return toPagedResponse(page);
   }
 
   /**
-   * Busca un producto de usuario por su identificador.
+   * Busca un producto de usuario por su identificador público.
    *
-   * @param id identificador del producto a recuperar
+   * @param publicId identificador público del producto a recuperar
    * @return DTO del producto encontrado
    * @throws BusinessException con ErrorCode.USER_PRODUCT_NOT_FOUND si el producto no existe o está
    *     inactivo
    */
-  public UserProductResponse findById(Long id) {
+  public UserProductResponse findById(UUID publicId) {
     UserProduct product =
         userProductRepository
-            .findById(id)
+            .findByPublicId(publicId)
             .orElseThrow(() -> new BusinessException(ErrorCode.USER_PRODUCT_NOT_FOUND));
     if (!product.getIsActive()) {
       throw new BusinessException(ErrorCode.USER_PRODUCT_NOT_FOUND);
     }
-    return UserProductResponse.from(product);
+    return UserProductResponse.from(
+        product,
+        resolveCategoryPublicId(product.getCategoryId()),
+        resolveBasePublicId(product.getBasedOnBaseId()));
   }
 
   /**
-   * Convierte una página de entidades {@link UserProduct} en un {@link PagedResponse} de DTOs.
+   * Convierte una página de entidades {@link UserProduct} en un {@link PagedResponse} de DTOs,
+   * resolviendo en lote los identificadores públicos de categorías y productos base.
    *
    * @param page página de entidades devuelta por el repositorio
    * @return envoltorio con los DTOs y los metadatos de paginación
    */
   private PagedResponse<UserProductResponse> toPagedResponse(Page<UserProduct> page) {
+    List<UserProduct> content = page.getContent();
+    Map<Long, UUID> categoryPublicIds = resolveCategoryPublicIds(content);
+    Map<Long, UUID> basePublicIds = resolveBasePublicIds(content);
     List<UserProductResponse> responses =
-        page.getContent().stream().map(UserProductResponse::from).toList();
+        content.stream()
+            .map(
+                p ->
+                    UserProductResponse.from(
+                        p,
+                        p.getCategoryId() == null ? null : categoryPublicIds.get(p.getCategoryId()),
+                        p.getBasedOnBaseId() == null
+                            ? null
+                            : basePublicIds.get(p.getBasedOnBaseId())))
+            .toList();
     return new PagedResponse<>(
         responses, page.getNumber(), page.getSize(), page.getTotalElements());
+  }
+
+  /**
+   * Resuelve en lote el identificador público de las categorías referenciadas por los productos.
+   *
+   * @param content productos de la página de los que se leen las referencias a categoría
+   * @return mapa de identificador interno a identificador público; vacío si no hay referencias que
+   *     resolver
+   */
+  private Map<Long, UUID> resolveCategoryPublicIds(List<UserProduct> content) {
+    Set<Long> ids =
+        content.stream()
+            .map(UserProduct::getCategoryId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    if (ids.isEmpty()) {
+      return Map.of();
+    }
+    return categoryRepository.findAllById(ids).stream()
+        .collect(Collectors.toMap(Category::getId, Category::getPublicId));
+  }
+
+  /**
+   * Resuelve en lote el identificador público de los productos base referenciados por los
+   * productos.
+   *
+   * @param content productos de la página de los que se leen las referencias a producto base
+   * @return mapa de identificador interno a identificador público; vacío si no hay referencias que
+   *     resolver
+   */
+  private Map<Long, UUID> resolveBasePublicIds(List<UserProduct> content) {
+    Set<Long> ids =
+        content.stream()
+            .map(UserProduct::getBasedOnBaseId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    if (ids.isEmpty()) {
+      return Map.of();
+    }
+    return baseProductRepository.findAllById(ids).stream()
+        .collect(Collectors.toMap(BaseProduct::getId, BaseProduct::getPublicId));
+  }
+
+  /**
+   * Resuelve el identificador público de la categoría con el identificador interno indicado.
+   *
+   * @param categoryId identificador interno de la categoría; puede ser {@code null}
+   * @return identificador público de la categoría, o {@code null} si no hay referencia o ya no
+   *     existe
+   */
+  private @Nullable UUID resolveCategoryPublicId(@Nullable Long categoryId) {
+    if (categoryId == null) {
+      return null;
+    }
+    return categoryRepository.findById(categoryId).map(Category::getPublicId).orElse(null);
+  }
+
+  /**
+   * Resuelve el identificador público del producto base con el identificador interno indicado.
+   *
+   * @param basedOnBaseId identificador interno del producto base; puede ser {@code null}
+   * @return identificador público del producto base, o {@code null} si no hay referencia o ya no
+   *     existe
+   */
+  private @Nullable UUID resolveBasePublicId(@Nullable Long basedOnBaseId) {
+    if (basedOnBaseId == null) {
+      return null;
+    }
+    return baseProductRepository.findById(basedOnBaseId).map(BaseProduct::getPublicId).orElse(null);
   }
 
   /**
@@ -139,17 +235,17 @@ public class UserProductService {
    */
   @Transactional
   public UserProductResponse create(CreateUserProductRequest request, Locale locale) {
-    @Nullable Long basedOnBaseId = request.basedOnBaseId();
+    @Nullable UUID basedOnBasePublicId = request.basedOnBaseId();
     @Nullable BaseProduct base = null;
-    if (basedOnBaseId != null) {
+    if (basedOnBasePublicId != null) {
       base =
           baseProductRepository
-              .findById(basedOnBaseId)
+              .findByPublicId(basedOnBasePublicId)
               .orElseThrow(
                   () ->
                       new BusinessException(
                           ErrorCode.INVALID_BASE_PRODUCT,
-                          "Base product with id " + basedOnBaseId + " not found"));
+                          "Base product with public id " + basedOnBasePublicId + " not found"));
     }
 
     @Nullable String name = request.name();
@@ -167,14 +263,23 @@ public class UserProductService {
       description = baseProductService.resolveDescription(base, locale);
     }
 
-    @Nullable Long categoryId = request.categoryId();
-    if (categoryId != null) {
-      if (!categoryRepository.existsById(categoryId)) {
-        throw new BusinessException(
-            ErrorCode.INVALID_CATEGORY, "Category with id " + categoryId + " not found");
-      }
+    @Nullable Long categoryId = null;
+    @Nullable UUID categoryPublicId = null;
+    @Nullable UUID requestCategoryId = request.categoryId();
+    if (requestCategoryId != null) {
+      Category category =
+          categoryRepository
+              .findByPublicId(requestCategoryId)
+              .orElseThrow(
+                  () ->
+                      new BusinessException(
+                          ErrorCode.INVALID_CATEGORY,
+                          "Category with public id " + requestCategoryId + " not found"));
+      categoryId = Objects.requireNonNull(category.getId());
+      categoryPublicId = category.getPublicId();
     } else if (base != null) {
       categoryId = base.getCategoryId();
+      categoryPublicId = resolveCategoryPublicId(categoryId);
     }
 
     @Nullable UnitEnum defaultUnit = request.defaultUnit();
@@ -198,12 +303,15 @@ public class UserProductService {
       throw new BusinessException(ErrorCode.CALORIES_PER_REQUIRED);
     }
 
+    @Nullable Long basedOnBaseInternalId =
+        base != null ? Objects.requireNonNull(base.getId()) : null;
+
     UserProduct product = new UserProduct();
     product.setOwnerId(request.ownerId());
     product.setName(name);
     product.setDescription(description);
     product.setCategoryId(categoryId);
-    product.setBasedOnBaseId(basedOnBaseId);
+    product.setBasedOnBaseId(basedOnBaseInternalId);
     product.setDefaultUnit(defaultUnit);
     product.setCalories(calories);
     product.setCaloriesPer(caloriesPer);
@@ -214,7 +322,8 @@ public class UserProductService {
     product.setIsActive(true);
 
     UserProduct saved = userProductRepository.save(product);
-    return UserProductResponse.from(saved);
+    @Nullable UUID basedOnBasePublicIdResponse = base != null ? base.getPublicId() : null;
+    return UserProductResponse.from(saved, categoryPublicId, basedOnBasePublicIdResponse);
   }
 
   /**
@@ -226,7 +335,7 @@ public class UserProductService {
    * no modifica el almacenado. {@code basedOnBaseId} es una traza inmutable que se ignora en
    * silencio si se envía.
    *
-   * @param id identificador del producto de usuario a editar
+   * @param publicId identificador público del producto de usuario a editar
    * @param request petición con los campos a modificar; solo los no nulos se aplican
    * @return DTO del producto de usuario tras aplicar los cambios
    * @throws BusinessException con ErrorCode.USER_PRODUCT_NOT_FOUND si el producto no existe
@@ -235,10 +344,10 @@ public class UserProductService {
    * @throws BusinessException con ErrorCode.INVALID_CATEGORY si la categoría indicada no existe
    */
   @Transactional
-  public UserProductResponse update(Long id, UpdateUserProductRequest request) {
+  public UserProductResponse update(UUID publicId, UpdateUserProductRequest request) {
     UserProduct product =
         userProductRepository
-            .findById(id)
+            .findByPublicId(publicId)
             .orElseThrow(() -> new BusinessException(ErrorCode.USER_PRODUCT_NOT_FOUND));
 
     if (!product.getOwnerId().equals(request.ownerId())) {
@@ -255,13 +364,17 @@ public class UserProductService {
       product.setDescription(description);
     }
 
-    @Nullable Long categoryId = request.categoryId();
+    @Nullable UUID categoryId = request.categoryId();
     if (categoryId != null) {
-      if (!categoryRepository.existsById(categoryId)) {
-        throw new BusinessException(
-            ErrorCode.INVALID_CATEGORY, "Category with id " + categoryId + " not found");
-      }
-      product.setCategoryId(categoryId);
+      Category category =
+          categoryRepository
+              .findByPublicId(categoryId)
+              .orElseThrow(
+                  () ->
+                      new BusinessException(
+                          ErrorCode.INVALID_CATEGORY,
+                          "Category with public id " + categoryId + " not found"));
+      product.setCategoryId(Objects.requireNonNull(category.getId()));
     }
 
     @Nullable UnitEnum defaultUnit = request.defaultUnit();
@@ -295,26 +408,29 @@ public class UserProductService {
     }
 
     UserProduct saved = userProductRepository.save(product);
-    return UserProductResponse.from(saved);
+    return UserProductResponse.from(
+        saved,
+        resolveCategoryPublicId(saved.getCategoryId()),
+        resolveBasePublicId(saved.getBasedOnBaseId()));
   }
 
   /**
    * Elimina físicamente un producto de usuario tras verificar la propiedad del {@code ownerId}.
    *
-   * <p>Busca el producto por su identificador sin filtrar por estado, por lo que un propietario
-   * puede borrar también productos inactivos.
+   * <p>Busca el producto por su identificador público sin filtrar por estado, por lo que un
+   * propietario puede borrar también productos inactivos.
    *
-   * @param id identificador del producto de usuario a eliminar
+   * @param publicId identificador público del producto de usuario a eliminar
    * @param ownerId identificador del propietario que solicita el borrado
    * @throws BusinessException con ErrorCode.USER_PRODUCT_NOT_FOUND si el producto no existe
    * @throws BusinessException con ErrorCode.OWNER_MISMATCH si el {@code ownerId} no coincide con el
    *     propietario almacenado
    */
   @Transactional
-  public void delete(Long id, UUID ownerId) {
+  public void delete(UUID publicId, UUID ownerId) {
     UserProduct product =
         userProductRepository
-            .findById(id)
+            .findByPublicId(publicId)
             .orElseThrow(() -> new BusinessException(ErrorCode.USER_PRODUCT_NOT_FOUND));
     if (!product.getOwnerId().equals(ownerId)) {
       throw new BusinessException(ErrorCode.OWNER_MISMATCH);

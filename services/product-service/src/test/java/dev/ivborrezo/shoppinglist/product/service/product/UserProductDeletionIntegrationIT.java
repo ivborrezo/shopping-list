@@ -62,7 +62,8 @@ class UserProductDeletionIntegrationIT {
     persist(product);
 
     mockMvc
-        .perform(delete("/user-products/" + product.getId()).param("ownerId", OWNER_ID.toString()))
+        .perform(
+            delete("/user-products/" + product.getPublicId()).param("ownerId", OWNER_ID.toString()))
         .andExpect(status().isNoContent());
 
     assertThat(entityManager.find(UserProduct.class, product.getId())).isNull();
@@ -79,7 +80,8 @@ class UserProductDeletionIntegrationIT {
 
     mockMvc
         .perform(
-            delete("/user-products/" + product.getId()).param("ownerId", OTHER_OWNER_ID.toString()))
+            delete("/user-products/" + product.getPublicId())
+                .param("ownerId", OTHER_OWNER_ID.toString()))
         .andExpect(status().isForbidden());
   }
 
@@ -89,14 +91,17 @@ class UserProductDeletionIntegrationIT {
     UserProduct product = buildProduct(OWNER_ID);
     persist(product);
 
-    mockMvc.perform(delete("/user-products/" + product.getId())).andExpect(status().isBadRequest());
+    mockMvc
+        .perform(delete("/user-products/" + product.getPublicId()))
+        .andExpect(status().isBadRequest());
   }
 
   /** Devuelve 404 cuando el identificador de producto de usuario no existe. */
   @Test
   void deleteUserProduct_nonexistentId_returns404() throws Exception {
     mockMvc
-        .perform(delete("/user-products/99999").param("ownerId", OWNER_ID.toString()))
+        .perform(
+            delete("/user-products/" + UUID.randomUUID()).param("ownerId", OWNER_ID.toString()))
         .andExpect(status().isNotFound());
   }
 

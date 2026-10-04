@@ -54,11 +54,12 @@ public class UserRecentProductService {
    * recientes.
    *
    * @param userId identificador del usuario que interactúa con el producto
-   * @param productId identificador del producto con el que se interactúa
+   * @param productId identificador interno del producto con el que se interactúa
+   * @param productPublicId identificador público del producto con el que se interactúa
    * @param productType tipo del producto ({@code BASE} o {@code USER})
    */
   @Transactional
-  void markUsed(UUID userId, Long productId, ProductType productType) {
+  void markUsed(UUID userId, Long productId, UUID productPublicId, ProductType productType) {
     if (userRecentProductRepository.existsByUserIdAndProductIdAndProductType(
         userId, productId, productType)) {
       userRecentProductRepository.updateLastUsedAt(userId, productId, productType, Instant.now());
@@ -67,6 +68,7 @@ public class UserRecentProductService {
     UserRecentProduct recent = new UserRecentProduct();
     recent.setUserId(userId);
     recent.setProductId(productId);
+    recent.setProductPublicId(productPublicId);
     recent.setProductType(productType);
     recent.setLastUsedAt(Instant.now());
     userRecentProductRepository.save(recent);

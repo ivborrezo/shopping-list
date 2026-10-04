@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
@@ -56,11 +57,17 @@ class UserProductListingIntegrationIT {
 
   private final TestEntityManager entityManager;
 
+  private final CategoryRepository categoryRepository;
+
   UserProductListingIntegrationIT(
-      MockMvc mockMvc, ObjectMapper objectMapper, TestEntityManager entityManager) {
+      MockMvc mockMvc,
+      ObjectMapper objectMapper,
+      TestEntityManager entityManager,
+      CategoryRepository categoryRepository) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
     this.entityManager = entityManager;
+    this.categoryRepository = categoryRepository;
   }
 
   /** Devuelve solo los productos activos del propietario indicado en {@code ownerId}. */
@@ -86,11 +93,12 @@ class UserProductListingIntegrationIT {
     UserProduct cheese = buildProduct(OWNER_A, "Queso curado", 2L, true);
     persist(milk, cheese);
 
+    UUID dairyCategoryId = categoryRepository.findById(1L).orElseThrow().getPublicId();
     PagedResponse<UserProductResponse> page =
-        getUserProducts("ownerId=" + OWNER_A + "&categoryId=1");
+        getUserProducts("ownerId=" + OWNER_A + "&categoryId=" + dairyCategoryId);
 
     assertThat(page.content()).hasSize(1);
-    assertThat(page.content().get(0).categoryId()).isEqualTo(1L);
+    assertThat(page.content().get(0).categoryId()).isEqualTo(dairyCategoryId);
   }
 
   /** Devuelve {@code 400} cuando {@code ownerId} no es un UUID válido. */

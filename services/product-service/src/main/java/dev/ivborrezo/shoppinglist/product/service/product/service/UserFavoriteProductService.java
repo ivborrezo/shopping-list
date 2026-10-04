@@ -6,6 +6,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
+import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserFavoriteProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
@@ -14,6 +15,7 @@ import dev.ivborrezo.shoppinglist.product.service.product.repository.UserProduct
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
@@ -68,8 +70,8 @@ public class UserFavoriteProductService {
    * recientes del usuario y se devuelve {@code favorited=true}.
    *
    * @param ownerId identificador del propietario del favorito
-   * @param productId identificador del producto a marcar, base o de usuario según {@code
-   *     productType}
+   * @param productPublicId identificador público del producto a marcar, base o de usuario según
+   *     {@code productType}
    * @param productTypeValue tipo de producto ({@code BASE} o {@code USER})
    * @return DTO con el estado del favorito tras la operación
    * @throws BusinessException con ErrorCode.INVALID_PRODUCT_TYPE si el tipo de producto no es
@@ -78,7 +80,8 @@ public class UserFavoriteProductService {
    *     tipo
    */
   @Transactional
-  public FavoriteToggleResponse toggle(UUID ownerId, Long productId, String productTypeValue) {
+  public FavoriteToggleResponse toggle(
+      UUID ownerId, UUID productPublicId, String productTypeValue) {
     ProductType productType;
     try {
       productType = ProductType.valueOf(productTypeValue);
@@ -86,29 +89,49 @@ public class UserFavoriteProductService {
       throw new BusinessException(ErrorCode.INVALID_PRODUCT_TYPE);
     }
 
-    boolean exists =
-        productType == ProductType.BASE
-            ? baseProductRepository.existsById(productId)
-            : userProductRepository.existsById(productId);
-    if (!exists) {
-      throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
-    }
+    Long internalId = resolveInternalProductId(productType, productPublicId);
 
     if (userFavoriteProductRepository.existsByUserIdAndProductIdAndProductType(
-        ownerId, productId, productType)) {
+        ownerId, internalId, productType)) {
       userFavoriteProductRepository.deleteByUserIdAndProductIdAndProductType(
-          ownerId, productId, productType);
+          ownerId, internalId, productType);
       return new FavoriteToggleResponse(false);
     }
 
     UserFavoriteProduct favorite = new UserFavoriteProduct();
     favorite.setUserId(ownerId);
-    favorite.setProductId(productId);
+    favorite.setProductId(internalId);
+    favorite.setProductPublicId(productPublicId);
     favorite.setProductType(productType);
     favorite.setCreatedAt(Instant.now());
     userFavoriteProductRepository.save(favorite);
-    userRecentProductService.markUsed(ownerId, productId, productType);
+    userRecentProductService.markUsed(ownerId, internalId, productPublicId, productType);
     return new FavoriteToggleResponse(true);
+  }
+
+  /**
+   * Resuelve el identificador interno del producto referenciado por su identificador público según
+   * su tipo.
+   *
+   * @param productType tipo del producto ({@code BASE} o {@code USER})
+   * @param productPublicId identificador público del producto
+   * @return identificador interno del producto
+   * @throws BusinessException con ErrorCode.PRODUCT_NOT_FOUND si el producto no existe según su
+   *     tipo
+   */
+  private Long resolveInternalProductId(ProductType productType, UUID productPublicId) {
+    if (productType == ProductType.BASE) {
+      BaseProduct base =
+          baseProductRepository
+              .findByPublicId(productPublicId)
+              .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+      return Objects.requireNonNull(base.getId());
+    }
+    UserProduct userProduct =
+        userProductRepository
+            .findByPublicId(productPublicId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+    return Objects.requireNonNull(userProduct.getId());
   }
 
   /**

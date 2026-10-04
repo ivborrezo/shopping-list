@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -36,6 +37,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class UserRecentProductServiceTest {
 
   private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+
+  private static final UUID PRODUCT_PUBLIC_ID =
+      UUID.fromString("11111111-2222-4333-8444-555555555555");
+
+  private static final UUID PRODUCT_PUBLIC_ID_3 =
+      UUID.fromString("33333333-4444-4555-8666-777777777777");
 
   @Mock private UserRecentProductRepository userRecentProductRepository;
 
@@ -59,7 +66,8 @@ class UserRecentProductServiceTest {
   }
 
   /**
-   * Inserta el producto en el ranking de recientes cuando el usuario aún no lo tenía registrado.
+   * Inserta el producto en el ranking de recientes cuando el usuario aún no lo tenía registrado,
+   * guardando el snapshot del identificador público.
    */
   @Test
   void markUsed_whenNotExists_insertsRecent() {
@@ -67,9 +75,14 @@ class UserRecentProductServiceTest {
             OWNER_ID, 1L, ProductType.BASE))
         .thenReturn(false);
 
-    userRecentProductService.markUsed(OWNER_ID, 1L, ProductType.BASE);
+    userRecentProductService.markUsed(OWNER_ID, 1L, PRODUCT_PUBLIC_ID, ProductType.BASE);
 
-    verify(userRecentProductRepository).save(any(UserRecentProduct.class));
+    ArgumentCaptor<UserRecentProduct> captor = ArgumentCaptor.forClass(UserRecentProduct.class);
+    verify(userRecentProductRepository).save(captor.capture());
+    UserRecentProduct saved = captor.getValue();
+    assertThat(saved.getProductId()).isEqualTo(1L);
+    assertThat(saved.getProductPublicId()).isEqualTo(PRODUCT_PUBLIC_ID);
+    assertThat(saved.getProductType()).isEqualTo(ProductType.BASE);
     verify(userRecentProductRepository, never()).updateLastUsedAt(any(), any(), any(), any());
   }
 
@@ -83,7 +96,7 @@ class UserRecentProductServiceTest {
             OWNER_ID, 1L, ProductType.BASE))
         .thenReturn(true);
 
-    userRecentProductService.markUsed(OWNER_ID, 1L, ProductType.BASE);
+    userRecentProductService.markUsed(OWNER_ID, 1L, PRODUCT_PUBLIC_ID, ProductType.BASE);
 
     verify(userRecentProductRepository)
         .updateLastUsedAt(eq(OWNER_ID), eq(1L), eq(ProductType.BASE), any(Instant.class));
@@ -96,8 +109,8 @@ class UserRecentProductServiceTest {
    */
   @Test
   void findRecents_returnsTop10MappedWithResolvedNames() {
-    UserRecentProduct recent3 = buildRecent(3L);
-    UserRecentProduct recent1 = buildRecent(1L);
+    UserRecentProduct recent3 = buildRecent(3L, PRODUCT_PUBLIC_ID_3);
+    UserRecentProduct recent1 = buildRecent(1L, PRODUCT_PUBLIC_ID);
     when(userRecentProductRepository.findTop10ByUserIdOrderByLastUsedAtDesc(OWNER_ID))
         .thenReturn(List.of(recent3, recent1));
 
@@ -110,7 +123,9 @@ class UserRecentProductServiceTest {
     List<ProductReference> recents = userRecentProductService.findRecents(OWNER_ID, Locale.ENGLISH);
 
     assertThat(recents).hasSize(2);
-    assertThat(recents).extracting(ProductReference::productId).containsExactly(3L, 1L);
+    assertThat(recents)
+        .extracting(ProductReference::productId)
+        .containsExactly(PRODUCT_PUBLIC_ID_3, PRODUCT_PUBLIC_ID);
     assertThat(recents.get(0).name()).isEqualTo("Leche entera");
     assertThat(recents.get(0).productType()).isEqualTo(ProductType.BASE);
   }
@@ -132,7 +147,7 @@ class UserRecentProductServiceTest {
    */
   @Test
   void findRecents_orphanedProduct_returnsNullName() {
-    UserRecentProduct recent = buildRecent(1L);
+    UserRecentProduct recent = buildRecent(1L, PRODUCT_PUBLIC_ID);
     when(userRecentProductRepository.findTop10ByUserIdOrderByLastUsedAtDesc(OWNER_ID))
         .thenReturn(List.of(recent));
     when(baseProductRepository.findById(1L)).thenReturn(Optional.empty());
@@ -140,20 +155,22 @@ class UserRecentProductServiceTest {
     List<ProductReference> recents = userRecentProductService.findRecents(OWNER_ID, Locale.ENGLISH);
 
     assertThat(recents).hasSize(1);
-    assertThat(recents.get(0).productId()).isEqualTo(1L);
+    assertThat(recents.get(0).productId()).isEqualTo(PRODUCT_PUBLIC_ID);
     assertThat(recents.get(0).name()).isNull();
   }
 
   /**
    * Construye un reciente de producto base con la referencia indicada para los tests.
    *
-   * @param productId identificador del producto base referenciado
+   * @param productId identificador interno del producto base referenciado
+   * @param productPublicId identificador público del producto base referenciado
    * @return entidad {@link UserRecentProduct} con la referencia indicada
    */
-  private UserRecentProduct buildRecent(Long productId) {
+  private UserRecentProduct buildRecent(Long productId, UUID productPublicId) {
     UserRecentProduct recent = new UserRecentProduct();
     recent.setUserId(OWNER_ID);
     recent.setProductId(productId);
+    recent.setProductPublicId(productPublicId);
     recent.setProductType(ProductType.BASE);
     return recent;
   }
