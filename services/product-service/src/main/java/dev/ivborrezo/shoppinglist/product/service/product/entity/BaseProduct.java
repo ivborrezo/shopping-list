@@ -2,6 +2,7 @@ package dev.ivborrezo.shoppinglist.product.service.product.entity;
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
+import dev.ivborrezo.shoppinglist.product.service.common.UuidV7;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,10 +13,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -41,6 +44,9 @@ public class BaseProduct {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+
+  @Column(name = "public_id", nullable = false, updatable = false)
+  private @Nullable UUID publicId;
 
   @Column(nullable = false, length = 64)
   private String code;
@@ -77,12 +83,27 @@ public class BaseProduct {
   /** Constructor sin argumentos exigido por JPA. */
   public BaseProduct() {}
 
+  @PrePersist
+  void assignPublicId() {
+    if (publicId == null) {
+      publicId = UuidV7.generate();
+    }
+  }
+
   public @Nullable Long getId() {
     return id;
   }
 
   public void setId(Long id) {
     this.id = id;
+  }
+
+  public @Nullable UUID getPublicId() {
+    return publicId;
+  }
+
+  public void setPublicId(UUID publicId) {
+    this.publicId = publicId;
   }
 
   public String getCode() {

@@ -10,6 +10,7 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Relación usuario-producto que marca un producto como favorito del usuario.
@@ -35,6 +36,9 @@ public class UserFavoriteProduct {
   @Enumerated(EnumType.STRING)
   @Column(name = "product_type", nullable = false, length = 4)
   private ProductType productType;
+
+  @Column(name = "product_public_id")
+  private @Nullable UUID productPublicId;
 
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
@@ -64,6 +68,14 @@ public class UserFavoriteProduct {
 
   public void setProductType(ProductType productType) {
     this.productType = productType;
+  }
+
+  public @Nullable UUID getProductPublicId() {
+    return productPublicId;
+  }
+
+  public void setProductPublicId(@Nullable UUID productPublicId) {
+    this.productPublicId = productPublicId;
   }
 
   public Instant getCreatedAt() {
