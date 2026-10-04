@@ -10,6 +10,7 @@
  *       {@code Page<T>} de Spring Data.
  *   <li>El catálogo de errores del contrato ({@code ErrorCode}), la excepción de negocio ({@code
  *       BusinessException}) y el manejador global de excepciones ({@code GlobalExceptionHandler}).
+ *   <li>La utilidad {@code UuidV7} de generación de identificadores públicos UUID v7.
  * </ul>
  */
 @NullMarked
