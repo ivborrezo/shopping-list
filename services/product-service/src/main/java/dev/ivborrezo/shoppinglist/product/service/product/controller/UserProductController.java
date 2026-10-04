@@ -70,7 +70,7 @@ public class UserProductController {
   @GetMapping
   public PagedResponse<UserProductResponse> list(
       @RequestParam UUID ownerId,
-      @RequestParam(required = false) @Nullable Long categoryId,
+      @RequestParam(required = false) @Nullable UUID categoryId,
       @PageableDefault Pageable pageable) {
     if (categoryId != null) {
       return userProductService.findByOwner(ownerId, pageable, categoryId);
@@ -85,7 +85,7 @@ public class UserProductController {
    * @return DTO del producto encontrado
    */
   @GetMapping("/{id}")
-  public UserProductResponse getById(@PathVariable Long id) {
+  public UserProductResponse getById(@PathVariable UUID id) {
     return userProductService.findById(id);
   }
 
@@ -103,7 +103,7 @@ public class UserProductController {
    */
   @PatchMapping("/{id}")
   public UserProductResponse update(
-      @PathVariable Long id, @Valid @RequestBody UpdateUserProductRequest request) {
+      @PathVariable UUID id, @Valid @RequestBody UpdateUserProductRequest request) {
     return userProductService.update(id, request);
   }
 
@@ -132,7 +132,7 @@ public class UserProductController {
    * @return {@code 204 No Content} si el borrado fue exitoso
    */
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable Long id, @RequestParam UUID ownerId) {
+  public ResponseEntity<Void> delete(@PathVariable UUID id, @RequestParam UUID ownerId) {
     userProductService.delete(id, ownerId);
     return ResponseEntity.noContent().build();
   }
@@ -151,7 +151,7 @@ public class UserProductController {
    */
   @PostMapping("/{id}/favorite")
   public FavoriteToggleResponse toggleFavorite(
-      @PathVariable Long id, @RequestParam UUID ownerId, @RequestParam String productType) {
+      @PathVariable UUID id, @RequestParam UUID ownerId, @RequestParam String productType) {
     return userFavoriteProductService.toggle(ownerId, id, productType);
   }
 
