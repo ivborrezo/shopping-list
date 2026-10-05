@@ -54,6 +54,10 @@ trigger (ver Decisión 4 y el backfill).
 
 ### Decisión 2 — Alcance por entidad
 
+> **Enmienda:** favoritos y recientes ya no conservan la referencia interna al
+> producto; referencian su identidad externa `product_public_id` (ver la sección
+> final "Enmienda").
+
 Llevan `public_id`:
 
 - `category`;
@@ -122,12 +126,20 @@ frontera: la capa de aplicación traduce `publicId` → `id` en escritura e
 
 ### Backfill de filas históricas
 
+> **Enmienda:** las filas sembradas reciben su `public_id` en el seed, con UUID
+> fijos; no hay backfill con `gen_random_uuid()` (ver la sección final
+> "Enmienda").
+
 Las filas ya sembradas se rellenan con `gen_random_uuid()` (UUID v4) en la
 migración; las filas nuevas llevan v7 desde la aplicación. La columna no
 tiene `DEFAULT` ni trigger: la única fuente de `public_id` para filas
 nuevas es la aplicación.
 
 ### Favoritos y recientes: snapshot `product_public_id`
+
+> **Enmienda:** la columna deja de ser un snapshot nullable y pasa a ser la
+> referencia única `product_public_id` (UUID, `NOT NULL`); ver la sección final
+> "Enmienda".
 
 `user_favorite_product` y `user_recent_product` conservan la referencia
 interna `product_id` (`BIGINT`) y añaden una columna snapshot
@@ -210,6 +222,33 @@ Delegar la generación en Hibernate (`@UuidGenerator`).
 
 **Por qué se descartó:** contradice la Decisión 4: la generación vive en la
 aplicación, no en el ORM ni en la BD.
+
+## Enmienda
+
+Esta sección registra una revisión posterior a la aceptación del ADR. El texto
+original se conserva; donde haya conflicto, manda esta enmienda.
+
+### Favoritos y recientes: referencia por `product_public_id`
+
+`user_favorite_product` y `user_recent_product` ya no mantienen la referencia
+interna `product_id` ni un snapshot `product_public_id` nullable. Referencian el
+producto únicamente por `product_public_id` (UUID, `NOT NULL`), con una PK
+surrogate `id` y clave natural única
+`(user_id, product_type, product_public_id)`. La columna es `NOT NULL` porque la
+referencia se guarda en el alta, cuando el producto existe obligatoriamente. Las
+filas colgantes se siguen conservando: si el producto se borra, la fila mantiene
+su `product_public_id` y el listado devuelve `name: null`. Con la referencia por
+identidad externa, el `ProductReference.productId` expuesto es no nulo.
+
+Esto sustituye la sección "Favoritos y recientes: snapshot `product_public_id`"
+de este ADR.
+
+### Backfill: los seeds llevan `public_id` fijo
+
+Las filas sembradas de `category` y `base_product` reciben su `public_id` en el
+propio seed, con UUID fijos (v4), en lugar de un backfill con
+`gen_random_uuid()` sobre la tabla ya creada. Las altas nuevas lo generan en la
+aplicación (UUID v7). La columna sigue sin `DEFAULT` ni trigger.
 
 ## Documentación relacionada
 
