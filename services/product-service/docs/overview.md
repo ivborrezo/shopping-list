@@ -56,7 +56,7 @@ mensajes en el backend (la localización es del frontend). Ver
 7 tablas: `category`, `category_translation`, `base_product`,
 `base_product_translation`, `user_product`, `user_favorite_product` y
 `user_recent_product`. El esquema se define exclusivamente mediante
-migraciones Flyway V1-V13, incluidos los seeds de categorías y productos
+migraciones Flyway V1-V11, incluidos los seeds de categorías y productos
 base. El esquema detallado, las relaciones y el diagrama ER viven en
 [`database-schema.md`](./database-schema.md).
 

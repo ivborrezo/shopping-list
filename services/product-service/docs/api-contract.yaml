@@ -699,7 +699,9 @@ components:
         productId:
           type: string
           format: uuid
-          nullable: true
+          description: >
+            Identificador público del producto referenciado. Se conserva
+            aunque el producto se haya borrado (en ese caso `name` es null).
         productType:
           $ref: '#/components/schemas/ProductType'
         name:
