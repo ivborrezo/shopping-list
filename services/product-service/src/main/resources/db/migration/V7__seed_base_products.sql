@@ -1,47 +1,49 @@
 -- Seed de 30 productos base repartidos entre las 10 categorías del seed V2,
 -- con los IDs 1-30 fijados explícitamente para que las traducciones referencien
--- sin ambigüedad. Todos los productos arrancan activos.
-INSERT INTO base_product (id, code, category_id, default_unit, calories, calories_per, is_active) VALUES
+-- sin ambigüedad. Los public_id también son fijos (UUID v4) para que el catálogo
+-- sembrado tenga identidad externa estable; las filas de runtime los genera la
+-- aplicación (v7). Todos los productos arrancan activos.
+INSERT INTO base_product (id, public_id, code, category_id, default_unit, calories, calories_per, is_active) VALUES
     -- dairy (1)
-    (1,  'whole_milk',       1,  'L',    NULL, 'ML',   TRUE),
-    (2,  'yogurt_natural',   1,  'UNIT', NULL, 'UNIT', TRUE),
-    (3,  'cured_cheese',     1,  'G',    350,  'G',    TRUE),
-    (4,  'butter',           1,  'G',    717,  'G',    TRUE),
+    (1,  '5b597bf7-446e-463e-a2f9-839c360a01cc', 'whole_milk',       1,  'L',    NULL, 'ML',   TRUE),
+    (2,  '334485de-b1f1-44a5-a336-9d8f917a4de1', 'yogurt_natural',   1,  'UNIT', NULL, 'UNIT', TRUE),
+    (3,  '5c61bfe9-a618-4390-b6d3-51b72a1e7316', 'cured_cheese',     1,  'G',    350,  'G',    TRUE),
+    (4,  '82eeb2f4-af08-4cea-b532-492932a35d18', 'butter',           1,  'G',    717,  'G',    TRUE),
     -- bakery (2)
-    (5,  'sliced_bread',     2,  'UNIT', NULL, 'UNIT', TRUE),
-    (6,  'whole_wheat_bread',2,  'UNIT', NULL, 'UNIT', TRUE),
-    (7,  'croissant',        2,  'UNIT', 406,  'G',    TRUE),
+    (5,  '12265c1a-f76d-4daa-9245-1aa29d751b34', 'sliced_bread',     2,  'UNIT', NULL, 'UNIT', TRUE),
+    (6,  '36dd68b3-5835-404e-ac43-5d97ccce36c7', 'whole_wheat_bread',2,  'UNIT', NULL, 'UNIT', TRUE),
+    (7,  '431fabcc-81f2-42bc-b847-39b2dcc7a078', 'croissant',        2,  'UNIT', 406,  'G',    TRUE),
     -- produce (3)
-    (8,  'tomato',           3,  'KG',   NULL, 'G',    TRUE),
-    (9,  'apple',            3,  'KG',   NULL, 'G',    TRUE),
-    (10, 'banana',           3,  'KG',   89,   'G',    TRUE),
-    (11, 'potato',           3,  'KG',   NULL, 'G',    TRUE),
-    (12, 'onion',            3,  'KG',   NULL, 'G',    TRUE),
+    (8,  'b34e6664-442c-4848-be23-8ad618b7620d', 'tomato',           3,  'KG',   NULL, 'G',    TRUE),
+    (9,  'fc373c6f-e9d0-4265-8d63-7f3b472b6fb2', 'apple',            3,  'KG',   NULL, 'G',    TRUE),
+    (10, 'a8257493-1b3a-4e11-b7c4-116647029bc1', 'banana',           3,  'KG',   89,   'G',    TRUE),
+    (11, 'd17c70f9-a2fd-487d-a3f7-61ae8601ffdc', 'potato',           3,  'KG',   NULL, 'G',    TRUE),
+    (12, '35bb9a25-c763-4f85-bab0-b61b0843a0f5', 'onion',            3,  'KG',   NULL, 'G',    TRUE),
     -- meat (4)
-    (13, 'chicken_breast',   4,  'KG',   165,  'G',    TRUE),
-    (14, 'ground_beef',      4,  'KG',   250,  'G',    TRUE),
-    (15, 'pork_chops',       4,  'KG',   242,  'G',    TRUE),
+    (13, 'cbd28417-2351-4026-987c-e65d26af68db', 'chicken_breast',   4,  'KG',   165,  'G',    TRUE),
+    (14, '5750d749-cdcb-4701-a6e4-46facdd435d5', 'ground_beef',      4,  'KG',   250,  'G',    TRUE),
+    (15, '30e6c7ff-b48d-4196-a227-bc53371544ee', 'pork_chops',       4,  'KG',   242,  'G',    TRUE),
     -- fish (5)
-    (16, 'salmon_fillet',    5,  'KG',   208,  'G',    TRUE),
-    (17, 'canned_tuna',      5,  'G',    132,  'G',    TRUE),
+    (16, 'fd27ead6-abcb-4c8f-b5bc-e642be52fc78', 'salmon_fillet',    5,  'KG',   208,  'G',    TRUE),
+    (17, 'e67e78fc-d08a-4556-8f61-7c7968b5d5cd', 'canned_tuna',      5,  'G',    132,  'G',    TRUE),
     -- pantry (6)
-    (18, 'white_rice',       6,  'KG',   365,  'G',    TRUE),
-    (19, 'pasta',            6,  'KG',   371,  'G',    TRUE),
-    (20, 'olive_oil',        6,  'L',    884,  'ML',   TRUE),
-    (21, 'table_salt',       6,  'G',    NULL, 'G',    TRUE),
+    (18, '1df0218f-69d7-42a9-8429-d3f241044444', 'white_rice',       6,  'KG',   365,  'G',    TRUE),
+    (19, 'cbf8830d-1618-413f-89e1-8e559787c5e5', 'pasta',            6,  'KG',   371,  'G',    TRUE),
+    (20, 'de5176bd-3afb-4b1e-a592-a36f319fc4ad', 'olive_oil',        6,  'L',    884,  'ML',   TRUE),
+    (21, '4e8dcf90-d136-4765-89f9-ae0780312a11', 'table_salt',       6,  'G',    NULL, 'G',    TRUE),
     -- beverages (7)
-    (22, 'mineral_water',    7,  'L',    NULL, 'ML',   TRUE),
-    (23, 'orange_juice',     7,  'L',    NULL, 'ML',   TRUE),
-    (24, 'ground_coffee',    7,  'G',    NULL, 'G',    TRUE),
+    (22, 'f08d20bb-0386-4e3f-97f6-06a33e9f9fb8', 'mineral_water',    7,  'L',    NULL, 'ML',   TRUE),
+    (23, '6bb860ab-15c2-4a68-9709-042509df99b5', 'orange_juice',     7,  'L',    NULL, 'ML',   TRUE),
+    (24, 'ed33bab0-0a85-4015-9c12-cfe305df78a6', 'ground_coffee',    7,  'G',    NULL, 'G',    TRUE),
     -- frozen (8)
-    (25, 'frozen_peas',      8,  'G',    78,   'G',    TRUE),
-    (26, 'frozen_pizza',     8,  'UNIT', 270,  'G',    TRUE),
+    (25, 'f18ab67e-aca7-4db3-aaf4-05b05af791b5', 'frozen_peas',      8,  'G',    78,   'G',    TRUE),
+    (26, 'c0d40ec0-991d-41a3-8d03-e7aab5659e7f', 'frozen_pizza',     8,  'UNIT', 270,  'G',    TRUE),
     -- household (9)
-    (27, 'dish_soap',        9,  'ML',   NULL, 'ML',   TRUE),
-    (28, 'paper_towels',     9,  'UNIT', NULL, 'UNIT', TRUE),
+    (27, '7ff8e6d0-513f-477d-931d-72f5f790df63', 'dish_soap',        9,  'ML',   NULL, 'ML',   TRUE),
+    (28, 'a2ed7147-9aaa-456b-8ca9-f34df6aa8ab2', 'paper_towels',     9,  'UNIT', NULL, 'UNIT', TRUE),
     -- personal_care (10)
-    (29, 'shampoo',          10, 'ML',   NULL, 'ML',   TRUE),
-    (30, 'toothpaste',       10, 'ML',   NULL, 'ML',   TRUE);
+    (29, 'c1aa6091-9a50-46ab-957f-3c4e816cf8ac', 'shampoo',          10, 'ML',   NULL, 'ML',   TRUE),
+    (30, '0e26028d-4f2d-4f63-80a4-0927798ac19a', 'toothpaste',       10, 'ML',   NULL, 'ML',   TRUE);
 
 -- Traducciones: 30 productos × 3 idiomas (es/en/eu) = 90 filas. Algunos
 -- productos incluyen descripción en los tres idiomas; el resto llevan NULL.
