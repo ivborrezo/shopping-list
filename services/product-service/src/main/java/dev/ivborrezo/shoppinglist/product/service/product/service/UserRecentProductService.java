@@ -10,6 +10,7 @@ import dev.ivborrezo.shoppinglist.product.service.product.repository.UserRecentP
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -54,20 +55,20 @@ public class UserRecentProductService {
    * recientes.
    *
    * @param userId identificador del usuario que interactúa con el producto
-   * @param productId identificador interno del producto con el que se interactúa
    * @param productPublicId identificador público del producto con el que se interactúa
    * @param productType tipo del producto ({@code BASE} o {@code USER})
    */
   @Transactional
-  void markUsed(UUID userId, Long productId, UUID productPublicId, ProductType productType) {
-    if (userRecentProductRepository.existsByUserIdAndProductIdAndProductType(
-        userId, productId, productType)) {
-      userRecentProductRepository.updateLastUsedAt(userId, productId, productType, Instant.now());
+  void markUsed(UUID userId, UUID productPublicId, ProductType productType) {
+    Optional<UserRecentProduct> existing =
+        userRecentProductRepository.findByUserIdAndProductTypeAndProductPublicId(
+            userId, productType, productPublicId);
+    if (existing.isPresent()) {
+      existing.get().setLastUsedAt(Instant.now());
       return;
     }
     UserRecentProduct recent = new UserRecentProduct();
     recent.setUserId(userId);
-    recent.setProductId(productId);
     recent.setProductPublicId(productPublicId);
     recent.setProductType(productType);
     recent.setLastUsedAt(Instant.now());
@@ -103,12 +104,12 @@ public class UserRecentProductService {
   private @Nullable String resolveName(UserRecentProduct recent, Locale locale) {
     if (recent.getProductType() == ProductType.BASE) {
       return baseProductRepository
-          .findById(recent.getProductId())
+          .findByPublicId(recent.getProductPublicId())
           .map(base -> baseProductService.resolveName(base, locale))
           .orElse(null);
     }
     return userProductRepository
-        .findById(recent.getProductId())
+        .findByPublicId(recent.getProductPublicId())
         .map(UserProduct::getName)
         .orElse(null);
   }

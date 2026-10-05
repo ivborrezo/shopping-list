@@ -9,13 +9,13 @@ import org.jspecify.annotations.Nullable;
 /**
  * Referencia a un producto del catálogo, con el nombre mostrable resuelto.
  *
- * <p>Identifica un producto por su {@code productId} y su {@code productType} (BASE o USER) y
- * adjunta el nombre resuelto: localizado según {@code Accept-Language} para los productos base,
- * monolingüe para los de usuario. {@code name} puede ser {@code null} si el producto referenciado
- * ya no existe (la fila de favorito o reciente se conserva).
+ * <p>Identifica un producto por su {@code productId} (el identificador público del producto, UUID)
+ * y su {@code productType} (BASE o USER) y adjunta el nombre resuelto: localizado según {@code
+ * Accept-Language} para los productos base, monolingüe para los de usuario. {@code name} puede ser
+ * {@code null} si el producto referenciado ya no existe (la fila de favorito o reciente se
+ * conserva).
  */
-public record ProductReference(
-    @Nullable UUID productId, ProductType productType, @Nullable String name) {
+public record ProductReference(UUID productId, ProductType productType, @Nullable String name) {
 
   /**
    * Construye una referencia a partir de una entidad de favorito y el nombre resuelto del producto.

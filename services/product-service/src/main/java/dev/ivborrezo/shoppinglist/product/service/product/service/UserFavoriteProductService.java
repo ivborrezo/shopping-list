@@ -6,7 +6,6 @@ import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
-import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserFavoriteProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
@@ -15,7 +14,6 @@ import dev.ivborrezo.shoppinglist.product.service.product.repository.UserProduct
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
@@ -89,49 +87,43 @@ public class UserFavoriteProductService {
       throw new BusinessException(ErrorCode.INVALID_PRODUCT_TYPE);
     }
 
-    Long internalId = resolveInternalProductId(productType, productPublicId);
+    validateProductExists(productType, productPublicId);
 
-    if (userFavoriteProductRepository.existsByUserIdAndProductIdAndProductType(
-        ownerId, internalId, productType)) {
-      userFavoriteProductRepository.deleteByUserIdAndProductIdAndProductType(
-          ownerId, internalId, productType);
+    if (userFavoriteProductRepository.existsByUserIdAndProductTypeAndProductPublicId(
+        ownerId, productType, productPublicId)) {
+      userFavoriteProductRepository.deleteByUserIdAndProductTypeAndProductPublicId(
+          ownerId, productType, productPublicId);
       return new FavoriteToggleResponse(false);
     }
 
     UserFavoriteProduct favorite = new UserFavoriteProduct();
     favorite.setUserId(ownerId);
-    favorite.setProductId(internalId);
     favorite.setProductPublicId(productPublicId);
     favorite.setProductType(productType);
     favorite.setCreatedAt(Instant.now());
     userFavoriteProductRepository.save(favorite);
-    userRecentProductService.markUsed(ownerId, internalId, productPublicId, productType);
+    userRecentProductService.markUsed(ownerId, productPublicId, productType);
     return new FavoriteToggleResponse(true);
   }
 
   /**
-   * Resuelve el identificador interno del producto referenciado por su identificador público según
-   * su tipo.
+   * Comprueba que el producto referenciado existe según su tipo.
    *
    * @param productType tipo del producto ({@code BASE} o {@code USER})
    * @param productPublicId identificador público del producto
-   * @return identificador interno del producto
    * @throws BusinessException con ErrorCode.PRODUCT_NOT_FOUND si el producto no existe según su
    *     tipo
    */
-  private Long resolveInternalProductId(ProductType productType, UUID productPublicId) {
+  private void validateProductExists(ProductType productType, UUID productPublicId) {
     if (productType == ProductType.BASE) {
-      BaseProduct base =
-          baseProductRepository
-              .findByPublicId(productPublicId)
-              .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-      return Objects.requireNonNull(base.getId());
+      baseProductRepository
+          .findByPublicId(productPublicId)
+          .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+      return;
     }
-    UserProduct userProduct =
-        userProductRepository
-            .findByPublicId(productPublicId)
-            .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-    return Objects.requireNonNull(userProduct.getId());
+    userProductRepository
+        .findByPublicId(productPublicId)
+        .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
   }
 
   /**
@@ -170,12 +162,12 @@ public class UserFavoriteProductService {
   private @Nullable String resolveName(UserFavoriteProduct favorite, Locale locale) {
     if (favorite.getProductType() == ProductType.BASE) {
       return baseProductRepository
-          .findById(favorite.getProductId())
+          .findByPublicId(favorite.getProductPublicId())
           .map(base -> baseProductService.resolveName(base, locale))
           .orElse(null);
     }
     return userProductRepository
-        .findById(favorite.getProductId())
+        .findByPublicId(favorite.getProductPublicId())
         .map(UserProduct::getName)
         .orElse(null);
   }
