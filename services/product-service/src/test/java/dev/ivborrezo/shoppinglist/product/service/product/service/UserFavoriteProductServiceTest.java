@@ -121,15 +121,14 @@ class UserFavoriteProductServiceTest {
 
   /**
    * Marca el producto como favorito cuando aún no lo estaba: persiste la relación con el
-   * identificador interno y el snapshot público, actualiza los recientes y devuelve {@code
-   * favorited=true}.
+   * identificador público y el tipo, actualiza los recientes y devuelve {@code favorited=true}.
    */
   @Test
   void toggle_whenNotAlreadyFavorite_createsFavoriteUpdatesRecentAndReturnsTrue() {
     when(baseProductRepository.findByPublicId(BASE_PRODUCT_PUBLIC_ID))
-        .thenReturn(Optional.of(baseProduct(1L, BASE_PRODUCT_PUBLIC_ID)));
-    when(userFavoriteProductRepository.existsByUserIdAndProductIdAndProductType(
-            eq(OWNER_ID), eq(1L), eq(ProductType.BASE)))
+        .thenReturn(Optional.of(new BaseProduct()));
+    when(userFavoriteProductRepository.existsByUserIdAndProductTypeAndProductPublicId(
+            OWNER_ID, ProductType.BASE, BASE_PRODUCT_PUBLIC_ID))
         .thenReturn(false);
 
     FavoriteToggleResponse response =
@@ -139,11 +138,9 @@ class UserFavoriteProductServiceTest {
     ArgumentCaptor<UserFavoriteProduct> captor = ArgumentCaptor.forClass(UserFavoriteProduct.class);
     verify(userFavoriteProductRepository).save(captor.capture());
     UserFavoriteProduct saved = captor.getValue();
-    assertThat(saved.getProductId()).isEqualTo(1L);
     assertThat(saved.getProductPublicId()).isEqualTo(BASE_PRODUCT_PUBLIC_ID);
     assertThat(saved.getProductType()).isEqualTo(ProductType.BASE);
-    verify(userRecentProductService)
-        .markUsed(eq(OWNER_ID), eq(1L), eq(BASE_PRODUCT_PUBLIC_ID), eq(ProductType.BASE));
+    verify(userRecentProductService).markUsed(OWNER_ID, BASE_PRODUCT_PUBLIC_ID, ProductType.BASE);
   }
 
   /**
@@ -153,9 +150,9 @@ class UserFavoriteProductServiceTest {
   @Test
   void toggle_whenAlreadyFavorite_deletesFavoriteAndReturnsFalse() {
     when(baseProductRepository.findByPublicId(BASE_PRODUCT_PUBLIC_ID))
-        .thenReturn(Optional.of(baseProduct(1L, BASE_PRODUCT_PUBLIC_ID)));
-    when(userFavoriteProductRepository.existsByUserIdAndProductIdAndProductType(
-            eq(OWNER_ID), eq(1L), eq(ProductType.BASE)))
+        .thenReturn(Optional.of(new BaseProduct()));
+    when(userFavoriteProductRepository.existsByUserIdAndProductTypeAndProductPublicId(
+            OWNER_ID, ProductType.BASE, BASE_PRODUCT_PUBLIC_ID))
         .thenReturn(true);
 
     FavoriteToggleResponse response =
@@ -163,8 +160,9 @@ class UserFavoriteProductServiceTest {
 
     assertThat(response.favorited()).isFalse();
     verify(userFavoriteProductRepository)
-        .deleteByUserIdAndProductIdAndProductType(OWNER_ID, 1L, ProductType.BASE);
-    verify(userRecentProductService, never()).markUsed(any(), any(), any(), any());
+        .deleteByUserIdAndProductTypeAndProductPublicId(
+            OWNER_ID, ProductType.BASE, BASE_PRODUCT_PUBLIC_ID);
+    verify(userRecentProductService, never()).markUsed(any(), any(), any());
   }
 
   /**
@@ -175,7 +173,6 @@ class UserFavoriteProductServiceTest {
   void findFavorites_withBaseProduct_resolvesLocalizedName() {
     UserFavoriteProduct favorite = new UserFavoriteProduct();
     favorite.setUserId(OWNER_ID);
-    favorite.setProductId(1L);
     favorite.setProductPublicId(BASE_PRODUCT_PUBLIC_ID);
     favorite.setProductType(ProductType.BASE);
     when(userFavoriteProductRepository.findByUserIdOrderByCreatedAtDesc(
@@ -183,7 +180,8 @@ class UserFavoriteProductServiceTest {
         .thenReturn(new PageImpl<>(List.of(favorite)));
 
     BaseProduct base = new BaseProduct();
-    when(baseProductRepository.findById(1L)).thenReturn(Optional.of(base));
+    when(baseProductRepository.findByPublicId(BASE_PRODUCT_PUBLIC_ID))
+        .thenReturn(Optional.of(base));
     when(baseProductService.resolveName(base, Locale.ENGLISH)).thenReturn("Milk");
 
     PagedResponse<ProductReference> page =
@@ -200,7 +198,6 @@ class UserFavoriteProductServiceTest {
   void findFavorites_withUserProduct_usesMonolingualName() {
     UserFavoriteProduct favorite = new UserFavoriteProduct();
     favorite.setUserId(OWNER_ID);
-    favorite.setProductId(5L);
     favorite.setProductPublicId(USER_PRODUCT_PUBLIC_ID);
     favorite.setProductType(ProductType.USER);
     when(userFavoriteProductRepository.findByUserIdOrderByCreatedAtDesc(
@@ -209,7 +206,8 @@ class UserFavoriteProductServiceTest {
 
     UserProduct userProduct = new UserProduct();
     userProduct.setName("Mi producto");
-    when(userProductRepository.findById(5L)).thenReturn(Optional.of(userProduct));
+    when(userProductRepository.findByPublicId(USER_PRODUCT_PUBLIC_ID))
+        .thenReturn(Optional.of(userProduct));
 
     PagedResponse<ProductReference> page =
         userFavoriteProductService.findFavorites(OWNER_ID, PageRequest.of(0, 20), Locale.ENGLISH);
@@ -221,19 +219,18 @@ class UserFavoriteProductServiceTest {
 
   /**
    * Incluye la fila en el listado con {@code name} a {@code null} cuando el producto referenciado
-   * ya no existe.
+   * ya no existe, conservando su identificador público.
    */
   @Test
   void findFavorites_orphanedProduct_returnsNullName() {
     UserFavoriteProduct favorite = new UserFavoriteProduct();
     favorite.setUserId(OWNER_ID);
-    favorite.setProductId(1L);
     favorite.setProductPublicId(BASE_PRODUCT_PUBLIC_ID);
     favorite.setProductType(ProductType.BASE);
     when(userFavoriteProductRepository.findByUserIdOrderByCreatedAtDesc(
             eq(OWNER_ID), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(favorite)));
-    when(baseProductRepository.findById(1L)).thenReturn(Optional.empty());
+    when(baseProductRepository.findByPublicId(BASE_PRODUCT_PUBLIC_ID)).thenReturn(Optional.empty());
 
     PagedResponse<ProductReference> page =
         userFavoriteProductService.findFavorites(OWNER_ID, PageRequest.of(0, 20), Locale.ENGLISH);
@@ -255,13 +252,5 @@ class UserFavoriteProductServiceTest {
 
     assertThat(page.content()).isEmpty();
     assertThat(page.totalElements()).isZero();
-  }
-
-  /** Construye un producto base con los identificadores interno y público indicados. */
-  private BaseProduct baseProduct(Long id, UUID publicId) {
-    BaseProduct base = new BaseProduct();
-    base.setId(id);
-    base.setPublicId(publicId);
-    return base;
   }
 }

@@ -2,7 +2,6 @@ package dev.ivborrezo.shoppinglist.product.service.product.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -67,39 +66,39 @@ class UserRecentProductServiceTest {
 
   /**
    * Inserta el producto en el ranking de recientes cuando el usuario aún no lo tenía registrado,
-   * guardando el snapshot del identificador público.
+   * guardando el identificador público con la marca temporal actual.
    */
   @Test
   void markUsed_whenNotExists_insertsRecent() {
-    when(userRecentProductRepository.existsByUserIdAndProductIdAndProductType(
-            OWNER_ID, 1L, ProductType.BASE))
-        .thenReturn(false);
+    when(userRecentProductRepository.findByUserIdAndProductTypeAndProductPublicId(
+            OWNER_ID, ProductType.BASE, PRODUCT_PUBLIC_ID))
+        .thenReturn(Optional.empty());
 
-    userRecentProductService.markUsed(OWNER_ID, 1L, PRODUCT_PUBLIC_ID, ProductType.BASE);
+    userRecentProductService.markUsed(OWNER_ID, PRODUCT_PUBLIC_ID, ProductType.BASE);
 
     ArgumentCaptor<UserRecentProduct> captor = ArgumentCaptor.forClass(UserRecentProduct.class);
     verify(userRecentProductRepository).save(captor.capture());
     UserRecentProduct saved = captor.getValue();
-    assertThat(saved.getProductId()).isEqualTo(1L);
     assertThat(saved.getProductPublicId()).isEqualTo(PRODUCT_PUBLIC_ID);
     assertThat(saved.getProductType()).isEqualTo(ProductType.BASE);
-    verify(userRecentProductRepository, never()).updateLastUsedAt(any(), any(), any(), any());
+    assertThat(saved.getLastUsedAt()).isNotNull();
   }
 
   /**
    * Actualiza la última interacción del producto cuando el usuario ya lo tenía registrado entre sus
-   * recientes.
+   * recientes, sin insertar una fila nueva.
    */
   @Test
   void markUsed_whenExists_updatesLastUsedAt() {
-    when(userRecentProductRepository.existsByUserIdAndProductIdAndProductType(
-            OWNER_ID, 1L, ProductType.BASE))
-        .thenReturn(true);
+    UserRecentProduct existing = new UserRecentProduct();
+    existing.setLastUsedAt(Instant.parse("2020-01-01T00:00:00Z"));
+    when(userRecentProductRepository.findByUserIdAndProductTypeAndProductPublicId(
+            OWNER_ID, ProductType.BASE, PRODUCT_PUBLIC_ID))
+        .thenReturn(Optional.of(existing));
 
-    userRecentProductService.markUsed(OWNER_ID, 1L, PRODUCT_PUBLIC_ID, ProductType.BASE);
+    userRecentProductService.markUsed(OWNER_ID, PRODUCT_PUBLIC_ID, ProductType.BASE);
 
-    verify(userRecentProductRepository)
-        .updateLastUsedAt(eq(OWNER_ID), eq(1L), eq(ProductType.BASE), any(Instant.class));
+    assertThat(existing.getLastUsedAt()).isAfter(Instant.parse("2020-01-01T00:00:00Z"));
     verify(userRecentProductRepository, never()).save(any());
   }
 
@@ -109,15 +108,15 @@ class UserRecentProductServiceTest {
    */
   @Test
   void findRecents_returnsTop10MappedWithResolvedNames() {
-    UserRecentProduct recent3 = buildRecent(3L, PRODUCT_PUBLIC_ID_3);
-    UserRecentProduct recent1 = buildRecent(1L, PRODUCT_PUBLIC_ID);
+    UserRecentProduct recent3 = buildRecent(PRODUCT_PUBLIC_ID_3);
+    UserRecentProduct recent1 = buildRecent(PRODUCT_PUBLIC_ID);
     when(userRecentProductRepository.findTop10ByUserIdOrderByLastUsedAtDesc(OWNER_ID))
         .thenReturn(List.of(recent3, recent1));
 
     BaseProduct base3 = new BaseProduct();
     BaseProduct base1 = new BaseProduct();
-    when(baseProductRepository.findById(3L)).thenReturn(Optional.of(base3));
-    when(baseProductRepository.findById(1L)).thenReturn(Optional.of(base1));
+    when(baseProductRepository.findByPublicId(PRODUCT_PUBLIC_ID_3)).thenReturn(Optional.of(base3));
+    when(baseProductRepository.findByPublicId(PRODUCT_PUBLIC_ID)).thenReturn(Optional.of(base1));
     when(baseProductService.resolveName(any(), any())).thenReturn("Leche entera");
 
     List<ProductReference> recents = userRecentProductService.findRecents(OWNER_ID, Locale.ENGLISH);
@@ -143,14 +142,14 @@ class UserRecentProductServiceTest {
 
   /**
    * Conserva la referencia en el listado con {@code name} a {@code null} cuando el producto
-   * referenciado ya no existe.
+   * referenciado ya no existe, manteniendo su identificador público.
    */
   @Test
   void findRecents_orphanedProduct_returnsNullName() {
-    UserRecentProduct recent = buildRecent(1L, PRODUCT_PUBLIC_ID);
+    UserRecentProduct recent = buildRecent(PRODUCT_PUBLIC_ID);
     when(userRecentProductRepository.findTop10ByUserIdOrderByLastUsedAtDesc(OWNER_ID))
         .thenReturn(List.of(recent));
-    when(baseProductRepository.findById(1L)).thenReturn(Optional.empty());
+    when(baseProductRepository.findByPublicId(PRODUCT_PUBLIC_ID)).thenReturn(Optional.empty());
 
     List<ProductReference> recents = userRecentProductService.findRecents(OWNER_ID, Locale.ENGLISH);
 
@@ -160,16 +159,14 @@ class UserRecentProductServiceTest {
   }
 
   /**
-   * Construye un reciente de producto base con la referencia indicada para los tests.
+   * Construye un reciente de producto base con el identificador público indicado para los tests.
    *
-   * @param productId identificador interno del producto base referenciado
    * @param productPublicId identificador público del producto base referenciado
    * @return entidad {@link UserRecentProduct} con la referencia indicada
    */
-  private UserRecentProduct buildRecent(Long productId, UUID productPublicId) {
+  private UserRecentProduct buildRecent(UUID productPublicId) {
     UserRecentProduct recent = new UserRecentProduct();
     recent.setUserId(OWNER_ID);
-    recent.setProductId(productId);
     recent.setProductPublicId(productPublicId);
     recent.setProductType(ProductType.BASE);
     return recent;

@@ -33,10 +33,9 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * Test de integración del listado de favoritos y recientes con filas huérfanas.
  *
- * <p>Persiste directamente una fila de favorito y otra de reciente que referencian un producto
- * inexistente (id interno sin resolver y snapshot de public id nulo) y comprueba que ambos listados
- * devuelven la referencia conservada con {@code productId} y {@code name} nulos, sin romper la
- * respuesta.
+ * <p>Persiste directamente una fila de favorito y otra de reciente cuyo {@code product_public_id}
+ * no resuelve a ningún producto y comprueba que ambos listados devuelven la referencia conservada
+ * con su identificador público y {@code name} nulo, sin romper la respuesta.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -51,7 +50,8 @@ class UserFavoriteOrphanIntegrationIT {
 
   private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
 
-  private static final Long UNRESOLVABLE_PRODUCT_ID = 999999L;
+  private static final UUID UNRESOLVABLE_PRODUCT_PUBLIC_ID =
+      UUID.fromString("99999999-9999-4999-8999-999999999999");
 
   private final MockMvc mockMvc;
 
@@ -76,16 +76,14 @@ class UserFavoriteOrphanIntegrationIT {
 
   /**
    * Lista los favoritos con una fila huérfana que apunta a un producto inexistente y comprueba que
-   * la referencia se conserva con identificador y nombre nulos.
+   * la referencia se conserva con su identificador público y el nombre nulo.
    */
   @Test
-  void listFavorites_withUnresolvableProduct_returnsNullReferenceWithoutBreaking()
-      throws Exception {
+  void listFavorites_withUnresolvableProduct_returnsNullNameWithoutBreaking() throws Exception {
     UserFavoriteProduct favorite = new UserFavoriteProduct();
     favorite.setUserId(OWNER_ID);
-    favorite.setProductId(UNRESOLVABLE_PRODUCT_ID);
     favorite.setProductType(ProductType.BASE);
-    favorite.setProductPublicId(null);
+    favorite.setProductPublicId(UNRESOLVABLE_PRODUCT_PUBLIC_ID);
     favorite.setCreatedAt(Instant.now());
     entityManager.persistAndFlush(favorite);
 
@@ -101,21 +99,20 @@ class UserFavoriteOrphanIntegrationIT {
             new TypeReference<PagedResponse<ProductReference>>() {});
 
     assertThat(page.content()).hasSize(1);
-    assertThat(page.content().get(0).productId()).isNull();
+    assertThat(page.content().get(0).productId()).isEqualTo(UNRESOLVABLE_PRODUCT_PUBLIC_ID);
     assertThat(page.content().get(0).name()).isNull();
   }
 
   /**
    * Lista los recientes con una fila huérfana que apunta a un producto inexistente y comprueba que
-   * la referencia se conserva con identificador y nombre nulos.
+   * la referencia se conserva con su identificador público y el nombre nulo.
    */
   @Test
-  void listRecents_withUnresolvableProduct_returnsNullReferenceWithoutBreaking() throws Exception {
+  void listRecents_withUnresolvableProduct_returnsNullNameWithoutBreaking() throws Exception {
     UserRecentProduct recent = new UserRecentProduct();
     recent.setUserId(OWNER_ID);
-    recent.setProductId(UNRESOLVABLE_PRODUCT_ID);
     recent.setProductType(ProductType.BASE);
-    recent.setProductPublicId(null);
+    recent.setProductPublicId(UNRESOLVABLE_PRODUCT_PUBLIC_ID);
     recent.setLastUsedAt(Instant.now());
     entityManager.persistAndFlush(recent);
 
@@ -131,7 +128,7 @@ class UserFavoriteOrphanIntegrationIT {
             new TypeReference<List<ProductReference>>() {});
 
     assertThat(recents).hasSize(1);
-    assertThat(recents.get(0).productId()).isNull();
+    assertThat(recents.get(0).productId()).isEqualTo(UNRESOLVABLE_PRODUCT_PUBLIC_ID);
     assertThat(recents.get(0).name()).isNull();
   }
 }
