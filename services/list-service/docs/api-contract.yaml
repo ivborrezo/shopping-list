@@ -33,7 +33,7 @@ paths:
           required: true
           description: >
             Placeholder sin autenticación real hasta Fase 4
-            (ver ADR-XXF1-identificacion-propietario-sin-autenticacion).
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
           schema:
             type: string
             format: uuid
@@ -280,7 +280,7 @@ components:
           format: uuid
           description: >
             Placeholder sin autenticación real hasta Fase 4
-            (ver ADR-XXF1-identificacion-propietario-sin-autenticacion).
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
         name:
           type: string
           nullable: true
