@@ -122,3 +122,18 @@ unificado, ver ADR-014).
   lista de locales soportados (aunque en la práctica solo cambiaría
   `LocaleConfig` y la constante `SUPPORTED_LOCALES` del servicio, no
   el DTO).
+
+## Resolución posterior
+
+La consecuencia de que `list-service` puede replicar `LocaleConfig`, el patrón
+`resolveName()` y la validación en dos capas se acota a los servicios con
+**entidades localizables**. `list-service` no tiene ninguna: los nombres que
+muestra son el de la propia lista (texto libre monolingüe) y el snapshot
+`displayName` del producto, resuelto por `product-service`.
+
+Por eso `list-service` **no** replica `LocaleConfig` ni `resolveName()`. Se
+limita a reenviar la cabecera `Accept-Language` cruda a `product-service`, que
+aplica su propia política de idioma y fallback (D1-D4 de este ADR), y persiste
+el nombre resuelto como snapshot. La réplica de `LocaleConfig`/`resolveName()`
+se reevaluará si `list-service` incorpora en el futuro campos localizables
+propios.

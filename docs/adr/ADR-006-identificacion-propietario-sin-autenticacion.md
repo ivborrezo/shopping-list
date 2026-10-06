@@ -96,3 +96,24 @@ el body de las peticiones de creación (`POST /products`, `POST
   (`list`, `product`): el
   riesgo de enumeración de recursos que `UUID` mitigaría es hoy
   secundario frente al riesgo mayor y previo que resuelve este ADR.
+
+## Resolución posterior
+
+`list-service` amplía el transporte de `ownerId` descrito en la Decisión, que
+solo cubría las peticiones de creación. La identificación del propietario pasa
+a definirse por operación:
+
+- `ownerId` viaja en el **body** en las escrituras del recurso (`POST /lists` y
+  `PATCH /lists/{id}`, este último mediante `UpdateListRequest`).
+- `ownerId` viaja por **query** en los borrados y en las mutaciones del
+  sub-recurso ítem (`DELETE /lists/{id}` y
+  `POST|PATCH|DELETE /lists/{id}/items[/{itemId}]`).
+
+Todas las mutaciones exigen `ownerId` y responden `403 OWNER_MISMATCH` si no
+coincide con el propietario del recurso. La propiedad de un ítem se comprueba
+contra la lista padre, que es la dueña del ítem. Las lecturas (`GET /lists/{id}`)
+siguen sin comprobar propiedad, coherente con `product-service`; el hueco de
+lectura se cierra en Fase 4 con autorización por membresía.
+
+El detalle por operación vive en
+[`services/list-service/docs/api-contract.yaml`](../../services/list-service/docs/api-contract.yaml).
