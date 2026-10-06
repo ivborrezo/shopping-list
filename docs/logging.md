@@ -246,6 +246,14 @@ que acordarse en cada punto de llamada (principio DRY, mismo
 razonamiento por el que `correlationId` vive en MDC y no se repite
 manualmente en cada línea de log).
 
+Además del `correlationId`, el interceptor propaga una **whitelist** reducida de
+cabeceras de la petición de entrada, hoy `X-Correlation-Id` y
+`Accept-Language`. `Accept-Language` se reenvía tal cual (sin parsear sus
+`q-values`) para que el servicio destino resuelva sus datos en el idioma
+solicitado; si la petición de entrada no trae la cabecera, no se envía. Añadir
+una cabecera a esta whitelist es una decisión explícita: no se reenvía la
+petición de entrada completa. La semántica de `correlationId` no cambia.
+
 **Importante:** si por algún motivo la petición saliente no lleva la
 cabecera (por ejemplo, una llamada hecha con un cliente HTTP distinto
 que no pase por este interceptor), no hay error funcional visible — el
