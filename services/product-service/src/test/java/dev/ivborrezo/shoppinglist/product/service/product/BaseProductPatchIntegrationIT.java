@@ -5,8 +5,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
+import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -43,14 +46,25 @@ class BaseProductPatchIntegrationIT {
 
   private final ObjectMapper objectMapper;
 
-  BaseProductPatchIntegrationIT(MockMvc mockMvc, ObjectMapper objectMapper) {
+  private final BaseProductRepository baseProductRepository;
+
+  private final CategoryRepository categoryRepository;
+
+  BaseProductPatchIntegrationIT(
+      MockMvc mockMvc,
+      ObjectMapper objectMapper,
+      BaseProductRepository baseProductRepository,
+      CategoryRepository categoryRepository) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
+    this.baseProductRepository = baseProductRepository;
+    this.categoryRepository = categoryRepository;
   }
 
   /** Cambia solo el código de un producto y devuelve el DTO actualizado con nombre localizado. */
   @Test
   void patchBaseProduct_updateCode_returns200WithNewCode() throws Exception {
+    UUID productId = baseProductPublicId(3L);
     String body =
         """
         {
@@ -61,7 +75,7 @@ class BaseProductPatchIntegrationIT {
     MvcResult result =
         mockMvc
             .perform(
-                patch("/base-products/3")
+                patch("/base-products/" + productId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("Accept-Language", "es")
                     .content(body))
@@ -72,10 +86,10 @@ class BaseProductPatchIntegrationIT {
         objectMapper.readValue(
             result.getResponse().getContentAsByteArray(), BaseProductResponse.class);
 
-    assertThat(updated.id()).isEqualTo(3L);
+    assertThat(updated.id()).isEqualTo(productId);
     assertThat(updated.code()).isEqualTo("aged_cheese");
     assertThat(updated.name()).isEqualTo("Queso curado");
-    assertThat(updated.categoryId()).isEqualTo(1L);
+    assertThat(updated.categoryId()).isEqualTo(categoryPublicId(1L));
     assertThat(updated.defaultUnit()).isEqualTo(UnitEnum.G);
     assertThat(updated.calories()).isEqualTo(350);
   }
@@ -83,6 +97,7 @@ class BaseProductPatchIntegrationIT {
   /** Reemplaza el conjunto completo de traducciones y devuelve los nuevos nombres localizados. */
   @Test
   void patchBaseProduct_replaceTranslations_returns200WithNewNames() throws Exception {
+    UUID productId = baseProductPublicId(10L);
     String body =
         """
         {
@@ -97,7 +112,7 @@ class BaseProductPatchIntegrationIT {
     MvcResult result =
         mockMvc
             .perform(
-                patch("/base-products/10")
+                patch("/base-products/" + productId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("Accept-Language", "eu")
                     .content(body))
@@ -108,7 +123,7 @@ class BaseProductPatchIntegrationIT {
         objectMapper.readValue(
             result.getResponse().getContentAsByteArray(), BaseProductResponse.class);
 
-    assertThat(updated.id()).isEqualTo(10L);
+    assertThat(updated.id()).isEqualTo(productId);
     assertThat(updated.code()).isEqualTo("banana");
     assertThat(updated.name()).isEqualTo("Banana berria");
   }
@@ -116,6 +131,7 @@ class BaseProductPatchIntegrationIT {
   /** Cambia la unidad por defecto de un producto sin modificar el resto de campos. */
   @Test
   void patchBaseProduct_changeDefaultUnit_returns200WithNewUnit() throws Exception {
+    UUID productId = baseProductPublicId(4L);
     String body =
         """
         {
@@ -126,7 +142,7 @@ class BaseProductPatchIntegrationIT {
     MvcResult result =
         mockMvc
             .perform(
-                patch("/base-products/4")
+                patch("/base-products/" + productId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("Accept-Language", "es")
                     .content(body))
@@ -137,7 +153,7 @@ class BaseProductPatchIntegrationIT {
         objectMapper.readValue(
             result.getResponse().getContentAsByteArray(), BaseProductResponse.class);
 
-    assertThat(updated.id()).isEqualTo(4L);
+    assertThat(updated.id()).isEqualTo(productId);
     assertThat(updated.code()).isEqualTo("butter");
     assertThat(updated.defaultUnit()).isEqualTo(UnitEnum.KG);
   }
@@ -160,7 +176,9 @@ class BaseProductPatchIntegrationIT {
     MvcResult result =
         mockMvc
             .perform(
-                patch("/base-products/3").contentType(MediaType.APPLICATION_JSON).content(body))
+                patch("/base-products/" + baseProductPublicId(3L))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isConflict())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -185,8 +203,31 @@ class BaseProductPatchIntegrationIT {
         """;
 
     mockMvc
-        .perform(patch("/base-products/9999").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            patch("/base-products/" + UUID.randomUUID())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isNotFound());
+  }
+
+  /**
+   * Resuelve el identificador público del producto base con el identificador interno indicado.
+   *
+   * @param id identificador interno del producto base del seed
+   * @return identificador público del producto base
+   */
+  private UUID baseProductPublicId(Long id) {
+    return baseProductRepository.findById(id).orElseThrow().getPublicId();
+  }
+
+  /**
+   * Resuelve el identificador público de la categoría con el identificador interno indicado.
+   *
+   * @param id identificador interno de la categoría del seed
+   * @return identificador público de la categoría
+   */
+  private UUID categoryPublicId(Long id) {
+    return categoryRepository.findById(id).orElseThrow().getPublicId();
   }
 
   /** Deserialización parcial del shape {@code ProblemDetail} para los asserts de los tests. */

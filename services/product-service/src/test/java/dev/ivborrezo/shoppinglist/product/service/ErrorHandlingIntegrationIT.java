@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
@@ -64,6 +65,8 @@ class ErrorHandlingIntegrationIT {
 
   private final TestEntityManager entityManager;
 
+  private final CategoryRepository categoryRepository;
+
   /**
    * Inyecta las dependencias de test por constructor, sin {@code @Autowired} por campo, coherente
    * con la convención del resto del monorepo.
@@ -71,12 +74,18 @@ class ErrorHandlingIntegrationIT {
    * @param mockMvc cliente MockMvc contra el DispatcherServlet real
    * @param objectMapper mapper Jackson para deserializar el body de las respuestas HTTP
    * @param entityManager gestor JPA para inserciones ad hoc dentro de la transacción del test
+   * @param categoryRepository repositorio de categorías para resolver identificadores públicos del
+   *     seed
    */
   ErrorHandlingIntegrationIT(
-      MockMvc mockMvc, ObjectMapper objectMapper, TestEntityManager entityManager) {
+      MockMvc mockMvc,
+      ObjectMapper objectMapper,
+      TestEntityManager entityManager,
+      CategoryRepository categoryRepository) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
     this.entityManager = entityManager;
+    this.categoryRepository = categoryRepository;
   }
 
   /** Devuelve 404 con ProblemDetail cuando la categoría solicitada no existe. */
@@ -84,7 +93,7 @@ class ErrorHandlingIntegrationIT {
   void getCategory_withNonExistentId_returnsProblemDetailWithCode() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/categories/999999"))
+            .perform(get("/categories/" + UUID.randomUUID()))
             .andExpect(status().isNotFound())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -105,13 +114,14 @@ class ErrorHandlingIntegrationIT {
         """
         {
           "code": "invalid_category_probe",
-          "categoryId": 999999,
+          "categoryId": "%s",
           "defaultUnit": "UNIT",
           "caloriesPer": "G",
           "isActive": true,
           "translations": [{"locale": "es", "name": "Producto de prueba"}]
         }
-        """;
+        """
+            .formatted(UUID.randomUUID());
 
     MvcResult result =
         mockMvc
@@ -147,7 +157,7 @@ class ErrorHandlingIntegrationIT {
     MvcResult result =
         mockMvc
             .perform(
-                patch("/user-products/" + product.getId())
+                patch("/user-products/" + product.getPublicId())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
             .andExpect(status().isForbidden())
@@ -170,13 +180,14 @@ class ErrorHandlingIntegrationIT {
         """
         {
           "code": "whole_milk",
-          "categoryId": 1,
+          "categoryId": "%s",
           "defaultUnit": "L",
           "caloriesPer": "ML",
           "isActive": true,
           "translations": [{"locale": "es", "name": "Leche entera"}]
         }
-        """;
+        """
+            .formatted(categoryPublicId(1L));
 
     MvcResult result =
         mockMvc
@@ -204,13 +215,14 @@ class ErrorHandlingIntegrationIT {
         """
         {
           "code": "",
-          "categoryId": 1,
+          "categoryId": "%s",
           "defaultUnit": "UNIT",
           "caloriesPer": "G",
           "isActive": true,
           "translations": [{"locale": "es", "name": "Producto sin código"}]
         }
-        """;
+        """
+            .formatted(categoryPublicId(1L));
 
     MvcResult result =
         mockMvc
@@ -249,6 +261,16 @@ class ErrorHandlingIntegrationIT {
     assertThat(response.code()).isEqualTo("INTERNAL_ERROR");
     assertThat(response.title()).isEqualTo("Internal Server Error");
     assertThat(response.status()).isEqualTo(500);
+  }
+
+  /**
+   * Resuelve el identificador público de la categoría con el identificador interno indicado.
+   *
+   * @param id identificador interno de la categoría del seed
+   * @return identificador público de la categoría
+   */
+  private UUID categoryPublicId(Long id) {
+    return categoryRepository.findById(id).orElseThrow().getPublicId();
   }
 
   /**

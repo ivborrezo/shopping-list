@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
+import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -41,24 +43,32 @@ class CategoryGetByIdIntegrationIT {
 
   private final ObjectMapper objectMapper;
 
+  private final CategoryRepository categoryRepository;
+
   /**
    * Inyecta las dependencias de test por constructor, sin {@code @Autowired} por campo, coherente
    * con la convención del resto del monorepo.
    *
    * @param mockMvc cliente MockMvc contra el DispatcherServlet real
    * @param objectMapper mapper Jackson para deserializar el body de las respuestas HTTP
+   * @param categoryRepository repositorio de categorías para resolver el identificador público del
+   *     seed
    */
-  CategoryGetByIdIntegrationIT(MockMvc mockMvc, ObjectMapper objectMapper) {
+  CategoryGetByIdIntegrationIT(
+      MockMvc mockMvc, ObjectMapper objectMapper, CategoryRepository categoryRepository) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
+    this.categoryRepository = categoryRepository;
   }
 
   /** Devuelve la categoría con el nombre localizado al idioma solicitado. */
   @Test
   void getCategoryById_withEuHeader_returnsCategoryWithLocalizedName() throws Exception {
+    UUID categoryId = categoryRepository.findById(1L).orElseThrow().getPublicId();
+
     MvcResult result =
         mockMvc
-            .perform(get("/categories/1").header("Accept-Language", "eu"))
+            .perform(get("/categories/" + categoryId).header("Accept-Language", "eu"))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -66,7 +76,7 @@ class CategoryGetByIdIntegrationIT {
         objectMapper.readValue(
             result.getResponse().getContentAsByteArray(), CategoryResponse.class);
 
-    assertThat(category.id()).isEqualTo(1L);
+    assertThat(category.id()).isEqualTo(categoryId);
     assertThat(category.code()).isEqualTo("dairy");
     assertThat(category.name()).isEqualTo("Esnekiak");
     assertThat(category.isActive()).isTrue();
@@ -75,6 +85,6 @@ class CategoryGetByIdIntegrationIT {
   /** Devuelve 404 cuando el identificador de categoría no existe. */
   @Test
   void getCategoryById_withNonExistentId_returns404() throws Exception {
-    mockMvc.perform(get("/categories/9999")).andExpect(status().isNotFound());
+    mockMvc.perform(get("/categories/" + UUID.randomUUID())).andExpect(status().isNotFound());
   }
 }

@@ -5,9 +5,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
+import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,9 +51,19 @@ class UserProductCreationIntegrationIT {
 
   private final ObjectMapper objectMapper;
 
-  UserProductCreationIntegrationIT(MockMvc mockMvc, ObjectMapper objectMapper) {
+  private final BaseProductRepository baseProductRepository;
+
+  private final CategoryRepository categoryRepository;
+
+  UserProductCreationIntegrationIT(
+      MockMvc mockMvc,
+      ObjectMapper objectMapper,
+      BaseProductRepository baseProductRepository,
+      CategoryRepository categoryRepository) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
+    this.baseProductRepository = baseProductRepository;
+    this.categoryRepository = categoryRepository;
   }
 
   /**
@@ -94,14 +106,15 @@ class UserProductCreationIntegrationIT {
    */
   @Test
   void createUserProduct_withBasedOnBaseId_copiesBaseValuesInRequestLanguage() throws Exception {
+    UUID baseOnePublicId = baseProductPublicId(1L);
     String body =
         """
         {
           "ownerId": "%s",
-          "basedOnBaseId": 1
+          "basedOnBaseId": "%s"
         }
         """
-            .formatted(OWNER_ID);
+            .formatted(OWNER_ID, baseOnePublicId);
 
     MvcResult result =
         mockMvc
@@ -120,11 +133,11 @@ class UserProductCreationIntegrationIT {
 
     assertThat(created.name()).isEqualTo("Leche entera");
     assertThat(created.description()).isEqualTo("Leche de vaca entera, sin desnatar");
-    assertThat(created.categoryId()).isEqualTo(1L);
+    assertThat(created.categoryId()).isEqualTo(categoryPublicId(1L));
     assertThat(created.defaultUnit()).isEqualTo(UnitEnum.L);
     assertThat(created.calories()).isNull();
     assertThat(created.caloriesPer()).isEqualTo(CaloriesPerEnum.ML);
-    assertThat(created.basedOnBaseId()).isEqualTo(1L);
+    assertThat(created.basedOnBaseId()).isEqualTo(baseOnePublicId);
   }
 
   /** Prefiere el {@code name} propio del body sobre el snapshot copiado del producto base. */
@@ -134,11 +147,11 @@ class UserProductCreationIntegrationIT {
         """
         {
           "ownerId": "%s",
-          "basedOnBaseId": 1,
+          "basedOnBaseId": "%s",
           "name": "Mi marca de leche"
         }
         """
-            .formatted(OWNER_ID);
+            .formatted(OWNER_ID, baseProductPublicId(1L));
 
     MvcResult result =
         mockMvc
@@ -151,7 +164,7 @@ class UserProductCreationIntegrationIT {
             result.getResponse().getContentAsByteArray(), UserProductResponse.class);
 
     assertThat(created.name()).isEqualTo("Mi marca de leche");
-    assertThat(created.categoryId()).isEqualTo(1L);
+    assertThat(created.categoryId()).isEqualTo(categoryPublicId(1L));
     assertThat(created.defaultUnit()).isEqualTo(UnitEnum.L);
     assertThat(created.caloriesPer()).isEqualTo(CaloriesPerEnum.ML);
   }
@@ -163,10 +176,10 @@ class UserProductCreationIntegrationIT {
         """
         {
           "ownerId": "%s",
-          "basedOnBaseId": 999999
+          "basedOnBaseId": "%s"
         }
         """
-            .formatted(OWNER_ID);
+            .formatted(OWNER_ID, UUID.randomUUID());
 
     mockMvc
         .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
@@ -270,5 +283,25 @@ class UserProductCreationIntegrationIT {
     mockMvc
         .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isBadRequest());
+  }
+
+  /**
+   * Resuelve el identificador público del producto base con el identificador interno indicado.
+   *
+   * @param id identificador interno del producto base del seed
+   * @return identificador público del producto base
+   */
+  private UUID baseProductPublicId(Long id) {
+    return baseProductRepository.findById(id).orElseThrow().getPublicId();
+  }
+
+  /**
+   * Resuelve el identificador público de la categoría con el identificador interno indicado.
+   *
+   * @param id identificador interno de la categoría del seed
+   * @return identificador público de la categoría
+   */
+  private UUID categoryPublicId(Long id) {
+    return categoryRepository.findById(id).orElseThrow().getPublicId();
   }
 }

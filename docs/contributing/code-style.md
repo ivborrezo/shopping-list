@@ -52,6 +52,22 @@
 
 Referencia: [ADR-015](../adr/ADR-015-estrategia-de-nulabilidad-con-jspecify.md).
 
+## Identificadores
+
+- `id`: PK interna (`BIGINT`, subrogada); no cruza la frontera (ni API, ni
+  eventos, ni errores).
+- `public_id` (columna) / `publicId` (campo JPA): identificador externo
+  estable, UUID único e inmutable, generado en la aplicación (UUID v7 vía
+  `common/UuidV7`) en un `@PrePersist`; en las filas históricas (backfill) es
+  v4. En la entidad el campo es `@Nullable` (se asigna en `@PrePersist`, como
+  `getId()`), aunque la columna sea `nullable = false`.
+- En el contrato HTTP el identificador externo se expone como `id` (UUID
+  string).
+- Las FKs internas siguen en `Long`; el UUID se resuelve a `Long` en la
+  frontera.
+
+Referencia: [ADR-016](../adr/ADR-016-estrategia-de-identificadores-publicos.md).
+
 ## Inyección de dependencias
 
 Siempre **por constructor**. Nunca field injection (`@Autowired` en

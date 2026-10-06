@@ -8,6 +8,7 @@ import dev.ivborrezo.shoppinglist.product.service.product.service.BaseProductSer
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.Locale;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -46,7 +47,7 @@ public class BaseProductController {
    */
   @GetMapping
   public PagedResponse<BaseProductResponse> list(
-      @RequestParam(required = false) @Nullable Long categoryId,
+      @RequestParam(required = false) @Nullable UUID categoryId,
       @RequestParam(required = false) @Nullable String text,
       @PageableDefault Pageable pageable,
       Locale locale) {
@@ -62,7 +63,7 @@ public class BaseProductController {
    * @return DTO del producto encontrado con sus textos localizados
    */
   @GetMapping("/{id}")
-  public BaseProductResponse getById(@PathVariable Long id, Locale locale) {
+  public BaseProductResponse getById(@PathVariable UUID id, Locale locale) {
     return baseProductService.findById(id, locale);
   }
 
@@ -92,7 +93,7 @@ public class BaseProductController {
    */
   @PatchMapping("/{id}")
   public BaseProductResponse update(
-      @PathVariable Long id, @Valid @RequestBody UpdateBaseProductRequest request, Locale locale) {
+      @PathVariable UUID id, @Valid @RequestBody UpdateBaseProductRequest request, Locale locale) {
     return baseProductService.update(id, request, locale);
   }
 
@@ -103,7 +104,7 @@ public class BaseProductController {
    * @return {@code 204 No Content} si el borrado fue exitoso
    */
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable Long id) {
+  public ResponseEntity<Void> delete(@PathVariable UUID id) {
     baseProductService.delete(id);
     return ResponseEntity.noContent().build();
   }

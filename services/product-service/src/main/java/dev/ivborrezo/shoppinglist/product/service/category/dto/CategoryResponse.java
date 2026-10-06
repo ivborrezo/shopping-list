@@ -1,6 +1,7 @@
 package dev.ivborrezo.shoppinglist.product.service.category.dto;
 
 import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -8,7 +9,7 @@ import org.jspecify.annotations.Nullable;
  * cabecera {@code Accept-Language}.
  */
 public record CategoryResponse(
-    @Nullable Long id, String code, @Nullable String name, boolean isActive) {
+    @Nullable UUID id, String code, @Nullable String name, boolean isActive) {
 
   /**
    * Construye una respuesta a partir de la entidad {@link Category} y el nombre ya resuelto al
@@ -19,6 +20,7 @@ public record CategoryResponse(
    * @return respuesta con los valores de {@code id}, {@code code}, {@code name} e {@code isActive}
    */
   public static CategoryResponse from(Category category, @Nullable String name) {
-    return new CategoryResponse(category.getId(), category.getCode(), name, category.getIsActive());
+    return new CategoryResponse(
+        category.getPublicId(), category.getCode(), name, category.getIsActive());
   }
 }

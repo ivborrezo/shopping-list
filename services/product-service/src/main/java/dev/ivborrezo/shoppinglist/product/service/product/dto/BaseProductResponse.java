@@ -3,6 +3,7 @@ package dev.ivborrezo.shoppinglist.product.service.product.dto;
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -13,9 +14,9 @@ import org.jspecify.annotations.Nullable;
  * UnitEnum}, {@link CaloriesPerEnum}).
  */
 public record BaseProductResponse(
-    @Nullable Long id,
+    @Nullable UUID id,
     String code,
-    Long categoryId,
+    UUID categoryId,
     UnitEnum defaultUnit,
     @Nullable Integer calories,
     CaloriesPerEnum caloriesPer,
@@ -28,16 +29,17 @@ public record BaseProductResponse(
    * descripción ya resueltos al idioma solicitado.
    *
    * @param product entidad fuente de la que se copian los campos estructurales de la respuesta
+   * @param categoryId identificador público de la categoría a la que pertenece el producto
    * @param name nombre localizado ya resuelto para el idioma de la petición
    * @param description descripción localizada ya resuelta; puede ser {@code null}
    * @return respuesta con los valores estructurales del producto base y los textos localizados
    */
   public static BaseProductResponse from(
-      BaseProduct product, @Nullable String name, @Nullable String description) {
+      BaseProduct product, UUID categoryId, @Nullable String name, @Nullable String description) {
     return new BaseProductResponse(
-        product.getId(),
+        product.getPublicId(),
         product.getCode(),
-        product.getCategoryId(),
+        categoryId,
         product.getDefaultUnit(),
         product.getCalories(),
         product.getCaloriesPer(),

@@ -15,12 +15,12 @@ import org.jspecify.annotations.Nullable;
  * respuesta.
  */
 public record UserProductResponse(
-    @Nullable Long id,
+    @Nullable UUID id,
     UUID ownerId,
     String name,
     @Nullable String description,
-    @Nullable Long categoryId,
-    @Nullable Long basedOnBaseId,
+    @Nullable UUID categoryId,
+    @Nullable UUID basedOnBaseId,
     UnitEnum defaultUnit,
     @Nullable Integer calories,
     CaloriesPerEnum caloriesPer,
@@ -32,17 +32,22 @@ public record UserProductResponse(
    * Construye una respuesta a partir de la entidad {@link UserProduct}.
    *
    * @param product entidad fuente de la que se copian los campos de la respuesta
+   * @param categoryId identificador público de la categoría a la que pertenece el producto; puede
+   *     ser {@code null}
+   * @param basedOnBaseId identificador público del producto base del que deriva; puede ser {@code
+   *     null}
    * @return respuesta con los valores del producto de usuario, con {@code defaultUnit} y {@code
    *     caloriesPer} mapeados a los enums de dominio
    */
-  public static UserProductResponse from(UserProduct product) {
+  public static UserProductResponse from(
+      UserProduct product, @Nullable UUID categoryId, @Nullable UUID basedOnBaseId) {
     return new UserProductResponse(
-        product.getId(),
+        product.getPublicId(),
         product.getOwnerId(),
         product.getName(),
         product.getDescription(),
-        product.getCategoryId(),
-        product.getBasedOnBaseId(),
+        categoryId,
+        basedOnBaseId,
         product.getDefaultUnit(),
         product.getCalories(),
         product.getCaloriesPer(),

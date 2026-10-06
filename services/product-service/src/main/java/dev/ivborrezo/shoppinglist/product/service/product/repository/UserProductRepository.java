@@ -1,6 +1,7 @@
 package dev.ivborrezo.shoppinglist.product.service.product.repository;
 
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,4 +30,12 @@ public interface UserProductRepository extends JpaRepository<UserProduct, Long> 
    */
   Page<UserProduct> findByOwnerIdAndIsActiveTrueAndCategoryId(
       UUID ownerId, Long categoryId, Pageable pageable);
+
+  /**
+   * Busca un producto de usuario por su identificador público.
+   *
+   * @param publicId identificador público del producto de usuario
+   * @return el producto de usuario si existe, o vacío si no
+   */
+  Optional<UserProduct> findByPublicId(UUID publicId);
 }

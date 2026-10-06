@@ -8,6 +8,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
+import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -56,11 +57,17 @@ class UserProductPatchIntegrationIT {
 
   private final TestEntityManager entityManager;
 
+  private final BaseProductRepository baseProductRepository;
+
   UserProductPatchIntegrationIT(
-      MockMvc mockMvc, ObjectMapper objectMapper, TestEntityManager entityManager) {
+      MockMvc mockMvc,
+      ObjectMapper objectMapper,
+      TestEntityManager entityManager,
+      BaseProductRepository baseProductRepository) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
     this.entityManager = entityManager;
+    this.baseProductRepository = baseProductRepository;
   }
 
   /** Actualiza los campos no nulos del body y devuelve el DTO con los nuevos valores. */
@@ -82,7 +89,7 @@ class UserProductPatchIntegrationIT {
     MvcResult result =
         mockMvc
             .perform(
-                patch("/user-products/" + product.getId())
+                patch("/user-products/" + product.getPublicId())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
             .andExpect(status().isOk())
@@ -92,7 +99,7 @@ class UserProductPatchIntegrationIT {
         objectMapper.readValue(
             result.getResponse().getContentAsByteArray(), UserProductResponse.class);
 
-    assertThat(updated.id()).isEqualTo(product.getId());
+    assertThat(updated.id()).isEqualTo(product.getPublicId());
     assertThat(updated.ownerId()).isEqualTo(OWNER_ID);
     assertThat(updated.name()).isEqualTo("Actualizado");
     assertThat(updated.calories()).isEqualTo(200);
@@ -119,7 +126,7 @@ class UserProductPatchIntegrationIT {
 
     mockMvc
         .perform(
-            patch("/user-products/" + product.getId())
+            patch("/user-products/" + product.getPublicId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isForbidden());
@@ -136,16 +143,16 @@ class UserProductPatchIntegrationIT {
         """
         {
           "ownerId": "%s",
-          "basedOnBaseId": 2,
+          "basedOnBaseId": "%s",
           "name": "Renombrado"
         }
         """
-            .formatted(OWNER_ID);
+            .formatted(OWNER_ID, baseProductPublicId(2L));
 
     MvcResult result =
         mockMvc
             .perform(
-                patch("/user-products/" + product.getId())
+                patch("/user-products/" + product.getPublicId())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
             .andExpect(status().isOk())
@@ -156,7 +163,7 @@ class UserProductPatchIntegrationIT {
             result.getResponse().getContentAsByteArray(), UserProductResponse.class);
 
     assertThat(updated.name()).isEqualTo("Renombrado");
-    assertThat(updated.basedOnBaseId()).isEqualTo(1L);
+    assertThat(updated.basedOnBaseId()).isEqualTo(baseProductPublicId(1L));
   }
 
   /** Devuelve 404 cuando el identificador de producto de usuario no existe. */
@@ -173,7 +180,9 @@ class UserProductPatchIntegrationIT {
 
     mockMvc
         .perform(
-            patch("/user-products/99999").contentType(MediaType.APPLICATION_JSON).content(body))
+            patch("/user-products/" + UUID.randomUUID())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isNotFound());
   }
 
@@ -209,5 +218,15 @@ class UserProductPatchIntegrationIT {
     product.setShareWithFriends(false);
     product.setIsActive(true);
     return product;
+  }
+
+  /**
+   * Resuelve el identificador público del producto base con el identificador interno indicado.
+   *
+   * @param id identificador interno del producto base del seed
+   * @return identificador público del producto base
+   */
+  private UUID baseProductPublicId(Long id) {
+    return baseProductRepository.findById(id).orElseThrow().getPublicId();
   }
 }

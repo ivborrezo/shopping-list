@@ -7,6 +7,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.Locale;
+import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +51,7 @@ public class CategoryController {
    * @return DTO de la categoría encontrada con su nombre localizado
    */
   @GetMapping("/{id}")
-  public CategoryResponse getById(@PathVariable Long id, Locale locale) {
+  public CategoryResponse getById(@PathVariable UUID id, Locale locale) {
     return categoryService.findById(id, locale);
   }
 

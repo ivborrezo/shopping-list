@@ -1,6 +1,7 @@
 package dev.ivborrezo.shoppinglist.product.service.category.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -8,9 +9,13 @@ import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.CategoryTranslation;
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
+import dev.ivborrezo.shoppinglist.product.service.common.BusinessException;
+import dev.ivborrezo.shoppinglist.product.service.common.ErrorCode;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -103,6 +108,34 @@ class CategoryServiceTest {
 
     assertThat(page.content()).isEmpty();
     assertThat(page.totalElements()).isEqualTo(0);
+  }
+
+  /** Busca por identificador público y resuelve el nombre en el idioma solicitado. */
+  @Test
+  void findById_existing_returnsResponseWithLocalizedName() {
+    UUID publicId = UUID.randomUUID();
+    CategoryFixture dairy =
+        new CategoryFixture(
+            new TranslationFixture("es", "Lácteos"), new TranslationFixture("en", "Dairy"));
+    dairy.setPublicId(publicId);
+    when(categoryRepository.findByPublicId(publicId)).thenReturn(Optional.of(dairy));
+
+    CategoryResponse response = categoryService.findById(publicId, Locale.forLanguageTag("en"));
+
+    assertThat(response.id()).isEqualTo(publicId);
+    assertThat(response.name()).isEqualTo("Dairy");
+  }
+
+  /** Lanza {@code 404} cuando el identificador público no corresponde a ninguna categoría. */
+  @Test
+  void findById_missing_throwsNotFound() {
+    UUID publicId = UUID.randomUUID();
+    when(categoryRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> categoryService.findById(publicId, Locale.ENGLISH))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.CATEGORY_NOT_FOUND));
   }
 
   private static class TranslationFixture {

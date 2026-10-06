@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -44,9 +46,13 @@ class BaseProductListingIntegrationIT {
 
   private final ObjectMapper objectMapper;
 
-  BaseProductListingIntegrationIT(MockMvc mockMvc, ObjectMapper objectMapper) {
+  private final CategoryRepository categoryRepository;
+
+  BaseProductListingIntegrationIT(
+      MockMvc mockMvc, ObjectMapper objectMapper, CategoryRepository categoryRepository) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
+    this.categoryRepository = categoryRepository;
   }
 
   /** Devuelve una página con los metadatos de paginación y los productos del seed. */
@@ -63,7 +69,8 @@ class BaseProductListingIntegrationIT {
   /** Filtra por categoría y devuelve solo los productos de esa categoría. */
   @Test
   void listBaseProducts_filterByCategoryId_returnsOnlyDairyProducts() throws Exception {
-    PagedResponse<BaseProductResponse> page = getBaseProducts("?categoryId=1");
+    UUID dairyCategoryId = categoryRepository.findById(1L).orElseThrow().getPublicId();
+    PagedResponse<BaseProductResponse> page = getBaseProducts("?categoryId=" + dairyCategoryId);
 
     assertThat(page.content()).hasSize(4);
     assertThat(page.content())

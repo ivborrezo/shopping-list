@@ -67,7 +67,7 @@ class UserProductGetByIdIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(get("/user-products/" + product.getId()))
+            .perform(get("/user-products/" + product.getPublicId()))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -75,7 +75,7 @@ class UserProductGetByIdIntegrationIT {
         objectMapper.readValue(
             result.getResponse().getContentAsByteArray(), UserProductResponse.class);
 
-    assertThat(dto.id()).isEqualTo(product.getId());
+    assertThat(dto.id()).isEqualTo(product.getPublicId());
     assertThat(dto.ownerId()).isEqualTo(OWNER_A);
     assertThat(dto.name()).isEqualTo("Leche entera");
     assertThat(dto.defaultUnit()).isEqualTo(UnitEnum.UNIT);
@@ -87,7 +87,7 @@ class UserProductGetByIdIntegrationIT {
   /** Devuelve 404 cuando el identificador de producto no existe. */
   @Test
   void getById_missing_returns404() throws Exception {
-    mockMvc.perform(get("/user-products/99999")).andExpect(status().isNotFound());
+    mockMvc.perform(get("/user-products/" + UUID.randomUUID())).andExpect(status().isNotFound());
   }
 
   /** Devuelve 404 cuando el producto existe pero está inactivo. */
@@ -96,7 +96,9 @@ class UserProductGetByIdIntegrationIT {
     UserProduct product = buildProduct(OWNER_A, "Queso curado", 1L, false);
     persist(product);
 
-    mockMvc.perform(get("/user-products/" + product.getId())).andExpect(status().isNotFound());
+    mockMvc
+        .perform(get("/user-products/" + product.getPublicId()))
+        .andExpect(status().isNotFound());
   }
 
   /**

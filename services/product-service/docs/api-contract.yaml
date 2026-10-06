@@ -82,8 +82,8 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
       responses:
         '200':
           description: Categoría encontrada.
@@ -109,8 +109,8 @@ paths:
         - name: categoryId
           in: query
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
             nullable: true
         - name: text
           in: query
@@ -169,8 +169,8 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
       responses:
         '200':
           description: Producto base encontrado.
@@ -192,8 +192,8 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -227,8 +227,8 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
       responses:
         '204':
           description: Producto base eliminado.
@@ -257,8 +257,8 @@ paths:
         - name: categoryId
           in: query
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
             nullable: true
       responses:
         '200':
@@ -308,8 +308,8 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
       responses:
         '200':
           description: Producto de usuario encontrado.
@@ -328,8 +328,8 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -360,8 +360,8 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
         - name: ownerId
           in: query
           required: true
@@ -396,8 +396,8 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
         - name: ownerId
           in: query
           required: true
@@ -532,8 +532,8 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         code:
           type: string
           example: dairy
@@ -592,13 +592,13 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         code:
           type: string
         categoryId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         defaultUnit:
           $ref: '#/components/schemas/UnitEnum'
         calories:
@@ -621,8 +621,8 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         ownerId:
           type: string
           format: uuid
@@ -632,12 +632,12 @@ components:
           type: string
           nullable: true
         categoryId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
           nullable: true
         basedOnBaseId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
           nullable: true
         defaultUnit:
           $ref: '#/components/schemas/UnitEnum'
@@ -697,8 +697,11 @@ components:
       type: object
       properties:
         productId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+          description: >
+            Identificador público del producto referenciado. Se conserva
+            aunque el producto se haya borrado (en ese caso `name` es null).
         productType:
           $ref: '#/components/schemas/ProductType'
         name:
@@ -731,8 +734,8 @@ components:
           type: string
           minLength: 1
         categoryId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         defaultUnit:
           $ref: '#/components/schemas/UnitEnum'
         calories:
@@ -755,8 +758,8 @@ components:
         code:
           type: string
         categoryId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         defaultUnit:
           $ref: '#/components/schemas/UnitEnum'
         calories:
@@ -792,8 +795,8 @@ components:
           type: string
           nullable: true
         categoryId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
           nullable: true
         defaultUnit:
           $ref: '#/components/schemas/UnitEnum'
@@ -816,8 +819,8 @@ components:
           type: boolean
           default: false
         basedOnBaseId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
           nullable: true
           description: >
             Si se indica, los campos ausentes del body se copian del producto
@@ -843,8 +846,8 @@ components:
           type: string
           nullable: true
         categoryId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
           nullable: true
         defaultUnit:
           $ref: '#/components/schemas/UnitEnum'
@@ -861,8 +864,8 @@ components:
         isActive:
           type: boolean
         basedOnBaseId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
           nullable: true
           description: >
             Campo inmutable: si se envía se ignora y el producto conserva su

@@ -6,9 +6,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -47,9 +49,13 @@ class BaseProductCreationIntegrationIT {
 
   private final ObjectMapper objectMapper;
 
-  BaseProductCreationIntegrationIT(MockMvc mockMvc, ObjectMapper objectMapper) {
+  private final CategoryRepository categoryRepository;
+
+  BaseProductCreationIntegrationIT(
+      MockMvc mockMvc, ObjectMapper objectMapper, CategoryRepository categoryRepository) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
+    this.categoryRepository = categoryRepository;
   }
 
   /**
@@ -58,11 +64,12 @@ class BaseProductCreationIntegrationIT {
    */
   @Test
   void createBaseProduct_withAllTranslations_returns201AndLocalizedName() throws Exception {
+    UUID dairyCategoryId = categoryPublicId(1L);
     String body =
         """
         {
           "code": "free_range_eggs",
-          "categoryId": 1,
+          "categoryId": "%s",
           "defaultUnit": "UNIT",
           "calories": 155,
           "caloriesPer": "G",
@@ -73,7 +80,8 @@ class BaseProductCreationIntegrationIT {
             {"locale": "eu", "name": "Arrautzak kanpoan", "description": "Hamabiko askatasunean hazitako oiloen arrautzak"}
           ]
         }
-        """;
+        """
+            .formatted(dairyCategoryId);
 
     MvcResult result =
         mockMvc
@@ -93,7 +101,7 @@ class BaseProductCreationIntegrationIT {
     assertThat(created.code()).isEqualTo("free_range_eggs");
     assertThat(created.name()).isEqualTo("Arrautzak kanpoan");
     assertThat(created.description()).isEqualTo("Hamabiko askatasunean hazitako oiloen arrautzak");
-    assertThat(created.categoryId()).isEqualTo(1L);
+    assertThat(created.categoryId()).isEqualTo(dairyCategoryId);
     assertThat(created.defaultUnit()).isEqualTo(UnitEnum.UNIT);
     assertThat(created.calories()).isEqualTo(155);
     assertThat(created.caloriesPer()).isEqualTo(CaloriesPerEnum.G);
@@ -108,7 +116,7 @@ class BaseProductCreationIntegrationIT {
         """
         {
           "code": "invalid_unit_product",
-          "categoryId": 1,
+          "categoryId": "%s",
           "defaultUnit": "XYZ",
           "caloriesPer": "G",
           "isActive": true,
@@ -116,7 +124,8 @@ class BaseProductCreationIntegrationIT {
             {"locale": "es", "name": "Producto con unidad inválida"}
           ]
         }
-        """;
+        """
+            .formatted(categoryPublicId(1L));
 
     mockMvc
         .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
@@ -135,7 +144,7 @@ class BaseProductCreationIntegrationIT {
         """
         {
           "code": "baguette",
-          "categoryId": 2,
+          "categoryId": "%s",
           "defaultUnit": "UNIT",
           "caloriesPer": "G",
           "isActive": true,
@@ -143,7 +152,8 @@ class BaseProductCreationIntegrationIT {
             {"locale": "fr", "name": "Baguette"}
           ]
         }
-        """;
+        """
+            .formatted(categoryPublicId(2L));
 
     MvcResult result =
         mockMvc
@@ -173,7 +183,7 @@ class BaseProductCreationIntegrationIT {
         """
         {
           "code": "whole_milk",
-          "categoryId": 1,
+          "categoryId": "%s",
           "defaultUnit": "L",
           "caloriesPer": "ML",
           "isActive": true,
@@ -181,7 +191,8 @@ class BaseProductCreationIntegrationIT {
             {"locale": "es", "name": "Leche entera"}
           ]
         }
-        """;
+        """
+            .formatted(categoryPublicId(1L));
 
     MvcResult result =
         mockMvc
@@ -206,7 +217,7 @@ class BaseProductCreationIntegrationIT {
         """
         {
           "code": "",
-          "categoryId": 1,
+          "categoryId": "%s",
           "defaultUnit": "UNIT",
           "caloriesPer": "G",
           "isActive": true,
@@ -214,7 +225,8 @@ class BaseProductCreationIntegrationIT {
             {"locale": "es", "name": "Producto sin código"}
           ]
         }
-        """;
+        """
+            .formatted(categoryPublicId(1L));
 
     mockMvc
         .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
@@ -228,16 +240,27 @@ class BaseProductCreationIntegrationIT {
         """
         {
           "code": "some_product",
-          "categoryId": 1,
+          "categoryId": "%s",
           "defaultUnit": "UNIT",
           "caloriesPer": "G",
           "isActive": true
         }
-        """;
+        """
+            .formatted(categoryPublicId(1L));
 
     mockMvc
         .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isBadRequest());
+  }
+
+  /**
+   * Resuelve el identificador público de la categoría con el identificador interno indicado.
+   *
+   * @param id identificador interno de la categoría del seed
+   * @return identificador público de la categoría
+   */
+  private UUID categoryPublicId(Long id) {
+    return categoryRepository.findById(id).orElseThrow().getPublicId();
   }
 
   /** Deserialización parcial del shape {@code ProblemDetail} para los asserts de los tests. */

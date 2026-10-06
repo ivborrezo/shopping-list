@@ -2,6 +2,7 @@ package dev.ivborrezo.shoppinglist.product.service.product.entity;
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
+import dev.ivborrezo.shoppinglist.product.service.common.UuidV7;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -10,6 +11,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
@@ -40,6 +42,9 @@ public class UserProduct {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+
+  @Column(name = "public_id", nullable = false, updatable = false)
+  private @Nullable UUID publicId;
 
   @Column(nullable = false)
   private UUID ownerId;
@@ -83,12 +88,27 @@ public class UserProduct {
   /** Constructor sin argumentos exigido por JPA. */
   public UserProduct() {}
 
+  @PrePersist
+  void assignPublicId() {
+    if (publicId == null) {
+      publicId = UuidV7.generate();
+    }
+  }
+
   public @Nullable Long getId() {
     return id;
   }
 
   public void setId(Long id) {
     this.id = id;
+  }
+
+  public @Nullable UUID getPublicId() {
+    return publicId;
+  }
+
+  public void setPublicId(UUID publicId) {
+    this.publicId = publicId;
   }
 
   public UUID getOwnerId() {

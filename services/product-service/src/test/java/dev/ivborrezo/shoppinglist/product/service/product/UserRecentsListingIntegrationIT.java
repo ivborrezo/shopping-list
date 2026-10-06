@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
+import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -49,9 +50,13 @@ class UserRecentsListingIntegrationIT {
 
   private final ObjectMapper objectMapper;
 
-  UserRecentsListingIntegrationIT(MockMvc mockMvc, ObjectMapper objectMapper) {
+  private final BaseProductRepository baseProductRepository;
+
+  UserRecentsListingIntegrationIT(
+      MockMvc mockMvc, ObjectMapper objectMapper, BaseProductRepository baseProductRepository) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
+    this.baseProductRepository = baseProductRepository;
   }
 
   /**
@@ -60,14 +65,16 @@ class UserRecentsListingIntegrationIT {
    */
   @Test
   void listRecents_returnsProductsOrderedByLastUsedAtDesc() throws Exception {
-    markFavorite(1L);
-    markFavorite(2L);
-    markFavorite(3L);
+    markFavorite(baseProductPublicId(1L));
+    markFavorite(baseProductPublicId(2L));
+    markFavorite(baseProductPublicId(3L));
 
     List<ProductReference> recents = getRecents("es");
 
     assertThat(recents).hasSize(3);
-    assertThat(recents).extracting(ProductReference::productId).containsExactly(3L, 2L, 1L);
+    assertThat(recents)
+        .extracting(ProductReference::productId)
+        .containsExactly(baseProductPublicId(3L), baseProductPublicId(2L), baseProductPublicId(1L));
     assertThat(recents)
         .extracting(ProductReference::name)
         .containsExactly("Queso curado", "Yogur natural", "Leche entera");
@@ -88,18 +95,20 @@ class UserRecentsListingIntegrationIT {
    */
   @Test
   void listRecents_toggleCombined_reMarkedProductMovesToTop() throws Exception {
-    markFavorite(1L);
-    markFavorite(2L);
-    markFavorite(3L);
+    markFavorite(baseProductPublicId(1L));
+    markFavorite(baseProductPublicId(2L));
+    markFavorite(baseProductPublicId(3L));
     assertThat(getRecents(null))
         .extracting(ProductReference::productId)
-        .containsExactly(3L, 2L, 1L);
+        .containsExactly(baseProductPublicId(3L), baseProductPublicId(2L), baseProductPublicId(1L));
 
-    markFavorite(1L);
-    markFavorite(1L);
+    markFavorite(baseProductPublicId(1L));
+    markFavorite(baseProductPublicId(1L));
 
     List<ProductReference> recents = getRecents(null);
-    assertThat(recents).extracting(ProductReference::productId).containsExactly(1L, 3L, 2L);
+    assertThat(recents)
+        .extracting(ProductReference::productId)
+        .containsExactly(baseProductPublicId(1L), baseProductPublicId(3L), baseProductPublicId(2L));
   }
 
   /**
@@ -126,15 +135,25 @@ class UserRecentsListingIntegrationIT {
    * Marca como favorito el producto base indicado vía el endpoint de toggle, registrando la
    * interacción en los recientes.
    *
-   * @param productId identificador del producto base a marcar
+   * @param productId identificador público del producto base a marcar
    * @throws Exception si la petición MockMvc falla
    */
-  private void markFavorite(Long productId) throws Exception {
+  private void markFavorite(UUID productId) throws Exception {
     mockMvc
         .perform(
             post("/user-products/{id}/favorite", productId)
                 .param("ownerId", OWNER_ID.toString())
                 .param("productType", "BASE"))
         .andExpect(status().isOk());
+  }
+
+  /**
+   * Resuelve el identificador público del producto base con el identificador interno indicado.
+   *
+   * @param id identificador interno del producto base del seed
+   * @return identificador público del producto base
+   */
+  private UUID baseProductPublicId(Long id) {
+    return baseProductRepository.findById(id).orElseThrow().getPublicId();
   }
 }

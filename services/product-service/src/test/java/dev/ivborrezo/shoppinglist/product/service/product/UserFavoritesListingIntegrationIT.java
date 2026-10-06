@@ -11,6 +11,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
+import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -57,11 +58,17 @@ class UserFavoritesListingIntegrationIT {
 
   private final TestEntityManager entityManager;
 
+  private final BaseProductRepository baseProductRepository;
+
   UserFavoritesListingIntegrationIT(
-      MockMvc mockMvc, ObjectMapper objectMapper, TestEntityManager entityManager) {
+      MockMvc mockMvc,
+      ObjectMapper objectMapper,
+      TestEntityManager entityManager,
+      BaseProductRepository baseProductRepository) {
     this.mockMvc = mockMvc;
     this.objectMapper = objectMapper;
     this.entityManager = entityManager;
+    this.baseProductRepository = baseProductRepository;
   }
 
   /**
@@ -70,12 +77,12 @@ class UserFavoritesListingIntegrationIT {
    */
   @Test
   void listFavorites_withBaseAndUserProducts_returnsPagedWithResolvedNames() throws Exception {
-    markFavorite(1L, "BASE", "es");
+    markFavorite(baseProductPublicId(1L), "BASE", "es");
 
     UserProduct product = buildUserProduct();
     entityManager.persist(product);
     entityManager.flush();
-    markFavorite(product.getId(), "USER", null);
+    markFavorite(product.getPublicId(), "USER", null);
 
     PagedResponse<ProductReference> page = getFavorites("ownerId=" + OWNER_ID, "es");
 
@@ -95,9 +102,9 @@ class UserFavoritesListingIntegrationIT {
    */
   @Test
   void listFavorites_paginated_returnsPageMetadataAndCreatedAtDescOrder() throws Exception {
-    markFavorite(1L, "BASE", null);
-    markFavorite(2L, "BASE", null);
-    markFavorite(3L, "BASE", null);
+    markFavorite(baseProductPublicId(1L), "BASE", null);
+    markFavorite(baseProductPublicId(2L), "BASE", null);
+    markFavorite(baseProductPublicId(3L), "BASE", null);
 
     PagedResponse<ProductReference> page = getFavorites("ownerId=" + OWNER_ID + "&size=2", null);
 
@@ -105,7 +112,9 @@ class UserFavoritesListingIntegrationIT {
     assertThat(page.totalElements()).isEqualTo(3);
     assertThat(page.page()).isZero();
     assertThat(page.size()).isEqualTo(2);
-    assertThat(page.content()).extracting(ProductReference::productId).containsExactly(3L, 2L);
+    assertThat(page.content())
+        .extracting(ProductReference::productId)
+        .containsExactly(baseProductPublicId(3L), baseProductPublicId(2L));
   }
 
   /** Devuelve una página vacía cuando el usuario no tiene ningún favorito. */
@@ -143,12 +152,12 @@ class UserFavoritesListingIntegrationIT {
   /**
    * Marca como favorito el producto indicado vía el endpoint de toggle.
    *
-   * @param productId identificador del producto a marcar
+   * @param productId identificador público del producto a marcar
    * @param productType tipo de producto ({@code BASE} o {@code USER})
    * @param acceptLanguage idioma de la petición; {@code null} para omitir la cabecera
    * @throws Exception si la petición MockMvc falla
    */
-  private void markFavorite(Long productId, String productType, String acceptLanguage)
+  private void markFavorite(UUID productId, String productType, String acceptLanguage)
       throws Exception {
     var request =
         post("/user-products/{id}/favorite", productId)
@@ -158,6 +167,16 @@ class UserFavoritesListingIntegrationIT {
       request = request.header("Accept-Language", acceptLanguage);
     }
     mockMvc.perform(request).andExpect(status().isOk());
+  }
+
+  /**
+   * Resuelve el identificador público del producto base con el identificador interno indicado.
+   *
+   * @param id identificador interno del producto base del seed
+   * @return identificador público del producto base
+   */
+  private UUID baseProductPublicId(Long id) {
+    return baseProductRepository.findById(id).orElseThrow().getPublicId();
   }
 
   /**

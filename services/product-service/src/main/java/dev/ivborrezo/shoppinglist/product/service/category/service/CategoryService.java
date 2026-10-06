@@ -11,6 +11,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,16 +52,16 @@ public class CategoryService {
   }
 
   /**
-   * Busca una categoría por su identificador con el nombre resuelto al idioma solicitado.
+   * Busca una categoría por su identificador público con el nombre resuelto al idioma solicitado.
    *
-   * @param id identificador de la categoría a recuperar
+   * @param publicId identificador público de la categoría a recuperar
    * @param locale idioma en el que se quiere el nombre de la categoría
    * @return DTO de la categoría encontrada con su nombre localizado
    * @throws BusinessException con ErrorCode.CATEGORY_NOT_FOUND si la categoría no existe
    */
-  public CategoryResponse findById(Long id, Locale locale) {
+  public CategoryResponse findById(UUID publicId, Locale locale) {
     return categoryRepository
-        .findById(id)
+        .findByPublicId(publicId)
         .map(c -> CategoryResponse.from(c, resolveName(c, locale)))
         .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
   }

@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -18,7 +19,7 @@ import org.jspecify.annotations.Nullable;
  */
 public record UpdateBaseProductRequest(
     @Nullable String code,
-    @Nullable Long categoryId,
+    @Nullable UUID categoryId,
     @Nullable UnitEnum defaultUnit,
     @Nullable Integer calories,
     @Nullable CaloriesPerEnum caloriesPer,

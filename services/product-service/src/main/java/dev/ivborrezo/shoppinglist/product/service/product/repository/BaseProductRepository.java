@@ -1,6 +1,8 @@
 package dev.ivborrezo.shoppinglist.product.service.product.repository;
 
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -52,4 +54,12 @@ public interface BaseProductRepository extends JpaRepository<BaseProduct, Long> 
    * @return {@code true} si ya existe un producto con ese código
    */
   boolean existsByCode(String code);
+
+  /**
+   * Busca un producto base por su identificador público.
+   *
+   * @param publicId identificador público del producto base
+   * @return el producto base si existe, o vacío si no
+   */
+  Optional<BaseProduct> findByPublicId(UUID publicId);
 }

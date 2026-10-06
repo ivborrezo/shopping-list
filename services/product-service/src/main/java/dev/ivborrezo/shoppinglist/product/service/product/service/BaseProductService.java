@@ -1,5 +1,6 @@
 package dev.ivborrezo.shoppinglist.product.service.product.service;
 
+import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.BusinessException;
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
@@ -16,8 +17,11 @@ import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProduct
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -76,28 +80,44 @@ public class BaseProductService {
    *
    * @param locale idioma en el que se quieren los textos localizados
    * @param pageable parámetros de paginación
-   * @param categoryId identificador de categoría para filtrar; {@code null} para no filtrar
+   * @param categoryId identificador público de categoría para filtrar; {@code null} para no filtrar
    * @param text término de búsqueda textual sobre el nombre localizado; {@code null} para no
    *     filtrar
    * @return página de DTOs con los productos activos y sus textos localizados
    */
   public PagedResponse<BaseProductResponse> findActive(
-      Locale locale, Pageable pageable, @Nullable Long categoryId, @Nullable String text) {
+      Locale locale, Pageable pageable, @Nullable UUID categoryId, @Nullable String text) {
     Page<BaseProduct> page;
     if (text != null && !text.isBlank()) {
       page = baseProductRepository.findByIsActiveTrueAndText(text, pageable);
     } else if (categoryId != null) {
-      page = baseProductRepository.findByIsActiveTrueAndCategoryId(categoryId, pageable);
+      @Nullable Long internal =
+          categoryRepository.findByPublicId(categoryId).map(Category::getId).orElse(null);
+      page =
+          internal != null
+              ? baseProductRepository.findByIsActiveTrueAndCategoryId(internal, pageable)
+              : Page.empty(pageable);
     } else {
       page = baseProductRepository.findByIsActiveTrue(pageable);
     }
+
+    List<Long> categoryIds =
+        page.getContent().stream()
+            .map(BaseProduct::getCategoryId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+    Map<Long, UUID> categoryPublicIds = resolveCategoryPublicIds(categoryIds);
 
     List<BaseProductResponse> responses =
         page.getContent().stream()
             .map(
                 bp ->
                     BaseProductResponse.from(
-                        bp, resolveName(bp, locale), resolveDescription(bp, locale)))
+                        bp,
+                        categoryPublicIds.get(bp.getCategoryId()),
+                        resolveName(bp, locale),
+                        resolveDescription(bp, locale)))
             .toList();
 
     return new PagedResponse<>(
@@ -105,24 +125,53 @@ public class BaseProductService {
   }
 
   /**
-   * Busca un producto base por su identificador con nombre y descripción localizados.
+   * Resuelve en lote el identificador público de las categorías con los identificadores internos
+   * indicados.
    *
-   * @param id identificador del producto base a recuperar
+   * @param categoryIds identificadores internos de las categorías a resolver
+   * @return mapa de identificador interno a identificador público; vacío si no hay categorías que
+   *     resolver
+   */
+  private Map<Long, UUID> resolveCategoryPublicIds(List<Long> categoryIds) {
+    if (categoryIds.isEmpty()) {
+      return Map.of();
+    }
+    return categoryRepository.findAllById(categoryIds).stream()
+        .collect(Collectors.toMap(Category::getId, Category::getPublicId));
+  }
+
+  /**
+   * Busca un producto base por su identificador público con nombre y descripción localizados.
+   *
+   * @param publicId identificador público del producto base a recuperar
    * @param locale idioma en el que se quieren los textos localizados
    * @return DTO del producto encontrado con sus textos localizados
    * @throws BusinessException con ErrorCode.BASE_PRODUCT_NOT_FOUND si el producto no existe o está
    *     inactivo
    */
-  public BaseProductResponse findById(Long id, Locale locale) {
+  public BaseProductResponse findById(UUID publicId, Locale locale) {
     BaseProduct product =
         baseProductRepository
-            .findById(id)
+            .findByPublicId(publicId)
             .orElseThrow(() -> new BusinessException(ErrorCode.BASE_PRODUCT_NOT_FOUND));
     if (!product.getIsActive()) {
       throw new BusinessException(ErrorCode.BASE_PRODUCT_NOT_FOUND);
     }
     return BaseProductResponse.from(
-        product, resolveName(product, locale), resolveDescription(product, locale));
+        product,
+        resolveCategoryPublicId(product.getCategoryId()),
+        resolveName(product, locale),
+        resolveDescription(product, locale));
+  }
+
+  /**
+   * Resuelve el identificador público de la categoría con el identificador interno indicado.
+   *
+   * @param categoryId identificador interno de la categoría
+   * @return identificador público de la categoría, o {@code null} si ya no existe
+   */
+  private @Nullable UUID resolveCategoryPublicId(Long categoryId) {
+    return categoryRepository.findById(categoryId).map(Category::getPublicId).orElse(null);
   }
 
   /**
@@ -140,10 +189,14 @@ public class BaseProductService {
    */
   @Transactional
   public BaseProductResponse create(CreateBaseProductRequest request, Locale locale) {
-    if (!categoryRepository.existsById(request.categoryId())) {
-      throw new BusinessException(
-          ErrorCode.INVALID_CATEGORY, "Category with id " + request.categoryId() + " not found");
-    }
+    Category category =
+        categoryRepository
+            .findByPublicId(request.categoryId())
+            .orElseThrow(
+                () ->
+                    new BusinessException(
+                        ErrorCode.INVALID_CATEGORY,
+                        "Category with public id " + request.categoryId() + " not found"));
 
     if (baseProductRepository.existsByCode(request.code())) {
       throw new BusinessException(ErrorCode.DUPLICATE_PRODUCT_CODE, "Product code already exists");
@@ -153,7 +206,7 @@ public class BaseProductService {
 
     BaseProduct product = new BaseProduct();
     product.setCode(request.code());
-    product.setCategoryId(request.categoryId());
+    product.setCategoryId(Objects.requireNonNull(category.getId()));
     product.setDefaultUnit(request.defaultUnit());
     product.setCalories(request.calories());
     product.setCaloriesPer(request.caloriesPer());
@@ -171,7 +224,10 @@ public class BaseProductService {
 
     BaseProduct saved = baseProductRepository.save(product);
     return BaseProductResponse.from(
-        saved, resolveName(saved, locale), resolveDescription(saved, locale));
+        saved,
+        category.getPublicId(),
+        resolveName(saved, locale),
+        resolveDescription(saved, locale));
   }
 
   /**
@@ -181,7 +237,7 @@ public class BaseProductService {
    * {@code translations} está presente, reemplaza el conjunto completo — no fusiona. La validación
    * de locales soportados se aplica tanto en creación como en edición.
    *
-   * @param id identificador del producto base a editar
+   * @param publicId identificador público del producto base a editar
    * @param request petición con los campos a modificar; solo los no nulos se aplican
    * @param locale idioma en el que se devuelven los textos localizados del producto editado
    * @return DTO del producto base tras aplicar los cambios, con sus textos localizados
@@ -193,10 +249,11 @@ public class BaseProductService {
    *     no soportado
    */
   @Transactional
-  public BaseProductResponse update(Long id, UpdateBaseProductRequest request, Locale locale) {
+  public BaseProductResponse update(
+      UUID publicId, UpdateBaseProductRequest request, Locale locale) {
     BaseProduct product =
         baseProductRepository
-            .findById(id)
+            .findByPublicId(publicId)
             .orElseThrow(() -> new BusinessException(ErrorCode.BASE_PRODUCT_NOT_FOUND));
 
     @Nullable String code = request.code();
@@ -208,13 +265,17 @@ public class BaseProductService {
       product.setCode(code);
     }
 
-    @Nullable Long categoryId = request.categoryId();
+    @Nullable UUID categoryId = request.categoryId();
     if (categoryId != null) {
-      if (!categoryRepository.existsById(categoryId)) {
-        throw new BusinessException(
-            ErrorCode.INVALID_CATEGORY, "Category with id " + categoryId + " not found");
-      }
-      product.setCategoryId(categoryId);
+      Category category =
+          categoryRepository
+              .findByPublicId(categoryId)
+              .orElseThrow(
+                  () ->
+                      new BusinessException(
+                          ErrorCode.INVALID_CATEGORY,
+                          "Category with public id " + categoryId + " not found"));
+      product.setCategoryId(Objects.requireNonNull(category.getId()));
     }
 
     @Nullable UnitEnum defaultUnit = request.defaultUnit();
@@ -261,20 +322,23 @@ public class BaseProductService {
 
     BaseProduct saved = baseProductRepository.save(product);
     return BaseProductResponse.from(
-        saved, resolveName(saved, locale), resolveDescription(saved, locale));
+        saved,
+        resolveCategoryPublicId(saved.getCategoryId()),
+        resolveName(saved, locale),
+        resolveDescription(saved, locale));
   }
 
   /**
    * Elimina físicamente un producto base y sus traducciones en cascada.
    *
-   * @param id identificador del producto base a eliminar
+   * @param publicId identificador público del producto base a eliminar
    * @throws BusinessException con ErrorCode.BASE_PRODUCT_NOT_FOUND si el producto no existe
    */
   @Transactional
-  public void delete(Long id) {
+  public void delete(UUID publicId) {
     BaseProduct product =
         baseProductRepository
-            .findById(id)
+            .findByPublicId(publicId)
             .orElseThrow(() -> new BusinessException(ErrorCode.BASE_PRODUCT_NOT_FOUND));
     baseProductRepository.delete(product);
   }
