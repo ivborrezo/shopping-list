@@ -217,9 +217,26 @@ components:
     NotFound:
       description: El recurso solicitado no existe.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemDetail'
+    ValidationError:
+      description: >
+        Error de validación de la petición. Los errores de Bean Validation
+        responden con code VALIDATION_FAILED y el array errors por campo; los
+        errores de negocio 400 (referencia de producto inválida o inexistente,
+        tipo de producto no soportado, etc.) usan el shape ProblemDetail sin
+        errors.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblemDetail'
+    Forbidden:
+      description: El `ownerId` no coincide con el propietario del recurso.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
 
   schemas:
     ShoppingList:
@@ -308,11 +325,59 @@ components:
         purchased:
           type: boolean
 
-    ErrorResponse:
+    ProblemDetail:
       type: object
+      description: >
+        Respuesta de error según RFC 9457 (application/problem+json) con la
+        extensión code del contrato. El catálogo completo de códigos vive en
+        el enum ErrorCode (ver ADR-014); las excepciones no controladas
+        responden 500 con code INTERNAL_ERROR, fuera del catálogo.
+      properties:
+        type:
+          type: string
+          format: uri
+          default: about:blank
+        title:
+          type: string
+          description: Resumen estable del error en inglés, el mismo para todas las ocurrencias.
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+          description: Mensaje específico en inglés; puede incluir el identificador del recurso implicado.
+        instance:
+          type: string
+          format: uri
+          nullable: true
+          description: URI del recurso de la petición que produjo el error.
+        code:
+          type: string
+          enum: [LIST_NOT_FOUND, LIST_ITEM_NOT_FOUND, OWNER_MISMATCH, DUPLICATE_LIST_ITEM, INVALID_PRODUCT_REFERENCE, PRODUCT_SERVICE_UNAVAILABLE, INVALID_PRODUCT_TYPE, VALIDATION_FAILED]
+          description: Identificador machine-readable del error; el contrato entre el backend y el frontend.
+
+    FieldError:
+      type: object
+      description: Error de validación de un campo concreto de la petición.
       properties:
         code:
           type: string
+          description: Nombre de la constraint que falla (FieldError.getCode(), p.ej. NotBlank).
+        field:
+          type: string
+          description: Nombre del campo que falla.
         message:
           type: string
-          description: Mensaje localizado vía Spring MessageSource según Accept-Language.
+          description: Mensaje de la constraint en inglés (FieldError.getDefaultMessage()).
+
+    ValidationProblemDetail:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetail'
+        - type: object
+          properties:
+            errors:
+              type: array
+              description: Errores por campo; presente solo en errores de validación Bean Validation.
+              items:
+                $ref: '#/components/schemas/FieldError'
