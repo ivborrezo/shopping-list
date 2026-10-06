@@ -46,6 +46,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
 
     post:
       tags: [lists]
@@ -64,6 +66,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShoppingList'
+        '400':
+          $ref: '#/components/responses/ValidationError'
 
   /lists/{id}:
     get:
@@ -97,9 +101,20 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
       responses:
         '204':
           description: Lista eliminada.
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -119,6 +134,15 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -132,8 +156,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListItem'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: La lista ya contiene ese producto.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '503':
+          description: product-service no está disponible para resolver el producto.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
 
   /lists/{id}/items/{itemId}:
     delete:
@@ -153,9 +193,20 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
       responses:
         '204':
           description: Ítem eliminado.
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -179,6 +230,15 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -192,6 +252,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListItem'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
