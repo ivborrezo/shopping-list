@@ -27,6 +27,9 @@ paths:
     get:
       tags: [lists]
       summary: Listar listas de un propietario
+      description: >
+        Devuelve las listas del propietario ordenadas por `updatedAt`
+        descendente (las más recientes primero).
       parameters:
         - name: ownerId
           in: query
@@ -87,6 +90,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShoppingList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [lists]
+      summary: Renombrar una lista
+      description: >
+        Edición parcial de la lista: actualiza `name` si se envía. Publica el
+        evento de dominio `list.renamed`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateListRequest'
+      responses:
+        '200':
+          description: Lista actualizada, con sus ítems.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -320,12 +356,17 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         ownerId:
           type: string
           format: uuid
+        name:
+          type: string
         createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
         items:
@@ -333,13 +374,31 @@ components:
           items:
             $ref: '#/components/schemas/ListItem'
 
+    ShoppingListSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
     ListPage:
       type: object
       properties:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/ShoppingList'
+            $ref: '#/components/schemas/ShoppingListSummary'
         page:
           type: integer
         size:
@@ -349,6 +408,21 @@ components:
           format: int64
 
     CreateListRequest:
+      type: object
+      required: [ownerId, name]
+      properties:
+        ownerId:
+          type: string
+          format: uuid
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+
+    UpdateListRequest:
       type: object
       required: [ownerId]
       properties:
@@ -361,16 +435,17 @@ components:
         name:
           type: string
           nullable: true
+          maxLength: 128
 
     ListItem:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         productId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         productType:
           type: string
           enum: [BASE, USER]
@@ -389,8 +464,8 @@ components:
       required: [productId, productType]
       properties:
         productId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         productType:
           type: string
           enum: [BASE, USER]
