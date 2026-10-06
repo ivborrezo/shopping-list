@@ -12,6 +12,15 @@
 | **Fase 5** | Sin empezar | Comunicación asíncrona y notificaciones: `notification-service` (Node.js, consumidor de eventos, email / web push / webhooks). |
 | **Fase 6** | Sin empezar | Observabilidad: OpenTelemetry + Micrometer + Prometheus + Grafana + Loki, self-hosted en Docker Compose. |
 
+## Alcance diferido
+
+Funcionalidad futura que no es una carencia del código actual y que se añadirá
+de forma aditiva cuando llegue su fase:
+
+- **Colaboración y membresía de listas (Fase 4).** La compartición de listas
+  entre colaboradores queda fuera de Fase 1, sin campos reservados en el contrato
+  de `list-service`; se incorporará con el modelo real de identidad (Keycloak).
+
 ## Deuda técnica
 
 La deuda técnica aceptada de forma consciente durante las fases ya

@@ -19,8 +19,13 @@ orquestación, con o sin Transactional Outbox, y mecanismos de resiliencia
 ante fallos de red (timeouts, retries, circuit breakers con
 Resilience4j).
 
-Trigger: se redactará el ADR pendiente de saga cuando se diseñe la
-integración real entre ambos servicios.
+Trigger: cuando exista un side effect cross-service real (por ejemplo,
+`product-service` consumiendo `list.item.added`) o un broker con requisito de
+entrega. La integración de Fase 1 entre ambos servicios es de solo lectura
+(`list-service` resuelve el nombre del producto para su snapshot), no una
+transacción distribuida, así que no activa por sí sola esta deuda. El ADR
+pendiente (`ADR-XXFX-gestion-de-transacciones-distribuidas-con-saga`) la
+resolverá.
 
 ### Soft mark en `list_item` al borrar un `user_product` referenciado
 
@@ -49,8 +54,10 @@ En Fases 1-3 el único disparador de `last_used_at` en recientes es el
 toggle de favorito; no existe endpoint de touch explícito
 ([ADR-013](./docs/adr/ADR-013-favoritos-y-recientes-detalle-de-implementacion.md)).
 
-Trigger: cuando `list-service` publique el evento de producto añadido a
-lista, que será el segundo disparador de recientes.
+Trigger: cuando `product-service` **consuma** el evento `list.item.added` de
+`list-service` (no basta con que se publique), que será el segundo disparador de
+recientes. Ese futuro consumidor necesitará el identificador del actor como campo
+aditivo en el payload, hoy no incluido.
 
 ### N+1 en la resolución de nombres localizados
 

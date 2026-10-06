@@ -27,13 +27,16 @@ paths:
     get:
       tags: [lists]
       summary: Listar listas de un propietario
+      description: >
+        Devuelve las listas del propietario ordenadas por `updatedAt`
+        descendente (las más recientes primero).
       parameters:
         - name: ownerId
           in: query
           required: true
           description: >
             Placeholder sin autenticación real hasta Fase 4
-            (ver ADR-XXF1-identificacion-propietario-sin-autenticacion).
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
           schema:
             type: string
             format: uuid
@@ -46,6 +49,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
 
     post:
       tags: [lists]
@@ -60,10 +65,17 @@ paths:
       responses:
         '201':
           description: Lista creada.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShoppingList'
+        '400':
+          $ref: '#/components/responses/ValidationError'
 
   /lists/{id}:
     get:
@@ -74,8 +86,8 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
       responses:
         '200':
           description: Lista encontrada, con sus ítems.
@@ -83,6 +95,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShoppingList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [lists]
+      summary: Renombrar una lista
+      description: >
+        Edición parcial de la lista: actualiza `name` si se envía. Publica el
+        evento de dominio `list.renamed`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateListRequest'
+      responses:
+        '200':
+          description: Lista actualizada, con sus ítems.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -95,11 +140,24 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
       responses:
         '204':
           description: Lista eliminada.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -113,12 +171,22 @@ paths:
         (Snapshot pattern), resuelto contra product-service en el momento de
         la petición.
       parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
         - name: id
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -128,12 +196,33 @@ paths:
       responses:
         '201':
           description: Ítem añadido a la lista.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListItem'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: La lista ya contiene ese producto.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '503':
+          description: product-service no está disponible para resolver el producto.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
 
   /lists/{id}/items/{itemId}:
     delete:
@@ -145,17 +234,30 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
         - name: itemId
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
       responses:
         '204':
           description: Ítem eliminado.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -171,14 +273,23 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
         - name: itemId
           in: path
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
+            format: uuid
+        - name: ownerId
+          in: query
+          required: true
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -192,11 +303,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListItem'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
 components:
   parameters:
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: >
+        Idioma solicitado para resolver el nombre del producto (snapshot) contra
+        product-service (es | en | eu). Se reenvía tal cual; si no se especifica
+        o el idioma no tiene traducción, product-service aplica su fallback a `en`.
+      schema:
+        type: string
+        enum: [es, en, eu]
+        default: en
     Page:
       name: page
       in: query
@@ -217,21 +344,44 @@ components:
     NotFound:
       description: El recurso solicitado no existe.
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProblemDetail'
+    ValidationError:
+      description: >
+        Error de validación de la petición. Los errores de Bean Validation
+        responden con code VALIDATION_FAILED y el array errors por campo; los
+        errores de negocio 400 (referencia de producto inválida o inexistente,
+        tipo de producto no soportado, etc.) usan el shape ProblemDetail sin
+        errors.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblemDetail'
+    Forbidden:
+      description: El `ownerId` no coincide con el propietario del recurso.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
 
   schemas:
     ShoppingList:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         ownerId:
           type: string
           format: uuid
+        name:
+          type: string
+          description: Nombre de la lista (texto libre).
         createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
         items:
@@ -239,13 +389,32 @@ components:
           items:
             $ref: '#/components/schemas/ListItem'
 
+    ShoppingListSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Nombre de la lista (texto libre).
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
     ListPage:
       type: object
       properties:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/ShoppingList'
+            $ref: '#/components/schemas/ShoppingListSummary'
         page:
           type: integer
         size:
@@ -256,6 +425,21 @@ components:
 
     CreateListRequest:
       type: object
+      required: [ownerId, name]
+      properties:
+        ownerId:
+          type: string
+          format: uuid
+          description: >
+            Placeholder sin autenticación real hasta Fase 4
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+
+    UpdateListRequest:
+      type: object
       required: [ownerId]
       properties:
         ownerId:
@@ -263,20 +447,21 @@ components:
           format: uuid
           description: >
             Placeholder sin autenticación real hasta Fase 4
-            (ver ADR-XXF1-identificacion-propietario-sin-autenticacion).
+            (ver ADR-006-identificacion-propietario-sin-autenticacion).
         name:
           type: string
           nullable: true
+          maxLength: 128
 
     ListItem:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         productId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         productType:
           type: string
           enum: [BASE, USER]
@@ -295,8 +480,8 @@ components:
       required: [productId, productType]
       properties:
         productId:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         productType:
           type: string
           enum: [BASE, USER]
@@ -308,11 +493,59 @@ components:
         purchased:
           type: boolean
 
-    ErrorResponse:
+    ProblemDetail:
       type: object
+      description: >
+        Respuesta de error según RFC 9457 (application/problem+json) con la
+        extensión code del contrato. El catálogo completo de códigos vive en
+        el enum ErrorCode (ver ADR-014); las excepciones no controladas
+        responden 500 con code INTERNAL_ERROR, fuera del catálogo.
+      properties:
+        type:
+          type: string
+          format: uri
+          default: about:blank
+        title:
+          type: string
+          description: Resumen estable del error en inglés, el mismo para todas las ocurrencias.
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+          description: Mensaje específico en inglés; puede incluir el identificador del recurso implicado.
+        instance:
+          type: string
+          format: uri
+          nullable: true
+          description: URI del recurso de la petición que produjo el error.
+        code:
+          type: string
+          enum: [LIST_NOT_FOUND, LIST_ITEM_NOT_FOUND, OWNER_MISMATCH, DUPLICATE_LIST_ITEM, INVALID_PRODUCT_REFERENCE, PRODUCT_SERVICE_UNAVAILABLE, INVALID_PRODUCT_TYPE, VALIDATION_FAILED]
+          description: Identificador machine-readable del error; el contrato entre el backend y el frontend.
+
+    FieldError:
+      type: object
+      description: Error de validación de un campo concreto de la petición.
       properties:
         code:
           type: string
+          description: Nombre de la constraint que falla (FieldError.getCode(), p.ej. NotBlank).
+        field:
+          type: string
+          description: Nombre del campo que falla.
         message:
           type: string
-          description: Mensaje localizado vía Spring MessageSource según Accept-Language.
+          description: Mensaje de la constraint en inglés (FieldError.getDefaultMessage()).
+
+    ValidationProblemDetail:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetail'
+        - type: object
+          properties:
+            errors:
+              type: array
+              description: Errores por campo; presente solo en errores de validación Bean Validation.
+              items:
+                $ref: '#/components/schemas/FieldError'
