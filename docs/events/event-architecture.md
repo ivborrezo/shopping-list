@@ -76,6 +76,10 @@ payload específico:
   consumo ocurra en un momento y servicio distintos. Ver
   `docs/logging.md` para el ciclo de vida completo del
   `correlationId`.
+- **`occurredAt`**: instante UTC (`Instant`) en que ocurrió el hecho,
+  capturado en el momento de la acción y no en el de la publicación.
+  Permite ordenar los eventos y reconstruir la secuencia real de los
+  hechos.
 
 ### Por qué el evento no lleva `locale` ni lista de destinatarios
 
@@ -113,13 +117,14 @@ Ambos puntos quedan pendientes de diseño concreto para Fase 5, cuando
 | Evento | Disparado por | Consumidor previsto | Propósito de negocio |
 |---|---|---|---|
 | `list.created` | `POST /lists` | — (sin consumidor activo) | Se ha creado una nueva lista. |
+| `list.renamed` | `PATCH /lists/{id}` | — (sin consumidor activo) | Se ha renombrado una lista. |
 | `list.deleted` | `DELETE /lists/{id}` | `notification-service` (Fase 5) | Notificar a los colaboradores de la lista que ha sido eliminada. |
 | `list.item.added` | `POST /lists/{id}/items` | — (sin consumidor activo) | Se ha añadido un producto a una lista existente. |
 | `list.item.removed` | `DELETE /lists/{id}/items/{itemId}` | `notification-service` (Fase 5) | Notificar a los colaboradores de que un producto fue eliminado de la lista. |
 | `list.item.purchased` | `PATCH /lists/{id}/items/{itemId}` | `notification-service` (Fase 5) | Notificar a los colaboradores de que un ítem fue marcado como comprado o pendiente (el mismo evento cubre ambos sentidos mediante un campo booleano en el payload, ej. `purchased: true/false`). |
 
-**Nota sobre eventos sin consumidor activo:** `list.created` y
-`list.item.added` se publican desde Fase 1 sin que ningún servicio los
+**Nota sobre eventos sin consumidor activo:** `list.created`, `list.renamed`
+y `list.item.added` se publican desde Fase 1 sin que ningún servicio los
 consuma todavía. Esto es una decisión consciente, no un descuido: el
 desacoplamiento propio de la mensajería asíncrona permite instrumentar
 la publicación ahora, evitando tener que modificar el código de
