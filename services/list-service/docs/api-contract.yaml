@@ -128,6 +128,7 @@ paths:
         (Snapshot pattern), resuelto contra product-service en el momento de
         la petición.
       parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
         - name: id
           in: path
           required: true
@@ -261,6 +262,18 @@ paths:
 
 components:
   parameters:
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: >
+        Idioma solicitado para resolver el nombre del producto (snapshot) contra
+        product-service (es | en | eu). Se reenvía tal cual; si no se especifica
+        o el idioma no tiene traducción, product-service aplica su fallback a `en`.
+      schema:
+        type: string
+        enum: [es, en, eu]
+        default: en
     Page:
       name: page
       in: query
