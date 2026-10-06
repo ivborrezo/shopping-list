@@ -147,7 +147,8 @@ ejemplo, `list_item` almacena el `product_id` y su tipo, `BASE` o
 
 - Esta decisión es la causa raíz que motiva el uso del **Snapshot
   pattern** en `list_item.display_name` (`list-service`), documentado
-  en su ADR local correspondiente (`services/list-service/docs/adr/`).
+  en su ADR local
+  [`ADR-LS-001-snapshot-display-name-list-item.md`](../../services/list-service/docs/adr/ADR-LS-001-snapshot-display-name-list-item.md).
 - **Addressed by** ADR-007 (Flyway como herramienta de migraciones) —
   materializa el *cómo* se gestiona la evolución del esquema de cada
   base de datos privada por servicio. Enlazado bidireccionalmente.
@@ -187,3 +188,16 @@ gestiona su propio motor de base de datos de forma independiente
 backups). Se valoró que el ahorro de recursos en Free Tier no
 compensaba renunciar a demostrar, en el propio diseño, el aislamiento
 real que el patrón Database-per-Service persigue.
+
+## Resolución posterior
+
+La integración de Fase 1 entre `list-service` y `product-service` es de **solo
+lectura**: al añadir un ítem, `list-service` consulta el nombre del producto por
+API síncrona y persiste un snapshot (`display_name`); no hay escritura cruzada ni
+una transacción distribuida que abarcar. La deuda de transacciones distribuidas
+de este ADR se mantiene, pero su trigger se re-scopa: se retomará cuando exista
+un **side effect cross-service real** (por ejemplo, `product-service` consumiendo
+`list.item.added`) o un broker con requisito de entrega, no por el simple hecho
+de que ambos servicios se integren. El trigger se re-scopa en
+[`TECH_DEBT.md`](../../TECH_DEBT.md) y remite al ADR pendiente
+`ADR-XXFX-gestion-de-transacciones-distribuidas-con-saga`.
