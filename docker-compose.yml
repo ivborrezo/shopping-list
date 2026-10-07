@@ -56,6 +56,20 @@ services:
     networks:
       - shopping-list-net
 
+  # ── list-service ─────────────────────────────────────────────────
+  list-service:
+    build: ./services/list-service
+    container_name: shopping-list-list-service
+    ports:
+      - "8082:8082"
+    env_file:
+      - .env
+    depends_on:
+      list-db:
+        condition: service_healthy
+    networks:
+      - shopping-list-net
+
 networks:
   shopping-list-net:
     driver: bridge
