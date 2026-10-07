@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${LIST_DB_HOST:localhost}:${LIST_DB_PORT_OUT:5435}/${LIST_DB_NAME:list_service_db}
+    username: ${LIST_DB_USER:list_user}
+    password: ${LIST_DB_PASSWORD:list_pass}

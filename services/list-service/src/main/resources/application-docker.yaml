@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://list-db:5432/${LIST_DB_NAME:list_service_db}
+    username: ${LIST_DB_USER:list_user}
+    password: ${LIST_DB_PASSWORD:list_pass}
