@@ -79,6 +79,19 @@ compartición (listas colaborativas, relaciones sociales)
 
 Trigger: se diseña el enforcement de compartición (Fase 4 o posterior).
 
+### `correlationId` implementado solo en `list-service`
+
+La convención de logging ([docs/logging.md](./docs/logging.md)) define un
+`CorrelationIdFilter` (cabecera `X-Correlation-Id` + MDC) para todos los
+servicios, pero hasta ahora ninguno lo implementaba. `list-service` es el primer
+servicio que lo necesita —el envelope de sus eventos exige `correlationId`— y lo
+implementa en su rama de listas; `product-service` queda sin él, de modo que sus
+logs todavía no se correlacionan con el resto.
+
+Trigger: al terminar la implementación de `list-service`, replicar en
+`product-service` el `CorrelationIdFilter` + MDC. No hay módulo compartido, así
+que cada servicio copia el patrón (como `ErrorCode`/`PagedResponse`).
+
 ## Decisiones opcionales
 
 Decisiones tomadas que admiten una alternativa razonable en el futuro, sin
