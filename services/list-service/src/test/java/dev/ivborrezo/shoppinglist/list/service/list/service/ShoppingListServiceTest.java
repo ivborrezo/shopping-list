@@ -3,6 +3,7 @@ package dev.ivborrezo.shoppinglist.list.service.list.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,23 +12,33 @@ import dev.ivborrezo.shoppinglist.list.service.common.BusinessException;
 import dev.ivborrezo.shoppinglist.list.service.common.ErrorCode;
 import dev.ivborrezo.shoppinglist.list.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.list.service.common.dto.PagedResponse;
+import dev.ivborrezo.shoppinglist.list.service.common.event.DomainEvent;
+import dev.ivborrezo.shoppinglist.list.service.common.event.DomainEventPublisher;
+import dev.ivborrezo.shoppinglist.list.service.common.event.EventType;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.CreateListRequest;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.ShoppingListResponse;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.ShoppingListSummaryResponse;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.UpdateListRequest;
 import dev.ivborrezo.shoppinglist.list.service.list.entity.ListItem;
 import dev.ivborrezo.shoppinglist.list.service.list.entity.ShoppingList;
+import dev.ivborrezo.shoppinglist.list.service.list.event.ListCreatedEvent;
+import dev.ivborrezo.shoppinglist.list.service.list.event.ListDeletedEvent;
+import dev.ivborrezo.shoppinglist.list.service.list.event.ListRenamedEvent;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ListItemRepository;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ShoppingListRepository;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.MDC;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -46,15 +57,32 @@ class ShoppingListServiceTest {
   private static final UUID OTHER_OWNER_ID =
       UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeef");
 
+  private static final Instant FIXED_INSTANT = Instant.parse("2026-01-02T03:04:05Z");
+
+  private static final String CORRELATION_ID = "corr-test";
+
   @Mock private ShoppingListRepository shoppingListRepository;
 
   @Mock private ListItemRepository listItemRepository;
+
+  @Mock private Clock clock;
+
+  @Mock private DomainEventPublisher domainEventPublisher;
 
   private ShoppingListService shoppingListService;
 
   @BeforeEach
   void setUp() {
-    shoppingListService = new ShoppingListService(shoppingListRepository, listItemRepository);
+    lenient().when(clock.instant()).thenReturn(FIXED_INSTANT);
+    MDC.put("correlationId", CORRELATION_ID);
+    shoppingListService =
+        new ShoppingListService(
+            shoppingListRepository, listItemRepository, clock, domainEventPublisher);
+  }
+
+  @AfterEach
+  void tearDown() {
+    MDC.clear();
   }
 
   /** Crea una lista y comprueba que persiste propietario y nombre y devuelve el DTO esperado. */
@@ -81,6 +109,41 @@ class ShoppingListServiceTest {
     assertThat(response.ownerId()).isEqualTo(OWNER_ID);
     assertThat(response.name()).isEqualTo("Compra semanal");
     assertThat(response.items()).isEmpty();
+  }
+
+  /**
+   * Publica un evento {@code list.created} con el instante, la correlación y el payload de la lista
+   * recién creada.
+   */
+  @Test
+  void create_publishesListCreatedEvent() {
+    UUID publicId = UUID.randomUUID();
+    CreateListRequest request = new CreateListRequest(OWNER_ID, "Compra semanal");
+    when(shoppingListRepository.save(any(ShoppingList.class)))
+        .thenAnswer(
+            invocation -> {
+              ShoppingList saved = invocation.getArgument(0);
+              saved.setId(1L);
+              saved.setPublicId(publicId);
+              return saved;
+            });
+
+    shoppingListService.create(request);
+
+    ArgumentCaptor<DomainEvent<?>> captor = domainEventCaptor();
+    verify(domainEventPublisher).publish(captor.capture());
+    DomainEvent<?> event = captor.getValue();
+    assertThat(event.eventType()).isEqualTo(EventType.LIST_CREATED);
+    assertThat(event.occurredAt()).isEqualTo(FIXED_INSTANT);
+    assertThat(event.correlationId()).isEqualTo(CORRELATION_ID);
+    assertThat(event.payload())
+        .isInstanceOfSatisfying(
+            ListCreatedEvent.class,
+            payload -> {
+              assertThat(payload.listId()).isEqualTo(publicId);
+              assertThat(payload.ownerId()).isEqualTo(OWNER_ID);
+              assertThat(payload.name()).isEqualTo("Compra semanal");
+            });
   }
 
   /** Lista las listas de un propietario como resúmenes y traslada la paginación de la página. */
@@ -160,6 +223,38 @@ class ShoppingListServiceTest {
     assertThat(response.name()).isEqualTo("Nombre nuevo");
   }
 
+  /**
+   * Publica un evento {@code list.renamed} con el nombre anterior y el nuevo cuando la petición
+   * incluye un nombre.
+   */
+  @Test
+  void update_withName_publishesListRenamedEvent() {
+    UUID publicId = UUID.randomUUID();
+    ShoppingList shoppingList = list(1L, publicId, OWNER_ID, "Nombre antiguo");
+    when(shoppingListRepository.findByPublicId(publicId)).thenReturn(Optional.of(shoppingList));
+    when(shoppingListRepository.save(any(ShoppingList.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(listItemRepository.findByListIdOrderByPurchasedAscIdAsc(1L)).thenReturn(List.of());
+
+    shoppingListService.update(publicId, new UpdateListRequest(OWNER_ID, "Nombre nuevo"));
+
+    ArgumentCaptor<DomainEvent<?>> captor = domainEventCaptor();
+    verify(domainEventPublisher).publish(captor.capture());
+    DomainEvent<?> event = captor.getValue();
+    assertThat(event.eventType()).isEqualTo(EventType.LIST_RENAMED);
+    assertThat(event.occurredAt()).isEqualTo(FIXED_INSTANT);
+    assertThat(event.correlationId()).isEqualTo(CORRELATION_ID);
+    assertThat(event.payload())
+        .isInstanceOfSatisfying(
+            ListRenamedEvent.class,
+            payload -> {
+              assertThat(payload.listId()).isEqualTo(publicId);
+              assertThat(payload.ownerId()).isEqualTo(OWNER_ID);
+              assertThat(payload.oldName()).isEqualTo("Nombre antiguo");
+              assertThat(payload.newName()).isEqualTo("Nombre nuevo");
+            });
+  }
+
   /** Conserva el nombre existente cuando la petición no incluye uno nuevo. */
   @Test
   void update_withoutName_keepsExistingName() {
@@ -174,6 +269,21 @@ class ShoppingListServiceTest {
         shoppingListService.update(publicId, new UpdateListRequest(OWNER_ID, null));
 
     assertThat(response.name()).isEqualTo("Nombre original");
+  }
+
+  /** No publica ningún evento cuando la petición de actualización no incluye un nombre nuevo. */
+  @Test
+  void update_withoutName_doesNotPublish() {
+    UUID publicId = UUID.randomUUID();
+    ShoppingList shoppingList = list(1L, publicId, OWNER_ID, "Nombre original");
+    when(shoppingListRepository.findByPublicId(publicId)).thenReturn(Optional.of(shoppingList));
+    when(shoppingListRepository.save(any(ShoppingList.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(listItemRepository.findByListIdOrderByPurchasedAscIdAsc(1L)).thenReturn(List.of());
+
+    shoppingListService.update(publicId, new UpdateListRequest(OWNER_ID, null));
+
+    verify(domainEventPublisher, never()).publish(any(DomainEvent.class));
   }
 
   /** Traduce la ausencia de una lista en el renombrado a {@code LIST_NOT_FOUND}. */
@@ -199,6 +309,33 @@ class ShoppingListServiceTest {
     shoppingListService.delete(publicId, OWNER_ID);
 
     verify(shoppingListRepository).delete(shoppingList);
+  }
+
+  /**
+   * Publica un evento {@code list.deleted} con el identificador, propietario y nombre de la lista.
+   */
+  @Test
+  void delete_existing_publishesListDeletedEvent() {
+    UUID publicId = UUID.randomUUID();
+    ShoppingList shoppingList = list(1L, publicId, OWNER_ID, "A borrar");
+    when(shoppingListRepository.findByPublicId(publicId)).thenReturn(Optional.of(shoppingList));
+
+    shoppingListService.delete(publicId, OWNER_ID);
+
+    ArgumentCaptor<DomainEvent<?>> captor = domainEventCaptor();
+    verify(domainEventPublisher).publish(captor.capture());
+    DomainEvent<?> event = captor.getValue();
+    assertThat(event.eventType()).isEqualTo(EventType.LIST_DELETED);
+    assertThat(event.occurredAt()).isEqualTo(FIXED_INSTANT);
+    assertThat(event.correlationId()).isEqualTo(CORRELATION_ID);
+    assertThat(event.payload())
+        .isInstanceOfSatisfying(
+            ListDeletedEvent.class,
+            payload -> {
+              assertThat(payload.listId()).isEqualTo(publicId);
+              assertThat(payload.ownerId()).isEqualTo(OWNER_ID);
+              assertThat(payload.name()).isEqualTo("A borrar");
+            });
   }
 
   /** Traduce la ausencia de una lista en el borrado a {@code LIST_NOT_FOUND}. */
@@ -245,6 +382,11 @@ class ShoppingListServiceTest {
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OWNER_MISMATCH));
 
     verify(shoppingListRepository, never()).delete(any(ShoppingList.class));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static ArgumentCaptor<DomainEvent<?>> domainEventCaptor() {
+    return ArgumentCaptor.forClass(DomainEvent.class);
   }
 
   private static ShoppingList list(Long id, UUID publicId, UUID ownerId, String name) {
