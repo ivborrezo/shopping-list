@@ -23,9 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
  * Servicio de aplicación de listas de la compra.
  *
  * <p>Orquesta la persistencia del agregado lista y sus ítems para las operaciones de crear, listar,
- * obtener, renombrar y eliminar. La verificación de propiedad y la publicación de eventos se
- * abordan en pasos posteriores: aquí {@code ownerId} se recibe por contrato, pero todavía no se
- * contrasta con el propietario del recurso.
+ * obtener, renombrar y eliminar. La propiedad se verifica en las mutaciones (renombrar y eliminar),
+ * que exigen que {@code ownerId} coincida con el propietario almacenado; las lecturas siguen siendo
+ * abiertas. La publicación de eventos se aborda en un paso posterior.
  */
 @Service
 @Transactional(readOnly = true)
@@ -91,16 +91,24 @@ public class ShoppingListService {
   }
 
   /**
-   * Renombra una lista si la petición incluye un nombre nuevo.
+   * Renombra una lista si el solicitante es su propietario y la petición incluye un nombre nuevo.
+   *
+   * <p>La existencia de la lista se comprueba antes que la propiedad, de modo que un recurso
+   * inexistente devuelve {@code LIST_NOT_FOUND} con independencia del {@code ownerId} recibido.
    *
    * @param publicId identificador público de la lista a actualizar
-   * @param request petición de renombrado; {@code name} nulo conserva el nombre actual
+   * @param request petición de renombrado con el solicitante; {@code name} nulo conserva el nombre
+   *     actual
    * @return detalle de la lista actualizada, con sus ítems
-   * @throws BusinessException con ErrorCode.LIST_NOT_FOUND si la lista no existe
+   * @throws BusinessException con ErrorCode.LIST_NOT_FOUND si la lista no existe, o con ErrorCode
+   *     OWNER_MISMATCH si {@code ownerId} no es el propietario de la lista
    */
   @Transactional
   public ShoppingListResponse update(UUID publicId, UpdateListRequest request) {
     ShoppingList list = findListOrThrow(publicId);
+    if (!list.getOwnerId().equals(request.ownerId())) {
+      throw new BusinessException(ErrorCode.OWNER_MISMATCH);
+    }
     if (request.name() != null) {
       list.setName(request.name());
     }
@@ -112,15 +120,22 @@ public class ShoppingListService {
   }
 
   /**
-   * Elimina una lista por su identificador público.
+   * Elimina una lista por su identificador público si el solicitante es su propietario.
+   *
+   * <p>La existencia de la lista se comprueba antes que la propiedad, de modo que un recurso
+   * inexistente devuelve {@code LIST_NOT_FOUND} con independencia del {@code ownerId} recibido.
    *
    * @param publicId identificador público de la lista a eliminar
    * @param ownerId propietario que solicita la eliminación
-   * @throws BusinessException con ErrorCode.LIST_NOT_FOUND si la lista no existe
+   * @throws BusinessException con ErrorCode.LIST_NOT_FOUND si la lista no existe, o con ErrorCode
+   *     OWNER_MISMATCH si {@code ownerId} no es el propietario de la lista
    */
   @Transactional
   public void delete(UUID publicId, UUID ownerId) {
     ShoppingList list = findListOrThrow(publicId);
+    if (!list.getOwnerId().equals(ownerId)) {
+      throw new BusinessException(ErrorCode.OWNER_MISMATCH);
+    }
     shoppingListRepository.delete(list);
   }
 

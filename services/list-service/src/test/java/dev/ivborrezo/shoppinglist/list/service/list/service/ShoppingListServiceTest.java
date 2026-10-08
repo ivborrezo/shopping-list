@@ -3,6 +3,7 @@ package dev.ivborrezo.shoppinglist.list.service.list.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,6 +42,9 @@ import org.springframework.data.domain.Pageable;
 class ShoppingListServiceTest {
 
   private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+
+  private static final UUID OTHER_OWNER_ID =
+      UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeef");
 
   @Mock private ShoppingListRepository shoppingListRepository;
 
@@ -207,6 +211,40 @@ class ShoppingListServiceTest {
         .isInstanceOfSatisfying(
             BusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIST_NOT_FOUND));
+  }
+
+  /** Rechaza el renombrado de una lista ajena con {@code OWNER_MISMATCH} sin persistir cambios. */
+  @Test
+  void update_withOtherOwner_throwsOwnerMismatchAndDoesNotSave() {
+    UUID publicId = UUID.randomUUID();
+    ShoppingList shoppingList = list(1L, publicId, OWNER_ID, "Nombre antiguo");
+    when(shoppingListRepository.findByPublicId(publicId)).thenReturn(Optional.of(shoppingList));
+
+    assertThatThrownBy(
+            () ->
+                shoppingListService.update(
+                    publicId, new UpdateListRequest(OTHER_OWNER_ID, "Nombre nuevo")))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OWNER_MISMATCH));
+
+    assertThat(shoppingList.getName()).isEqualTo("Nombre antiguo");
+    verify(shoppingListRepository, never()).save(any(ShoppingList.class));
+  }
+
+  /** Rechaza el borrado de una lista ajena con {@code OWNER_MISMATCH} sin eliminarla. */
+  @Test
+  void delete_withOtherOwner_throwsOwnerMismatchAndDoesNotDelete() {
+    UUID publicId = UUID.randomUUID();
+    ShoppingList shoppingList = list(1L, publicId, OWNER_ID, "Ajena");
+    when(shoppingListRepository.findByPublicId(publicId)).thenReturn(Optional.of(shoppingList));
+
+    assertThatThrownBy(() -> shoppingListService.delete(publicId, OTHER_OWNER_ID))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OWNER_MISMATCH));
+
+    verify(shoppingListRepository, never()).delete(any(ShoppingList.class));
   }
 
   private static ShoppingList list(Long id, UUID publicId, UUID ownerId, String name) {
