@@ -248,6 +248,27 @@ class ListOwnershipIntegrationIT {
   }
 
   /**
+   * Devuelve el detalle de una lista de otro propietario al leerla sin {@code ownerId}, demostrando
+   * que la lectura es abierta entre propietarios.
+   */
+  @Test
+  void getListById_withoutOwner_returnsListOfAnyOwner() throws Exception {
+    ShoppingList list = buildList(OTHER_OWNER_ID, "Lista de otro propietario");
+    persist(list);
+
+    MvcResult result =
+        mockMvc.perform(get("/lists/" + list.getPublicId())).andExpect(status().isOk()).andReturn();
+
+    ShoppingListResponse response =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), ShoppingListResponse.class);
+
+    assertThat(response.id()).isEqualTo(list.getPublicId());
+    assertThat(response.ownerId()).isEqualTo(OTHER_OWNER_ID);
+    assertThat(response.name()).isEqualTo("Lista de otro propietario");
+  }
+
+  /**
    * Persiste la lista indicada dentro de la transacción del test y fuerza el {@code flush} para que
    * JPA asigne los identificadores generados.
    *

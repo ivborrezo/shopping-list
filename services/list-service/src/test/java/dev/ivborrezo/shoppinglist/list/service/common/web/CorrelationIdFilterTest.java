@@ -2,8 +2,10 @@ package dev.ivborrezo.shoppinglist.list.service.common.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -62,5 +64,33 @@ class CorrelationIdFilterTest {
     filter.doFilter(request, response, chain);
 
     assertThat(MDC.get(MDC_KEY)).isNull();
+  }
+
+  @Test
+  void doFilter_whenChainThrows_clearsMdc() {
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    FilterChain chain =
+        (req, res) -> {
+          throw new ServletException("fallo de cadena");
+        };
+
+    assertThatThrownBy(() -> filter.doFilter(request, response, chain))
+        .isInstanceOf(ServletException.class);
+
+    assertThat(MDC.get(MDC_KEY)).isNull();
+  }
+
+  @Test
+  void doFilter_clearsAllMdcKeys() throws Exception {
+    MDC.put("userId", "x");
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    FilterChain chain = (req, res) -> {};
+
+    filter.doFilter(request, response, chain);
+
+    assertThat(MDC.get(MDC_KEY)).isNull();
+    assertThat(MDC.get("userId")).isNull();
   }
 }

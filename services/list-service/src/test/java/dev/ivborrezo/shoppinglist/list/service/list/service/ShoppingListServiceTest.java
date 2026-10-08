@@ -167,6 +167,24 @@ class ShoppingListServiceTest {
     assertThat(page.totalElements()).isEqualTo(5);
   }
 
+  /**
+   * Cuando el propietario no tiene listas, delega la consulta en el repositorio y devuelve una
+   * página vacía con el total a cero.
+   */
+  @Test
+  void findPage_whenNoLists_returnsEmptyPage() {
+    Pageable pageable = PageRequest.of(0, 20);
+    when(shoppingListRepository.findByOwnerIdOrderByUpdatedAtDescIdDesc(OWNER_ID, pageable))
+        .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+    PagedResponse<ShoppingListSummaryResponse> page =
+        shoppingListService.findPage(OWNER_ID, pageable);
+
+    verify(shoppingListRepository).findByOwnerIdOrderByUpdatedAtDescIdDesc(OWNER_ID, pageable);
+    assertThat(page.content()).isEmpty();
+    assertThat(page.totalElements()).isZero();
+  }
+
   /** Obtiene el detalle de una lista existente con sus ítems en el orden devuelto por el repo. */
   @Test
   void findById_existing_returnsListWithItemsInRepositoryOrder() {

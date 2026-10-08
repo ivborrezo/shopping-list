@@ -82,6 +82,32 @@ class LoggingDomainEventPublisherTest {
   }
 
   @Test
+  void publish_withActiveTransaction_rollback_doesNotDeliver() {
+    ObjectMapper objectMapper = new ObjectMapper();
+    DomainEventPublisher publisher = new LoggingDomainEventPublisher(objectMapper);
+    DomainEvent<Map<String, Object>> event = listCreatedEvent();
+
+    TransactionSynchronizationManager.initSynchronization();
+    try {
+      TransactionSynchronizationManager.setActualTransactionActive(true);
+
+      publisher.publish(event);
+
+      assertThat(appender.list).isEmpty();
+
+      TransactionSynchronizationManager.getSynchronizations()
+          .forEach(
+              synchronization ->
+                  synchronization.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
+
+      assertThat(appender.list).isEmpty();
+    } finally {
+      TransactionSynchronizationManager.clearSynchronization();
+      TransactionSynchronizationManager.setActualTransactionActive(false);
+    }
+  }
+
+  @Test
   void publish_whenSerializationFails_logsErrorAndDoesNotPropagate() {
     ObjectMapper objectMapper = mock(ObjectMapper.class);
     doThrow(new RuntimeException("serialization failure"))

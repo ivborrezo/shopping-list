@@ -160,6 +160,54 @@ class ListControllerIntegrationIT {
         .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
   }
 
+  /** Rechaza con 400 y ProblemDetail la creación de una lista sin propietario. */
+  @Test
+  void createList_withoutOwnerId_returnsValidationProblemDetail() throws Exception {
+    String body =
+        """
+        {
+          "name": "X"
+        }
+        """;
+
+    mockMvc
+        .perform(post("/lists").contentType(MediaType.APPLICATION_JSON).content(body))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.errors[0].field").value("ownerId"));
+  }
+
+  /** Rechaza con 400 y ProblemDetail la creación de una lista con un nombre demasiado largo. */
+  @Test
+  void createList_withNameTooLong_returnsValidationProblemDetail() throws Exception {
+    String body =
+        """
+        {
+          "ownerId": "%s",
+          "name": "%s"
+        }
+        """
+            .formatted(OWNER_ID, "a".repeat(129));
+
+    mockMvc
+        .perform(post("/lists").contentType(MediaType.APPLICATION_JSON).content(body))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.errors[0].field").value("name"));
+  }
+
+  /** Rechaza con 400 y ProblemDetail la creación de una lista con un body JSON malformado. */
+  @Test
+  void postList_withMalformedBody_returnsValidationProblemDetail() throws Exception {
+    mockMvc
+        .perform(post("/lists").contentType(MediaType.APPLICATION_JSON).content("{ not json"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+  }
+
   /**
    * Lista las listas del propietario indicado con el shape de página del contrato, solo sus listas
    * y resúmenes sin ítems.
@@ -196,6 +244,16 @@ class ListControllerIntegrationIT {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content[0].id").value(newer.getPublicId().toString()))
         .andExpect(jsonPath("$.content[1].id").value(older.getPublicId().toString()));
+  }
+
+  /** Devuelve una página vacía cuando el {@code ownerId} no tiene ninguna lista. */
+  @Test
+  void listLists_unknownOwner_returnsEmptyPage() throws Exception {
+    mockMvc
+        .perform(get("/lists").param("ownerId", UUID.randomUUID().toString()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(0))
+        .andExpect(jsonPath("$.content").isEmpty());
   }
 
   /** Devuelve 400 con ProblemDetail cuando falta el query param {@code ownerId}. */
@@ -301,6 +359,59 @@ class ListControllerIntegrationIT {
             result.getResponse().getContentAsByteArray(), ShoppingListResponse.class);
 
     assertThat(updated.name()).isEqualTo("Nombre nuevo");
+  }
+
+  /**
+   * Devuelve 400 con ProblemDetail cuando el renombrado no incluye {@code ownerId}, señalando el
+   * campo ausente en los errores de validación.
+   */
+  @Test
+  void patchList_withMissingOwnerId_returnsValidationProblemDetail() throws Exception {
+    ShoppingList list = buildList(OWNER_ID, "Nombre antiguo");
+    persist(list);
+
+    String body =
+        """
+        {
+          "name": "x"
+        }
+        """;
+
+    mockMvc
+        .perform(
+            patch("/lists/" + list.getPublicId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.errors[0].field").value("ownerId"));
+  }
+
+  /** Rechaza con 400 y ProblemDetail el renombrado con un nombre demasiado largo. */
+  @Test
+  void patchList_withNameTooLong_returnsValidationProblemDetail() throws Exception {
+    ShoppingList list = buildList(OWNER_ID, "Nombre antiguo");
+    persist(list);
+
+    String body =
+        """
+        {
+          "ownerId": "%s",
+          "name": "%s"
+        }
+        """
+            .formatted(OWNER_ID, "a".repeat(129));
+
+    mockMvc
+        .perform(
+            patch("/lists/" + list.getPublicId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.errors[0].field").value("name"));
   }
 
   /** Devuelve 404 cuando la lista a renombrar no existe. */
