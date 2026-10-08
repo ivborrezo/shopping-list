@@ -3,6 +3,10 @@ spring:
     name: list-service
   profiles:
     active: local
+  data:
+    web:
+      pageable:
+        max-page-size: 100
   jpa:
     open-in-view: false
     hibernate:
