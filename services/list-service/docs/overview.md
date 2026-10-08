@@ -6,10 +6,11 @@
 
 ## Qué hace
 
-Servicio placeholder de gestión de listas de la compra y sus ítems. Todavía
-no hay implementación: solo existe su contrato de API, definido Design-First
-en [`api-contract.yaml`](./api-contract.yaml), que servirá de base para la
-implementación en Fase 1.
+Servicio de gestión de listas de la compra y sus ítems. A día de hoy está
+implementada su capa de persistencia (migraciones Flyway, entidades JPA y
+repositorios); el contrato de API está definido Design-First en
+[`api-contract.yaml`](./api-contract.yaml) y su implementación (endpoints y
+lógica de negocio) queda pendiente.
 
 ## Endpoints implementados
 
@@ -27,18 +28,25 @@ renombrado mediante `PATCH`) y de sus ítems (`/lists/{id}/items` y
 
 ## Tablas y migraciones
 
-No aplica todavía: el servicio no tiene implementación ni
-`database-schema.md`. El esquema se documentará en ese fichero cuando exista.
+El esquema se define con migraciones Flyway sobre la base de datos dedicada
+`list-db` y se documenta en [`database-schema.md`](./database-schema.md), que
+es la fuente de detalle (tablas, constraints, relaciones y diagrama ER).
+
+- `list` (V1) — listas de la compra: identidad externa `public_id` (UUID),
+  propietario `owner_id`, `name` y marcas de auditoría.
+- `list_item` (V2) — ítems de una lista: FK `list_id` a `list` en cascada,
+  referencia polimórfica al producto por `(product_type, product_id)` y snapshot
+  `display_name`.
 
 ## Dependencias
 
-- _Infraestructura:_ PostgreSQL prevista (base de datos `list-db`), bajo el
-  patrón database-per-service ([ADR-002](../../../docs/adr/ADR-002-database-per-service-pattern.md)).
+- _Infraestructura:_ PostgreSQL (base de datos `list-db`), bajo el patrón
+  database-per-service ([ADR-002](../../../docs/adr/ADR-002-database-per-service-pattern.md)).
 - _Servicios:_ consumirá datos de `product-service` por API en el futuro.
 
 ## Deudas abiertas
 
-Ninguna: el servicio está sin implementar.
+Ninguna.
 
 ## Fuera de alcance
 

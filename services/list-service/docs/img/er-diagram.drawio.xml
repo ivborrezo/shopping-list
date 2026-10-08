@@ -1,0 +1,28 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="ER list-service" id="er-list-service">
+    <mxGraphModel dx="1542" dy="823" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="list-hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a0522d;strokeColor=#6D1F00;strokeWidth=2;fontSize=12;fontStyle=1;align=center;fontColor=light-dark(#FFFFFF,#121212);" value="list" vertex="1">
+          <mxGeometry height="28" width="220" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="list-body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#FAD7AC,#FFF2CC);strokeWidth=1;fontSize=11;align=left;spacingLeft=6;verticalAlign=top;strokeColor=#b46504;fontColor=light-dark(#FFFFFF,#121212);" value="&lt;div&gt;id PK&lt;/div&gt;&lt;div&gt;public_id UQ UUID&lt;/div&gt;owner_id UUID&lt;br&gt;name&lt;br&gt;created_at&lt;br&gt;updated_at" vertex="1">
+          <mxGeometry height="98" width="220" x="40" y="68" as="geometry" />
+        </mxCell>
+        <mxCell id="list-item-hdr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a0522d;strokeColor=#6D1F00;strokeWidth=2;fontSize=12;fontStyle=1;align=center;fontColor=light-dark(#FFFFFF,#121212);" value="list_item" vertex="1">
+          <mxGeometry height="28" width="220" x="435" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="list-item-body" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#FAD7AC,#FFF2CC);strokeWidth=1;fontSize=11;align=left;spacingLeft=6;verticalAlign=top;strokeColor=#b46504;fontColor=light-dark(#FFFFFF,#121212);" value="&lt;div&gt;id PK&lt;/div&gt;&lt;div&gt;public_id UQ UUID&lt;/div&gt;list_id FK&lt;br&gt;product_id UUID&lt;br&gt;product_type CHECK(BASE|USER)&lt;br&gt;display_name&lt;br&gt;purchased&lt;br&gt;created_at&lt;br&gt;updated_at" vertex="1">
+          <mxGeometry height="133" width="220" x="435" y="67" as="geometry" />
+        </mxCell>
+        <mxCell id="note-poly" parent="1" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=light-dark(#FAD7AC,#FFF2CC);strokeWidth=1;fontSize=10;align=left;verticalAlign=top;spacing=6;strokeColor=#b46504;fontColor=light-dark(#FFFFFF,#121212);" value="&lt;div&gt;&lt;b&gt;Referencia polimórfica al producto (sin FK física)&lt;/b&gt;&lt;/div&gt;&lt;div&gt;list_item referencia un producto BASE|USER por (product_type, product_id), donde product_id es el public_id UUID del producto. No hay clave foránea física: el producto vive en product-service (database-per-service, ADR-002) y la integridad se valida en la capa de aplicación (ADR-016). El snapshot display_name congela el nombre del producto en el momento del alta (ADR-LS-001).&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="615" x="40" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="e-list-item" edge="1" parent="1" source="list-body" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6D1F00;strokeWidth=1.5;fontColor=light-dark(#FFFFFF,#FFF2CC);fontSize=10;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fillColor=#a0522d;" target="list-item-body" value="1 : N · ON DELETE CASCADE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
