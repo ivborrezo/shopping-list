@@ -15,6 +15,11 @@ public interface DomainEventPublisher {
    * <p>La entrega es best-effort: no garantiza entrega, orden ni idempotencia, y un fallo de
    * publicación no se propaga al cliente.
    *
+   * <p>Invariante de correlación: el {@code correlationId} del evento no es nulo. Quien publica
+   * debe hacerlo dentro de un contexto de correlación; en peticiones HTTP lo aporta el filtro de
+   * correlación (cabecera {@code X-Correlation-Id} o UUID generado), y cualquier entrada no-HTTP
+   * (job programado, consumidor de mensajes) debe establecerlo antes de publicar.
+   *
    * @param event evento a publicar
    */
   void publish(DomainEvent<?> event);

@@ -215,6 +215,16 @@ entrada real del sistema y será quien, en la práctica, genere el
 `correlationId` casi siempre. El filtro de cada servicio no cambia: sigue
 haciendo exactamente lo mismo (reutilizar si viene, generar si no).
 
+**Cualquier otro punto de entrada:** el filtro cubre las peticiones HTTP, pero
+un flujo que no entra por HTTP —un job programado, un consumidor de mensajes que
+a su vez publica, un runner de arranque— también debe establecer su contexto de
+correlación antes de ejecutar lógica de negocio o publicar eventos: genera un
+`correlationId` y publícalo en el MDC igual que hace el filtro. Así el
+`correlationId` de los eventos emitidos es siempre **no nulo** y correlacionable,
+con independencia del origen. En Fase 6 lo cubrirá el contexto de traza (W3C
+Trace Context / OpenTelemetry), que genera un `traceId` nuevo cuando no hay
+contexto entrante.
+
 ### Propagación en llamadas internas (REST)
 
 Cuando un servicio llama a otro por HTTP (ej. `list-service` →

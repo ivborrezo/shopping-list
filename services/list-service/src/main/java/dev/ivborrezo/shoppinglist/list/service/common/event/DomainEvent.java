@@ -7,7 +7,8 @@ import java.time.Instant;
  *
  * @param <T> tipo de la carga específica del evento
  * @param eventType tipo del evento, del catálogo {@link EventType}
- * @param correlationId identificador de correlación de la petición que originó el hecho
+ * @param correlationId identificador de correlación de la petición que originó el hecho; no nulo
+ *     (el productor garantiza un contexto de correlación)
  * @param occurredAt instante UTC en que ocurrió el hecho
  * @param payload carga específica del evento
  */
