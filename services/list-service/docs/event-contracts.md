@@ -98,3 +98,71 @@ Disparado por `DELETE /lists/{id}`.
   "name": "Compra del finde"
 }
 ```
+
+### `list.item.added`
+
+Disparado por `POST /lists/{id}/items`.
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `listId` | string (UUID) | Identificador público de la lista a la que se añade el ítem. |
+| `itemId` | string (UUID) | Identificador público del ítem creado. |
+| `productType` | string | Tipo del producto referenciado (`BASE` o `USER`). |
+| `productId` | string (UUID) | Identificador público del producto referenciado. |
+| `displayName` | string | Snapshot del nombre del producto en el momento del alta. |
+
+```json
+{
+  "listId": "0195c9f3-7a2b-7c4d-8e1f-2a3b4c5d6e7f",
+  "itemId": "0195c9f3-9c4e-7a1b-8f2c-3d4e5f6a7b8c",
+  "productType": "BASE",
+  "productId": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+  "displayName": "Leche entera"
+}
+```
+
+### `list.item.removed`
+
+Disparado por `DELETE /lists/{id}/items/{itemId}`.
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `listId` | string (UUID) | Identificador público de la lista de la que se elimina el ítem. |
+| `itemId` | string (UUID) | Identificador público del ítem eliminado. |
+| `productType` | string | Tipo del producto referenciado (`BASE` o `USER`). |
+| `productId` | string (UUID) | Identificador público del producto referenciado. |
+| `displayName` | string | Snapshot del nombre que tenía el producto al eliminarse. |
+
+```json
+{
+  "listId": "0195c9f3-7a2b-7c4d-8e1f-2a3b4c5d6e7f",
+  "itemId": "0195c9f3-9c4e-7a1b-8f2c-3d4e5f6a7b8c",
+  "productType": "BASE",
+  "productId": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+  "displayName": "Leche entera"
+}
+```
+
+### `list.item.purchased`
+
+Disparado por `PATCH /lists/{id}/items/{itemId}`.
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `listId` | string (UUID) | Identificador público de la lista a la que pertenece el ítem. |
+| `itemId` | string (UUID) | Identificador público del ítem marcado o desmarcado. |
+| `productType` | string | Tipo del producto referenciado (`BASE` o `USER`). |
+| `productId` | string (UUID) | Identificador público del producto referenciado. |
+| `displayName` | string | Snapshot del nombre del producto almacenado en el ítem. |
+| `purchased` | boolean | `true` marca el ítem como comprado; `false` lo desmarca. |
+
+```json
+{
+  "listId": "0195c9f3-7a2b-7c4d-8e1f-2a3b4c5d6e7f",
+  "itemId": "0195c9f3-9c4e-7a1b-8f2c-3d4e5f6a7b8c",
+  "productType": "BASE",
+  "productId": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+  "displayName": "Leche entera",
+  "purchased": true
+}
+```
