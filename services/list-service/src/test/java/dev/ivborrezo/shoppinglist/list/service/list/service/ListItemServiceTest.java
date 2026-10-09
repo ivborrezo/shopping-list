@@ -11,31 +11,43 @@ import static org.mockito.Mockito.when;
 import dev.ivborrezo.shoppinglist.list.service.common.BusinessException;
 import dev.ivborrezo.shoppinglist.list.service.common.ErrorCode;
 import dev.ivborrezo.shoppinglist.list.service.common.ProductType;
+import dev.ivborrezo.shoppinglist.list.service.common.event.DomainEvent;
+import dev.ivborrezo.shoppinglist.list.service.common.event.DomainEventPublisher;
+import dev.ivborrezo.shoppinglist.list.service.common.event.EventType;
 import dev.ivborrezo.shoppinglist.list.service.list.client.ProductCatalogClient;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.AddListItemRequest;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.ListItemResponse;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.UpdateListItemPurchasedRequest;
 import dev.ivborrezo.shoppinglist.list.service.list.entity.ListItem;
 import dev.ivborrezo.shoppinglist.list.service.list.entity.ShoppingList;
+import dev.ivborrezo.shoppinglist.list.service.list.event.ListItemAddedEvent;
+import dev.ivborrezo.shoppinglist.list.service.list.event.ListItemPurchasedEvent;
+import dev.ivborrezo.shoppinglist.list.service.list.event.ListItemRemovedEvent;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ListItemRepository;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ShoppingListRepository;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.MDC;
 import org.springframework.dao.DataIntegrityViolationException;
 
 /**
  * Test unitario de {@link ListItemService} con repositorios y catálogo mockeados.
  *
  * <p>Cubre el alta con snapshot resuelto, la precedencia de errores, la traducción de la violación
- * de unicidad a {@code DUPLICATE_LIST_ITEM}, el cambio de estado de compra y el borrado. La
- * actividad real ({@code updatedAt}) se verifica en el test de integración; aquí basta con
- * comprobar que {@code touch} deja la marca asignada.
+ * de unicidad a {@code DUPLICATE_LIST_ITEM}, el cambio de estado de compra, el borrado y la
+ * publicación de los eventos de dominio asociados a cada mutación. La actividad real ({@code
+ * updatedAt}) se verifica en el test de integración; aquí basta con comprobar que {@code touch}
+ * deja la marca asignada.
  */
 @ExtendWith(MockitoExtension.class)
 class ListItemServiceTest {
@@ -45,18 +57,38 @@ class ListItemServiceTest {
   private static final UUID OTHER_OWNER_ID =
       UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeef");
 
+  private static final String CORRELATION_ID = "corr-test";
+
+  private static final Instant FIXED_INSTANT = Instant.parse("2026-01-01T00:00:00Z");
+
   @Mock private ShoppingListRepository shoppingListRepository;
 
   @Mock private ListItemRepository listItemRepository;
 
   @Mock private ProductCatalogClient productCatalogClient;
 
+  @Mock private DomainEventPublisher domainEventPublisher;
+
+  private Clock clock;
+
   private ListItemService listItemService;
 
   @BeforeEach
   void setUp() {
+    clock = Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
     listItemService =
-        new ListItemService(shoppingListRepository, listItemRepository, productCatalogClient);
+        new ListItemService(
+            shoppingListRepository,
+            listItemRepository,
+            productCatalogClient,
+            clock,
+            domainEventPublisher);
+    MDC.put("correlationId", CORRELATION_ID);
+  }
+
+  @AfterEach
+  void tearDown() {
+    MDC.clear();
   }
 
   /**
@@ -99,6 +131,15 @@ class ListItemServiceTest {
     assertThat(response.productType()).isEqualTo(ProductType.BASE);
     assertThat(response.displayName()).isEqualTo("Leche");
     assertThat(response.purchased()).isFalse();
+
+    DomainEvent<?> event = capturePublishedEvent();
+    assertThat(event.eventType()).isEqualTo(EventType.LIST_ITEM_ADDED);
+    assertThat(event.correlationId()).isEqualTo(CORRELATION_ID);
+    assertThat(event.occurredAt()).isEqualTo(FIXED_INSTANT);
+    assertThat(event.payload())
+        .isEqualTo(
+            new ListItemAddedEvent(
+                listPublicId, itemPublicId, ProductType.BASE, productId, "Leche"));
   }
 
   /** Rechaza un tipo de producto no soportado sin llegar a consultar el catálogo. */
@@ -180,6 +221,8 @@ class ListItemServiceTest {
         .isInstanceOfSatisfying(
             BusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_LIST_ITEM));
+
+    verify(domainEventPublisher, never()).publish(any());
   }
 
   /** Propaga como fallo cerrado la referencia de producto inválida que lanza el catálogo. */
@@ -227,8 +270,9 @@ class ListItemServiceTest {
   void updatePurchased_validRequest_updatesStateAndTouchesList() {
     UUID listPublicId = UUID.randomUUID();
     UUID itemPublicId = UUID.randomUUID();
+    UUID productId = UUID.randomUUID();
     ShoppingList list = list(1L, listPublicId, OWNER_ID);
-    ListItem item = item(1L, itemPublicId, UUID.randomUUID(), ProductType.BASE, "Leche", false);
+    ListItem item = item(1L, itemPublicId, productId, ProductType.BASE, "Leche", false);
     when(shoppingListRepository.findByPublicId(listPublicId)).thenReturn(Optional.of(list));
     when(listItemRepository.findByPublicId(itemPublicId)).thenReturn(Optional.of(item));
     when(listItemRepository.save(item)).thenAnswer(invocation -> invocation.getArgument(0));
@@ -242,6 +286,15 @@ class ListItemServiceTest {
     verify(listItemRepository).save(item);
     assertThat(response.id()).isEqualTo(itemPublicId);
     assertThat(response.purchased()).isTrue();
+
+    DomainEvent<?> event = capturePublishedEvent();
+    assertThat(event.eventType()).isEqualTo(EventType.LIST_ITEM_PURCHASED);
+    assertThat(event.correlationId()).isEqualTo(CORRELATION_ID);
+    assertThat(event.occurredAt()).isEqualTo(FIXED_INSTANT);
+    assertThat(event.payload())
+        .isEqualTo(
+            new ListItemPurchasedEvent(
+                listPublicId, itemPublicId, ProductType.BASE, productId, "Leche", true));
   }
 
   /** Traduce la ausencia del ítem a {@code LIST_ITEM_NOT_FOUND}. */
@@ -291,8 +344,9 @@ class ListItemServiceTest {
   void remove_validRequest_deletesItemAndTouchesList() {
     UUID listPublicId = UUID.randomUUID();
     UUID itemPublicId = UUID.randomUUID();
+    UUID productId = UUID.randomUUID();
     ShoppingList list = list(1L, listPublicId, OWNER_ID);
-    ListItem item = item(1L, itemPublicId, UUID.randomUUID(), ProductType.BASE, "Leche", false);
+    ListItem item = item(1L, itemPublicId, productId, ProductType.BASE, "Leche", false);
     when(shoppingListRepository.findByPublicId(listPublicId)).thenReturn(Optional.of(list));
     when(listItemRepository.findByPublicId(itemPublicId)).thenReturn(Optional.of(item));
 
@@ -300,6 +354,15 @@ class ListItemServiceTest {
 
     verify(listItemRepository).delete(item);
     assertThat(list.getUpdatedAt()).isNotNull();
+
+    DomainEvent<?> event = capturePublishedEvent();
+    assertThat(event.eventType()).isEqualTo(EventType.LIST_ITEM_REMOVED);
+    assertThat(event.correlationId()).isEqualTo(CORRELATION_ID);
+    assertThat(event.occurredAt()).isEqualTo(FIXED_INSTANT);
+    assertThat(event.payload())
+        .isEqualTo(
+            new ListItemRemovedEvent(
+                listPublicId, itemPublicId, ProductType.BASE, productId, "Leche"));
   }
 
   /** Traduce la ausencia del ítem en el borrado a {@code LIST_ITEM_NOT_FOUND}. */
@@ -333,6 +396,12 @@ class ListItemServiceTest {
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OWNER_MISMATCH));
 
     verify(listItemRepository, never()).delete(any(ListItem.class));
+  }
+
+  private DomainEvent<?> capturePublishedEvent() {
+    ArgumentCaptor<DomainEvent<?>> captor = ArgumentCaptor.forClass(DomainEvent.class);
+    verify(domainEventPublisher).publish(captor.capture());
+    return captor.getValue();
   }
 
   private static ShoppingList list(Long id, UUID publicId, UUID ownerId) {

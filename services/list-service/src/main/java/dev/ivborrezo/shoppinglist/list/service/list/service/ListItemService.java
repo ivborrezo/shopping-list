@@ -3,16 +3,24 @@ package dev.ivborrezo.shoppinglist.list.service.list.service;
 import dev.ivborrezo.shoppinglist.list.service.common.BusinessException;
 import dev.ivborrezo.shoppinglist.list.service.common.ErrorCode;
 import dev.ivborrezo.shoppinglist.list.service.common.ProductType;
+import dev.ivborrezo.shoppinglist.list.service.common.event.DomainEvent;
+import dev.ivborrezo.shoppinglist.list.service.common.event.DomainEventPublisher;
+import dev.ivborrezo.shoppinglist.list.service.common.event.EventType;
 import dev.ivborrezo.shoppinglist.list.service.list.client.ProductCatalogClient;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.AddListItemRequest;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.ListItemResponse;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.UpdateListItemPurchasedRequest;
 import dev.ivborrezo.shoppinglist.list.service.list.entity.ListItem;
 import dev.ivborrezo.shoppinglist.list.service.list.entity.ShoppingList;
+import dev.ivborrezo.shoppinglist.list.service.list.event.ListItemAddedEvent;
+import dev.ivborrezo.shoppinglist.list.service.list.event.ListItemPurchasedEvent;
+import dev.ivborrezo.shoppinglist.list.service.list.event.ListItemRemovedEvent;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ListItemRepository;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ShoppingListRepository;
+import java.time.Clock;
 import java.util.Objects;
 import java.util.UUID;
+import org.slf4j.MDC;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>Añade, marca o desmarca y elimina productos de una lista verificando la propiedad a través de
  * la lista padre. En el alta congela el snapshot {@code displayName} resuelto contra {@code
  * product-service} y delega la detección de duplicados en la constraint de unicidad de la base de
- * datos. Cada mutación marca la lista como modificada para refrescar su actividad.
+ * datos. Cada mutación marca la lista como modificada para refrescar su actividad y publica el
+ * evento de dominio correspondiente a través de {@link DomainEventPublisher}, con el instante del
+ * hecho capturado en el propio servicio.
  */
 @Service
 @Transactional(readOnly = true)
@@ -35,20 +45,31 @@ public class ListItemService {
 
   private final ProductCatalogClient productCatalogClient;
 
+  private final Clock clock;
+
+  private final DomainEventPublisher domainEventPublisher;
+
   /**
-   * Inyecta los repositorios y el puerto de catálogo por constructor.
+   * Inyecta los repositorios, el puerto de catálogo, la fuente de tiempo y el puerto de publicación
+   * por constructor.
    *
    * @param shoppingListRepository repositorio de listas
    * @param listItemRepository repositorio de ítems de lista
    * @param productCatalogClient puerto de resolución de nombres de producto
+   * @param clock fuente de tiempo para capturar el instante de los hechos
+   * @param domainEventPublisher puerto de publicación de eventos de dominio
    */
   public ListItemService(
       ShoppingListRepository shoppingListRepository,
       ListItemRepository listItemRepository,
-      ProductCatalogClient productCatalogClient) {
+      ProductCatalogClient productCatalogClient,
+      Clock clock,
+      DomainEventPublisher domainEventPublisher) {
     this.shoppingListRepository = shoppingListRepository;
     this.listItemRepository = listItemRepository;
     this.productCatalogClient = productCatalogClient;
+    this.clock = clock;
+    this.domainEventPublisher = domainEventPublisher;
   }
 
   /**
@@ -90,6 +111,14 @@ public class ListItemService {
       throw new BusinessException(ErrorCode.DUPLICATE_LIST_ITEM);
     }
     list.touch();
+    publish(
+        EventType.LIST_ITEM_ADDED,
+        new ListItemAddedEvent(
+            Objects.requireNonNull(list.getPublicId()),
+            Objects.requireNonNull(saved.getPublicId()),
+            saved.getProductType(),
+            saved.getProductId(),
+            saved.getDisplayName()));
     return ListItemResponse.from(saved);
   }
 
@@ -120,6 +149,15 @@ public class ListItemService {
     item.setPurchased(request.purchased());
     ListItem saved = listItemRepository.save(item);
     list.touch();
+    publish(
+        EventType.LIST_ITEM_PURCHASED,
+        new ListItemPurchasedEvent(
+            Objects.requireNonNull(list.getPublicId()),
+            Objects.requireNonNull(saved.getPublicId()),
+            saved.getProductType(),
+            saved.getProductId(),
+            saved.getDisplayName(),
+            saved.getPurchased()));
     return ListItemResponse.from(saved);
   }
 
@@ -146,6 +184,14 @@ public class ListItemService {
     ListItem item = findItemOrThrow(list, itemPublicId);
     listItemRepository.delete(item);
     list.touch();
+    publish(
+        EventType.LIST_ITEM_REMOVED,
+        new ListItemRemovedEvent(
+            Objects.requireNonNull(list.getPublicId()),
+            Objects.requireNonNull(item.getPublicId()),
+            item.getProductType(),
+            item.getProductId(),
+            item.getDisplayName()));
   }
 
   private ShoppingList findListOrThrow(UUID publicId) {
@@ -159,6 +205,11 @@ public class ListItemService {
         .findByPublicId(itemPublicId)
         .filter(item -> item.getListId().equals(list.getId()))
         .orElseThrow(() -> new BusinessException(ErrorCode.LIST_ITEM_NOT_FOUND));
+  }
+
+  private void publish(EventType type, Object payload) {
+    domainEventPublisher.publish(
+        new DomainEvent<>(type, MDC.get("correlationId"), clock.instant(), payload));
   }
 
   private ProductType parseProductType(String raw) {
