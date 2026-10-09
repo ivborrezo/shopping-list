@@ -100,4 +100,15 @@ public class ShoppingList {
   public Instant getUpdatedAt() {
     return updatedAt;
   }
+
+  /**
+   * Marca la entidad como modificada para que la auditoría refresque {@code updatedAt}.
+   *
+   * <p>Lo usan las mutaciones de los ítems (D2.4) para reflejar su actividad en la lista padre sin
+   * trigger ni SQL crudo: al asignar un instante nuevo la entidad queda sucia y el
+   * {@code @PreUpdate} de la auditoría reescribe la marca en el siguiente flush.
+   */
+  public void touch() {
+    this.updatedAt = Instant.now();
+  }
 }
