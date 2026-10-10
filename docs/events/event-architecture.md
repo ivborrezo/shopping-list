@@ -114,24 +114,32 @@ Ambos puntos quedan pendientes de diseño concreto para Fase 5, cuando
 
 ### `list-service`
 
+`list-service` es el **productor activo** de los seis eventos de esta
+tabla desde Fase 1. `product-service` es el consumidor previsto de
+`list.item.added`, para el ranking de recientes (Fase 5).
+
 | Evento | Disparado por | Consumidor previsto | Propósito de negocio |
 |---|---|---|---|
 | `list.created` | `POST /lists` | — (sin consumidor activo) | Se ha creado una nueva lista. |
 | `list.renamed` | `PATCH /lists/{id}` | — (sin consumidor activo) | Se ha renombrado una lista. |
 | `list.deleted` | `DELETE /lists/{id}` | `notification-service` (Fase 5) | Notificar a los colaboradores de la lista que ha sido eliminada. |
-| `list.item.added` | `POST /lists/{id}/items` | — (sin consumidor activo) | Se ha añadido un producto a una lista existente. |
+| `list.item.added` | `POST /lists/{id}/items` | `product-service` (recientes, Fase 5) | Se ha añadido un producto a una lista existente. |
 | `list.item.removed` | `DELETE /lists/{id}/items/{itemId}` | `notification-service` (Fase 5) | Notificar a los colaboradores de que un producto fue eliminado de la lista. |
 | `list.item.purchased` | `PATCH /lists/{id}/items/{itemId}` | `notification-service` (Fase 5) | Notificar a los colaboradores de que un ítem fue marcado como comprado o pendiente (el mismo evento cubre ambos sentidos mediante un campo booleano en el payload, ej. `purchased: true/false`). |
 
-**Nota sobre eventos sin consumidor activo:** `list.created`, `list.renamed`
-y `list.item.added` se publican desde Fase 1 sin que ningún servicio los
+**Nota sobre eventos sin consumidor activo:** `list.created` y
+`list.renamed` se publican desde Fase 1 sin que ningún servicio los
 consuma todavía. Esto es una decisión consciente, no un descuido: el
 desacoplamiento propio de la mensajería asíncrona permite instrumentar
 la publicación ahora, evitando tener que modificar el código de
 negocio de `list-service` retroactivamente cuando aparezca un
-consumidor futuro. `list.deleted` y `list.item.removed` siguen el mismo
-razonamiento: se publican desde ya pensando en el valor de notificación
-que aportarán en Fase 5.
+consumidor futuro. `list.item.added` tiene un consumidor previsto
+(`product-service`, para el ranking de recientes, Fase 5) todavía no
+implementado, coherente con la entrada "Disparador de recientes
+limitado al toggle de favorito" de [`TECH_DEBT.md`](../../TECH_DEBT.md).
+`list.deleted` y `list.item.removed` siguen el mismo razonamiento: se
+publican desde ya pensando en el valor de notificación que aportarán
+en Fase 5.
 
 ### `product-service`
 
