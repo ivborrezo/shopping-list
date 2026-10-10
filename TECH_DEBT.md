@@ -34,8 +34,8 @@ El borrado de un `user_product` referenciado desde `list_item` deja el
 marcar el ítem como "producto no disponible" y preservar el snapshot
 `display_name` ([ADR-012](./docs/adr/ADR-012-modelo-productos-base-vs-usuario.md)).
 
-Trigger: cuando `list-service` implemente la relación con productos por
-referencia, y `product-service` decida publicar el evento
+Trigger: la relación de `list-service` con los productos por referencia ya
+existe (Fase 1); queda pendiente que `product-service` publique el evento
 `product.deleted`.
 
 ### Clonado user-to-user de productos
@@ -83,14 +83,13 @@ Trigger: se diseña el enforcement de compartición (Fase 4 o posterior).
 
 La convención de logging ([docs/logging.md](./docs/logging.md)) define un
 `CorrelationIdFilter` (cabecera `X-Correlation-Id` + MDC) para todos los
-servicios, pero hasta ahora ninguno lo implementaba. `list-service` es el primer
-servicio que lo necesita —el envelope de sus eventos exige `correlationId`— y lo
-implementa en su rama de listas; `product-service` queda sin él, de modo que sus
-logs todavía no se correlacionan con el resto.
+servicios. `list-service` ya lo implementa —el envelope de sus eventos exige
+`correlationId`—; `product-service` queda sin él, de modo que sus logs todavía
+no se correlacionan con el resto.
 
-Trigger: al terminar la implementación de `list-service`, replicar en
-`product-service` el `CorrelationIdFilter` + MDC. No hay módulo compartido, así
-que cada servicio copia el patrón (como `ErrorCode`/`PagedResponse`).
+Trigger: replicar en `product-service` el `CorrelationIdFilter` + MDC. No hay
+módulo compartido, así que cada servicio copia el patrón (como
+`ErrorCode`/`PagedResponse`).
 
 ### Los `400` de validación de parámetros en `product-service` no llevan `code`
 

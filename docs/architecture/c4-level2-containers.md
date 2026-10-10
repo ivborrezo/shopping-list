@@ -112,7 +112,7 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 | list-service | list-db | Síncrono | JDBC/SQL | Lectura/escritura de listas e ítems de lista. |
 | list-service | product-service | Síncrono | REST/HTTPS | Consulta puntual de producto referenciado (sin join entre BDs). |
 | list-service | Message Broker | Asíncrono | AMQP / Kafka protocol | Publicación de eventos de dominio (lista creada, producto añadido). |
-| product-service | Message Broker | Asíncrono | AMQP / Kafka protocol | Publicación de eventos de dominio. |
+| Message Broker | product-service | Asíncrono | AMQP / Kafka protocol | Consumo de eventos (recientes, Fase 5). |
 | Message Broker | Notification Service | Asíncrono | AMQP / Kafka protocol | Consumo de eventos para generar notificaciones. |
 | Notification Service | SendGrid | Síncrono | SMTP / HTTPS API | Envío de notificaciones por email. |
 
@@ -177,6 +177,9 @@ datos exclusiva, sin joins directos entre ellas. La relación
 `list-service → product-service` (consulta de producto referenciado) es
 una llamada síncrona REST, coherente con la decisión documentada de usar
 "REST síncrono para queries, eventos asíncronos para side effects".
+`product-service` no publica eventos en Fase 1; será el consumidor
+previsto de `list.item.added` (recientes, Fase 5), coherente con la
+relación de consumo reflejada en la matriz de comunicaciones.
 
 ### Message Broker
 Representado de forma genérica porque la elección final entre Kafka y
@@ -187,9 +190,11 @@ independientemente del resultado de esa decisión.
 
 ### Notification Service
 Único contenedor políglota del sistema (Node.js). Consume eventos del
-Message Broker y los traduce en notificaciones multicanal. La
-plantilla de notificación se selecciona según el campo `locale` que debe
-viajar en el payload del evento (ver `docs/events/event-architecture.md`).
+Message Broker y los traduce en notificaciones multicanal. El evento
+describe el hecho ocurrido y no incluye `locale` ni destinatarios:
+`notification-service` resuelve el idioma de cada destinatario en el
+momento del consumo, contra la fuente de identidad (Fase 4). Ver
+`docs/events/event-architecture.md`.
 
 ### Bases de datos (product-db, list-db, auth-db)
 Cada una es una instancia PostgreSQL físicamente independiente,
