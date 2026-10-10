@@ -150,8 +150,9 @@ elevación:
   `RecordTypeParameterName`, `MethodTypeParameterName`,
   `InterfaceTypeParameterName`, `MethodName`).
 - **Bucket C — javadoc (9 módulos):** reglas de documentación
-  coherentes con AGENTS.md §5 (Javadoc obligatorio en tipos
-  públicos y métodos públicos ≥2 líneas). `NonEmptyAtclauseDescription`,
+  coherentes con la convención de javadoc del proyecto (Javadoc
+  obligatorio en tipos públicos y métodos públicos ≥2 líneas).
+  `NonEmptyAtclauseDescription`,
   `InvalidJavadocPosition`, `SummaryJavadoc`, `JavadocParagraph`,
   `RequireEmptyLineBeforeBlockTagGroup`, `AtclauseOrder`,
   `JavadocMethod`, `MissingJavadocMethod`, `MissingJavadocType`.

@@ -17,7 +17,7 @@
   root Checker, agrupados en tres buckets:
     - Bucket A (12): bug-prone / estructural que Spotless no reformatea.
     - Bucket B (14): naming conventions que Spotless no toca.
-    - Bucket C  (9): javadoc (coherente con AGENTS.md §5).
+    - Bucket C  (9): javadoc (coherente con la convención de javadoc del proyecto).
   El resto (~22) sigue como warning heredado: formatting cubierto por
   Spotless (red doble deliberada ADR-009 §3) y reglas subjetivas.
   Criterio y lista detallada en docs/cicd/cicd-strategy.md §4.1.

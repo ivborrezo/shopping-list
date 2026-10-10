@@ -30,7 +30,8 @@ El proyecto ya fija en [ADR-008](ADR-008-testcontainers-para-testing-de-integrac
 la herramienta de integracion (Testcontainers con PostgreSQL real) y en
 [ADR-009](ADR-009-estrategia-de-ci-y-git-hooks.md) la estrategia de CI
 y la convencion de naming de tests (`*Test` / `*IT` /
-`*IntegrationTest`). La seccion 4 del AGENTS.md del proyecto ya exige
+`*IntegrationTest`). La politica de testing del proyecto
+([`docs/contributing/testing.md`](../contributing/testing.md)) ya exige
 tests como parte de cada entregable, con minimo de caso feliz y caso de
 error por endpoint. Lo que ninguno de esos documentos fija es el
 **cuando** (antes o despues del codigo) ni el **como** (que tipo de
@@ -79,7 +80,7 @@ proyecto:
 - No prescribe cobertura minima. Esa metrica se decidira cuando haya
   datos reales de cobertura sobre un volumen representativo de codigo;
   fijar un porcentaje ahora seria arbitrario.
-- No cambia lo que ya exige AGENTS.md seccion 4: los tests siguen
+- No cambia lo que ya exige la politica de testing del proyecto: los tests siguen
   siendo parte del entregable de cada tarea. Este ADR anade el *cuando*
   (antes del codigo), no sustituye el *que* (tests obligatorios).
 - No obliga a reescribir tests de codigo existente. El scaffold y el
@@ -270,12 +271,14 @@ Gherkin y el codigo Java que la implementa) supera el beneficio.
 
 ## Documentacion relacionada
 
-- **AGENTS.md seccion 4 (Testing):** ya exige tests como parte de cada
-  entregable, con un minimo de caso feliz y caso de error por endpoint
-  o metodo publico relevante, y fija el stack de testing (JUnit 5,
-  Mockito, AssertJ, Testcontainers, MockMvc). Este ADR anade el
-  *cuando* (TDD: tests antes del codigo) y el *como* (que tipo de test
-  para que caso: Decision 2), sin sustituir lo ya exigido en AGENTS.md.
+- **Politica de testing del proyecto
+  ([`docs/contributing/testing.md`](../contributing/testing.md)):** ya
+  exige tests como parte de cada entregable, con un minimo de caso feliz
+  y caso de error por endpoint o metodo publico relevante, y fija el
+  stack de testing (JUnit 5, Mockito, AssertJ, Testcontainers,
+  MockMvc). Este ADR anade el *cuando* (TDD: tests antes del codigo) y
+  el *como* (que tipo de test para que caso: Decision 2), sin sustituir
+  lo ya exigido por esa politica.
 - **[ADR-008](ADR-008-testcontainers-para-testing-de-integracion.md):**
   fija Testcontainers con modulo PostgreSQL como herramienta de
   integracion y `@ServiceConnection` como patron de wiring. Este ADR
