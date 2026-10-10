@@ -5,7 +5,7 @@
 | Fase | Estado | Contenido |
 |---|---|---|
 | **Fase 0** | Completada | Estructura del monorepo, README inicial y documentación macro del sistema (arquitectura C4, ADRs, eventos, convenciones). |
-| **Fase 1** | En desarrollo | MVP Core. `product-service` implementado: categories, base-products, user-products, favoritos y recientes. `list-service` pendiente de implementación: placeholder con contrato definido ([overview](./services/list-service/docs/overview.md), `api-contract.yaml`). |
+| **Fase 1** | En desarrollo | MVP Core. `product-service` implementado: categories, base-products, user-products, favoritos y recientes. `list-service` implementado: listas, ítems, integración de solo lectura con `product-service` y publicación de eventos ([overview](./services/list-service/docs/overview.md)). |
 | **Fase 2** | Sin empezar | Frontend: `frontend/` en la raíz del repositorio (React, i18n de UI con react-i18next, PWA). |
 | **Fase 3** | Sin empezar | Infraestructura de plataforma: `api-gateway` (Spring Cloud Gateway: enrutamiento, rate limiting, CORS, propagación de `Accept-Language`) y `config-service` (Spring Cloud Config Server). |
 | **Fase 4** | Sin empezar | Seguridad: `auth-service` como Identity Provider (Keycloak + OAuth2/OIDC). Sustituye el placeholder `ownerId` de las Fases 1-3. |

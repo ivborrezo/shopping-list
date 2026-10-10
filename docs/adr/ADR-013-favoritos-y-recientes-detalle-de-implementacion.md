@@ -191,6 +191,21 @@ adopta en esta enmienda: al referenciar por identidad externa, la clave natural
 del par usuario-producto deja de depender del id interno y la surrogate es la
 forma coherente con `list_item`.
 
+## Resolución posterior
+
+Esta sección precisa, sin reescribir lo decidido, el estado del segundo
+disparador de recientes de las Decisiones 3 y 4.
+
+La Decisión 3 condicionaba ese disparador a que `list-service` publicara el
+evento "producto añadido a lista" y lo ligaba a la elección del message broker.
+La publicación no es el cuello de botella: `list-service` ya publica
+`list.item.added` desde Fase 1. Lo que activa realmente el segundo disparador es
+que `product-service` **consuma** ese evento para actualizar `last_used_at`; hasta
+entonces el único camino hacia la marca de reciente sigue siendo el toggle de
+favorito. El catálogo central lo refleja en
+[`TECH_DEBT.md`](../../TECH_DEBT.md) (entrada "Disparador de recientes limitado
+al toggle de favorito").
+
 ## Documentación relacionada
 
 - **[ADR-002](ADR-002-database-per-service-pattern.md)** — por qué no puede

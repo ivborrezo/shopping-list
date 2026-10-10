@@ -7,8 +7,8 @@ Aceptado.
 ## Contexto
 
 `list-service` publica eventos de dominio desde Fase 1 (`docs/events/event-architecture.md`
-define el catálogo inicial: `list.created`, `list.deleted`, `list.item.added`,
-`list.item.removed`, `list.item.purchased`). Antes de escribir la primera
+define el catálogo inicial: `list.created`, `list.renamed`, `list.deleted`,
+`list.item.added`, `list.item.removed`, `list.item.purchased`). Antes de escribir la primera
 clase de evento en código, es necesario fijar una convención de nombrado
 para el campo `eventType` de cada mensaje.
 
@@ -78,6 +78,7 @@ Ejemplos ya adoptados en el catálogo de `list-service`:
 
 ```
 list.created
+list.renamed
 list.deleted
 list.item.added
 list.item.removed

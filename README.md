@@ -9,6 +9,7 @@ Java 21 · Spring Boot 4.x · PostgreSQL · Docker
 </div>
 
 [![CI](https://github.com/iv-borrezo/shopping-list/actions/workflows/product-service.yml/badge.svg)](https://github.com/iv-borrezo/shopping-list/actions/workflows/product-service.yml)
+[![CI](https://github.com/iv-borrezo/shopping-list/actions/workflows/list-service.yml/badge.svg)](https://github.com/iv-borrezo/shopping-list/actions/workflows/list-service.yml)
 
 ---
 
@@ -40,9 +41,9 @@ colaborativa. El sistema está diseñado siguiendo principios
 independiente con su propia base de datos, y toda la infraestructura
 local está definida como código mediante Docker Compose.
 
-> **Estado actual:** Fase 1 (MVP Core) en desarrollo. `product-service`
-> operativo — [overview](./services/product-service/docs/overview.md);
-> `list-service` placeholder — [overview](./services/list-service/docs/overview.md).
+> **Estado actual:** Fase 1 (MVP Core) en desarrollo. `product-service` y
+> `list-service` operativos — [overview de `product-service`](./services/product-service/docs/overview.md),
+> [overview de `list-service`](./services/list-service/docs/overview.md).
 
 ---
 
@@ -59,6 +60,7 @@ documentadas en
 | Servicio | Contenedor | Puerto local |
 |---|---|---|
 | `product-service` | `shopping-list-product-service` | `8081` |
+| `list-service` | `shopping-list-list-service` | `8082` |
 | `product-db` | `shopping-list-product-db` (PostgreSQL) | `5434` |
 | `list-db` | `shopping-list-list-db` (PostgreSQL) | `5435` |
 
@@ -70,11 +72,11 @@ documentadas en
 shopping-list/
 ├── docker-compose.yml
 ├── .env.example
-├── .github/workflows/       # CI pipeline (product-service)
+├── .github/workflows/       # CI pipeline (product-service, list-service)
 ├── githooks/                # pre-commit + commit-msg
 ├── config/checkstyle/       # Google Java Style (compartido)
 ├── docs/
-│   ├── adr/                 # 15 ADRs
+│   ├── adr/                 # 16 ADRs
 │   ├── architecture/        # C4 Level 2
 │   ├── cicd/                # Estrategia CI/CD
 │   ├── contributing/        # Guías de contribución
@@ -89,15 +91,21 @@ shopping-list/
 │   │       ├── database-schema.md
 │   │       ├── local-setup.md
 │   │       └── img/             # Diagrama ER (draw.io + SVG)
-│   └── list-service/            # Placeholder (contrato de API)
+│   └── list-service/          # Spring Boot + PostgreSQL
+│       ├── Dockerfile (multi-stage)
+│       ├── src/
 │       └── docs/
-│           └── api-contract.yaml
+│           ├── api-contract.yaml
+│           ├── database-schema.md
+│           ├── local-setup.md
+│           ├── event-contracts.md
+│           ├── adr/             # ADR local del servicio
+│           └── img/             # Diagrama ER (draw.io + SVG)
 ```
 
-`product-service` ya es operacionalmente independiente: build Maven,
-`Dockerfile` multi-stage, tests con Testcontainers y pipeline de CI
-propio. `list-service` es un placeholder con su contrato de API
-definido; su implementación replicará la misma estructura.
+`product-service` y `list-service` ya son operacionalmente
+independientes: cada uno con build Maven vía wrapper, `Dockerfile`
+multi-stage, tests con Testcontainers y pipeline de CI propio.
 
 ---
 
@@ -135,6 +143,7 @@ servicio), consulta el [Setup completo](./docs/contributing/setup.md).
 |---|---|
 | [C4 Nivel 2 — Diagrama de Contenedores](./docs/architecture/c4-level2-containers.md) | Vista de contenedores del sistema completo (arquitectura objetivo por fases, codificada por color según estado de implementación) |
 | [Diagrama ER de `product-service`](./services/product-service/docs/img/er-diagram.svg) | Esquema entidad-relación de las 7 tablas de `product-service` (snapshot a Flyway V11) |
+| [Diagrama ER de `list-service`](./services/list-service/docs/img/er-diagram.svg) | Esquema entidad-relación de las tablas `list` y `list_item` (snapshot a Flyway V2) |
 
 ### Arquitectura de eventos y convenciones
 
@@ -168,6 +177,8 @@ como snapshot histórico de diseño.
 | [Contribuir a ShoppingList](./CONTRIBUTING.md) | Índice de guías de contribución: setup completo, commits, ramas, estilo de código, testing, logging y entorno local |
 | [Setup local de `product-service`](./services/product-service/docs/local-setup.md) | Prerrequisitos, variables de entorno, escenarios de ejecución (CLI, VSCode, Docker Compose), tests y troubleshooting |
 | [Esquema de BD de `product-service`](./services/product-service/docs/database-schema.md) | Tablas `category`, `category_translation`, `base_product`, `base_product_translation`, `user_product`, `user_favorite_product` y `user_recent_product` con migraciones Flyway |
+| [Setup local de `list-service`](./services/list-service/docs/local-setup.md) | Prerrequisitos, variables de entorno, escenarios de ejecución (CLI, VSCode, Docker Compose), tests y troubleshooting |
+| [Esquema de BD de `list-service`](./services/list-service/docs/database-schema.md) | Tablas `list` y `list_item` con migraciones Flyway V1-V2 |
 
 ### Estrategia de CI/CD
 

@@ -16,14 +16,16 @@ instalación y arranque del repositorio se describe en el
 
 ## Nomenclatura
 
-- Contenedores con prefijo `shopping-list-`
-  (`shopping-list-product-db`, `shopping-list-list-db`).
+- Contenedores con prefijo `shopping-list-`: bases de datos
+  (`shopping-list-product-db`, `shopping-list-list-db`) y servicios
+  (`shopping-list-product-service`, `shopping-list-list-service`).
 - Red Docker: `shopping-list-net`.
 
 ## Variables de entorno
 
 - Configuración por servicio en `.env` (plantilla `.env.example`):
-  `PRODUCT_DB_*` y `LIST_DB_*` (`NAME`, `USER`, `PASSWORD`, `PORT_OUT`).
+  `PRODUCT_DB_*` y `LIST_DB_*` (`HOST`, `NAME`, `USER`, `PASSWORD`, `PORT_OUT`).
 
 Referencias: [Setup local de product-service](../../services/product-service/docs/local-setup.md) ·
+[Setup local de list-service](../../services/list-service/docs/local-setup.md) ·
 [Estrategia de CI/CD](../cicd/cicd-strategy.md).
