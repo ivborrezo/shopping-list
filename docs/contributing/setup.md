@@ -40,6 +40,7 @@ Una vez arrancado:
 | Servicio | URL local |
 |---|---|
 | `product-service` (API REST) | `http://localhost:8081` |
+| `list-service` (API REST) | `http://localhost:8082` |
 | `product-db` (PostgreSQL) | `localhost:5434` |
 | `list-db` (PostgreSQL) | `localhost:5435` |
 
@@ -48,6 +49,7 @@ Una vez arrancado:
 ```bash
 curl -s http://localhost:8081/actuator/health
 curl -s http://localhost:8081/categories | head -c 200
+curl -s http://localhost:8082/actuator/health
 ```
 
 ## Parar y limpiar
@@ -61,6 +63,7 @@ docker compose down -v
 Cada microservicio documenta su propio entorno de desarrollo aislado:
 
 - [Setup local de product-service](../../services/product-service/docs/local-setup.md)
+- [Setup local de list-service](../../services/list-service/docs/local-setup.md)
 
 Referencias: [Convenciones del entorno local](local-environment.md) ·
 [Estrategia de CI/CD](../cicd/cicd-strategy.md).
