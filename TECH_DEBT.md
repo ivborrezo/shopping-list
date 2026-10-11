@@ -79,19 +79,6 @@ compartición (listas colaborativas, relaciones sociales)
 
 Trigger: se diseña el enforcement de compartición (Fase 4 o posterior).
 
-### Los `400` de validación de parámetros en `product-service` no llevan `code`
-
-El `GlobalExceptionHandler` de `product-service` cubre la validación del body
-(Bean Validation) y las excepciones de negocio, pero los fallos de conversión de
-parámetros de path/query y los parámetros obligatorios ausentes los resuelve el
-`ResponseEntityExceptionHandler` de Spring con su `400` por defecto, sin la
-extensión `code` que exige
-[ADR-014](./docs/adr/ADR-014-estrategia-de-manejo-de-errores.md).
-
-Trigger: al revisar o alinear la estrategia de errores de `product-service`,
-replicar los handlers de parámetro que ya emiten `code=VALIDATION_FAILED` en
-`list-service`.
-
 ## Decisiones opcionales
 
 Decisiones tomadas que admiten una alternativa razonable en el futuro, sin

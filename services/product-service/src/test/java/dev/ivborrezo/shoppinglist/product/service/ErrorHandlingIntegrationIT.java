@@ -11,6 +11,7 @@ import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRe
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -40,8 +42,9 @@ import tools.jackson.databind.ObjectMapper;
  * <p>Verifica el shape {@code ProblemDetail} (RFC 9457) con content-type {@code
  * application/problem+json} y la extensión {@code code} para cada familia de error del catálogo:
  * recurso inexistente (404), categoría inválida (400), propietario no coincidente (403), código
- * duplicado (409), validación Bean Validation con errores por campo (400) y fallback de excepción
- * no controlada (500).
+ * duplicado (409), validación Bean Validation con errores por campo (400), parámetros problemáticos
+ * con {@code code=VALIDATION_FAILED} (tipo no convertible, obligatorio ausente, body no procesable
+ * o constraints de parámetro) y fallback de excepción no controlada (500).
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -244,6 +247,110 @@ class ErrorHandlingIntegrationIT {
     assertThat(response.errors().get(0).message()).isNotBlank();
   }
 
+  /** Devuelve 400 con {@code VALIDATION_FAILED} cuando un path variable no es convertible. */
+  @Test
+  void nonUuidPathVariable_returnsValidationProblemDetail() throws Exception {
+    MvcResult result =
+        mockMvc
+            .perform(get("/categories/not-a-uuid"))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andReturn();
+
+    ValidationProblemDetailResponse response =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), ValidationProblemDetailResponse.class);
+
+    assertThat(response.code()).isEqualTo("VALIDATION_FAILED");
+    assertThat(response.title()).isEqualTo("Validation failed");
+    assertThat(response.status()).isEqualTo(400);
+    assertThat(response.errors()).hasSize(1);
+    assertThat(response.errors().get(0).code()).isEqualTo("typeMismatch");
+    assertThat(response.errors().get(0).field()).isEqualTo("id");
+  }
+
+  /** Devuelve 400 con {@code VALIDATION_FAILED} cuando un query param no es convertible. */
+  @Test
+  void nonUuidRequestParam_returnsValidationProblemDetail() throws Exception {
+    MvcResult result =
+        mockMvc
+            .perform(get("/user-products").param("ownerId", "not-a-uuid"))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andReturn();
+
+    ValidationProblemDetailResponse response =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), ValidationProblemDetailResponse.class);
+
+    assertThat(response.code()).isEqualTo("VALIDATION_FAILED");
+    assertThat(response.errors()).hasSize(1);
+    assertThat(response.errors().get(0).code()).isEqualTo("typeMismatch");
+    assertThat(response.errors().get(0).field()).isEqualTo("ownerId");
+  }
+
+  /** Devuelve 400 con {@code VALIDATION_FAILED} cuando falta un parámetro obligatorio. */
+  @Test
+  void missingRequestParam_returnsValidationProblemDetail() throws Exception {
+    MvcResult result =
+        mockMvc
+            .perform(get("/user-products"))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andReturn();
+
+    ValidationProblemDetailResponse response =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), ValidationProblemDetailResponse.class);
+
+    assertThat(response.code()).isEqualTo("VALIDATION_FAILED");
+    assertThat(response.errors()).hasSize(1);
+    assertThat(response.errors().get(0).code()).isEqualTo("missing");
+    assertThat(response.errors().get(0).field()).isEqualTo("ownerId");
+  }
+
+  /** Devuelve 400 con {@code VALIDATION_FAILED} cuando el body JSON no es procesable. */
+  @Test
+  void malformedRequestBody_returnsValidationProblemDetail() throws Exception {
+    MvcResult result =
+        mockMvc
+            .perform(
+                post("/base-products")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{ not json"))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andReturn();
+
+    ProblemDetailResponse response =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), ProblemDetailResponse.class);
+
+    assertThat(response.code()).isEqualTo("VALIDATION_FAILED");
+    assertThat(response.title()).isEqualTo("Validation failed");
+    assertThat(response.status()).isEqualTo(400);
+  }
+
+  /** Devuelve 400 con {@code VALIDATION_FAILED} cuando falla una constraint de parámetro. */
+  @Test
+  void methodValidationFailure_returnsValidationProblemDetail() throws Exception {
+    MvcResult result =
+        mockMvc
+            .perform(get("/probe/method-validation").param("name", " "))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andReturn();
+
+    ValidationProblemDetailResponse response =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), ValidationProblemDetailResponse.class);
+
+    assertThat(response.code()).isEqualTo("VALIDATION_FAILED");
+    assertThat(response.errors()).hasSize(1);
+    assertThat(response.errors().get(0).code()).isEqualTo("NotBlank");
+    assertThat(response.errors().get(0).field()).isEqualTo("name");
+  }
+
   /** Devuelve 500 con ProblemDetail ante una excepción no controlada por el contrato. */
   @Test
   void errorProbe_withUnhandledException_returnsInternalErrorProblemDetail() throws Exception {
@@ -322,6 +429,14 @@ class ErrorHandlingIntegrationIT {
       void probe() {
         throw new RuntimeException("error probe");
       }
+    }
+
+    /** Controller de prueba con una constraint directa sobre un parámetro. */
+    @RestController
+    static class MethodValidationProbeController {
+
+      @GetMapping("/probe/method-validation")
+      void probe(@RequestParam @NotBlank String name) {}
     }
   }
 
