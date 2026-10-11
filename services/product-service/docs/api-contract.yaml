@@ -518,10 +518,13 @@ components:
             $ref: '#/components/schemas/ProblemDetail'
     ValidationError:
       description: >
-        Error de validación de la petición. Los errores de Bean Validation
-        responden con code VALIDATION_FAILED y el array errors por campo; los
-        errores de negocio 400 (categoría inexistente, locale no soportado,
-        etc.) usan el shape ProblemDetail sin errors.
+        Error de validación de la petición. La validación Bean Validation y los
+        errores de parámetros de petición (valor no convertible, parámetro
+        obligatorio ausente, constraints de parámetro) responden con code
+        VALIDATION_FAILED y el array errors; un body no procesable responde
+        VALIDATION_FAILED sin errors. Los errores de negocio 400 (categoría
+        inexistente, locale no soportado, etc.) usan el shape ProblemDetail sin
+        errors.
       content:
         application/problem+json:
           schema:
@@ -951,6 +954,9 @@ components:
           properties:
             errors:
               type: array
-              description: Errores por campo; presente solo en errores de validación Bean Validation.
+              description: >
+                Errores por campo; presente en la validación Bean Validation y en
+                los errores de parámetros de petición. Un body no procesable
+                responde VALIDATION_FAILED sin errors.
               items:
                 $ref: '#/components/schemas/FieldError'
