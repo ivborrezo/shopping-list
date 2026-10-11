@@ -79,18 +79,6 @@ compartición (listas colaborativas, relaciones sociales)
 
 Trigger: se diseña el enforcement de compartición (Fase 4 o posterior).
 
-### `correlationId` implementado solo en `list-service`
-
-La convención de logging ([docs/logging.md](./docs/logging.md)) define un
-`CorrelationIdFilter` (cabecera `X-Correlation-Id` + MDC) para todos los
-servicios. `list-service` ya lo implementa —el envelope de sus eventos exige
-`correlationId`—; `product-service` queda sin él, de modo que sus logs todavía
-no se correlacionan con el resto.
-
-Trigger: replicar en `product-service` el `CorrelationIdFilter` + MDC. No hay
-módulo compartido, así que cada servicio copia el patrón (como
-`ErrorCode`/`PagedResponse`).
-
 ### Los `400` de validación de parámetros en `product-service` no llevan `code`
 
 El `GlobalExceptionHandler` de `product-service` cubre la validación del body
@@ -116,4 +104,6 @@ lo ignora en silencio (no aplica cambios, no devuelve error). Alternativa
 abierta: devolver `409` si el body intenta modificar el campo
 ([ADR-012](./docs/adr/ADR-012-modelo-productos-base-vs-usuario.md)).
 
-Trigger: se decide ser estricto en lugar de ignorar en silencio.
+Trigger: cuando exista un motivo observable para exigir error en vez de
+ignorar: feedback de uso, un test/contrato que lo requiera, o al revisar el
+contrato Design-First de `user-products`.
