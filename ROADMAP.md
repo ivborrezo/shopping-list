@@ -5,7 +5,7 @@
 | Fase | Estado | Contenido |
 |---|---|---|
 | **Fase 0** | Completada | Estructura del monorepo, README inicial y documentación macro del sistema (arquitectura C4, ADRs, eventos, convenciones). |
-| **Fase 1** | En desarrollo | MVP Core. `product-service` implementado: categories, base-products, user-products, favoritos y recientes. `list-service` implementado: listas, ítems, integración de solo lectura con `product-service` y publicación de eventos ([overview](./services/list-service/docs/overview.md)). |
+| **Fase 1** | Completada | MVP Core completo: `product-service` (categories, base-products, user-products, favoritos y recientes) y `list-service` (listas, ítems, integración de solo lectura con `product-service` y publicación de eventos). Overviews: [product-service](./services/product-service/docs/overview.md), [list-service](./services/list-service/docs/overview.md). |
 | **Fase 2** | Sin empezar | Frontend: `frontend/` en la raíz del repositorio (React, i18n de UI con react-i18next, PWA). |
 | **Fase 3** | Sin empezar | Infraestructura de plataforma: `api-gateway` (Spring Cloud Gateway: enrutamiento, rate limiting, CORS, propagación de `Accept-Language`) y `config-service` (Spring Cloud Config Server). |
 | **Fase 4** | Sin empezar | Seguridad: `auth-service` como Identity Provider (Keycloak + OAuth2/OIDC). Sustituye el placeholder `ownerId` de las Fases 1-3. |
@@ -33,6 +33,7 @@ implementadas vive en [TECH_DEBT.md](./TECH_DEBT.md).
 | `ADR-XXF1` | Elección de message broker (Kafka vs RabbitMQ). Define el canal físico de transporte de eventos; la publicación se mantiene desacoplada del broker vía Ports and Adapters ([event-architecture](./docs/events/event-architecture.md)). |
 | `ADR-XXF4` | Keycloak como Identity Provider. Superará al ADR-006, que queda como registro histórico del placeholder `ownerId` ([ADR-006](./docs/adr/ADR-006-identificacion-propietario-sin-autenticacion.md)). |
 | `ADR-XXFX` | Gestión de transacciones distribuidas con Saga. Resolverá la deuda técnica aceptada explícitamente en [ADR-002](./docs/adr/ADR-002-database-per-service-pattern.md). |
+| `ADR-XXXX-configuracion-cloud-map-ecs` | Configuración de Service Discovery en producción con AWS Cloud Map + ECS. Desarrolla el principio de DNS interno ya fijado en [ADR-003](./docs/adr/ADR-003-service-discovery-nativo-y-descarte-de-eureka.md). |
 
 ## Servicios futuros (sin crear directorios aún)
 

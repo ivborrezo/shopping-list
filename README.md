@@ -41,9 +41,10 @@ colaborativa. El sistema está diseñado siguiendo principios
 independiente con su propia base de datos, y toda la infraestructura
 local está definida como código mediante Docker Compose.
 
-> **Estado actual:** Fase 1 (MVP Core) en desarrollo. `product-service` y
+> **Estado actual:** Fase 1 (MVP Core) completada. `product-service` y
 > `list-service` operativos — [overview de `product-service`](./services/product-service/docs/overview.md),
-> [overview de `list-service`](./services/list-service/docs/overview.md).
+> [overview de `list-service`](./services/list-service/docs/overview.md). Para
+> el siguiente hito, ver el [ROADMAP](./ROADMAP.md).
 
 ---
 
