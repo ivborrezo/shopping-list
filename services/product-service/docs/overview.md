@@ -78,8 +78,8 @@ direccionable mantiene su `id` interno (BIGINT, PK) y un `public_id` UUID
 
 - Disparador de recientes limitado al toggle de favorito y sin endpoint de
   touch: `last_used_at` solo se actualiza al marcar un favorito; no hay otro
-  camino hacia la marca de reciente hasta que `list-service` publique el
-  evento "producto añadido a lista". Deuda consciente, documentada en
+  camino hacia la marca de reciente hasta que `product-service` consuma el
+  evento `list.item.added` (Fase 5). Deuda consciente, documentada en
   [ADR-013](../../../docs/adr/ADR-013-favoritos-y-recientes-detalle-de-implementacion.md)
   (Decisiones 3 y 4).
 

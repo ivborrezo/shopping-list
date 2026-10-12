@@ -91,6 +91,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -125,6 +127,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseProductPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
     post:
       tags: [base-products]
       summary: Crear un producto base
@@ -178,6 +182,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseProduct'
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
@@ -207,6 +213,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseProduct'
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
@@ -232,6 +240,8 @@ paths:
       responses:
         '204':
           description: Producto base eliminado.
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -267,6 +277,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProductPage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
     post:
       tags: [user-products]
       summary: Crear un producto de usuario
@@ -317,6 +329,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProduct'
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
@@ -343,6 +357,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProduct'
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
         '403':
@@ -374,6 +390,8 @@ paths:
       responses:
         '204':
           description: Producto de usuario eliminado.
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '403':
           description: El ownerId del query param no coincide con el propietario del producto.
           content:
@@ -451,6 +469,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductReferencePage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
 
   /user-products/recents:
     get:
@@ -479,6 +499,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ProductReference'
+        '400':
+          $ref: '#/components/responses/ValidationError'
 
 components:
   parameters:

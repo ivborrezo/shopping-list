@@ -154,6 +154,8 @@ decisión nueva, fuera del alcance de este ADR.
   integración de la gate de calidad en CI, incluyendo la verificación
   de que las migraciones Flyway aplican limpiamente en cada push.
 
+> Nota de estado: `docs/cicd/cicd-strategy.md` ya está redactado.
+
 ## Alternativas consideradas
 
 ### Liquibase (descartada)

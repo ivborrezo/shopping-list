@@ -25,6 +25,8 @@ CI/CD a un documento aparte:
   para resolver esto se decide en `docs/cicd/cicd-strategy.md`
   (pendiente de redactar)"*.
 
+> Nota de estado: `docs/cicd/cicd-strategy.md` ya está redactado.
+
 A esos se suma un tercer caveat abierto durante la implementación del
 `Dockerfile` multi-stage de `product-service`: el `Dockerfile`
 usa BuildKit cache mount (`--mount=type=cache,target=/root/.m2`)

@@ -127,10 +127,11 @@ Si `envFile` no resuelve rutas relativas en tu sistema, usa
 docker compose up -d
 ```
 
-Esto levanta los tres contenedores existentes hoy:
+Esto levanta los cuatro contenedores existentes hoy:
 `shopping-list-product-db` (PostgreSQL),
-`shopping-list-list-db` (PostgreSQL) y
-`shopping-list-product-service`.
+`shopping-list-list-db` (PostgreSQL),
+`shopping-list-product-service` y
+`shopping-list-list-service`.
 
 `product-service` construye su imagen desde el `Dockerfile` local (build
 lento la primera vez por descarga de dependencias Maven; builds posteriores
@@ -144,7 +145,7 @@ forzar el rebuild.
 **Verificación:**
 
 ```bash
-docker compose ps                          # 3 servicios healthy/Up
+docker compose ps                          # 4 servicios healthy/Up
 docker compose logs product-service | grep "Successfully applied"  # Flyway OK
 curl -s http://localhost:8081/actuator/health
 ```
