@@ -1,7 +1,7 @@
 # ADR-004: Estándares de Desarrollo y Gobernanza
 
 ## Estado
-Redactado
+Aceptado
 
 ## Contexto
 

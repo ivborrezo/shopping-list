@@ -2,7 +2,7 @@
 
 ## Estado
 
-Redactado
+Aceptado
 
 ## Contexto
 
