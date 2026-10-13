@@ -10,7 +10,7 @@ Proceso de instalación y arranque del repositorio completo (monorepo).
 ## Clonar el repositorio
 
 ```bash
-git clone https://github.com/iv-borrezo/shopping-list.git
+git clone https://github.com/ivborrezo/shopping-list.git
 cd shopping-list
 ```
 
