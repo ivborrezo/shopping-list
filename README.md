@@ -8,8 +8,8 @@ Java 21 · Spring Boot 4.x · PostgreSQL · Docker
 
 </div>
 
-[![CI](https://github.com/iv-borrezo/shopping-list/actions/workflows/product-service.yml/badge.svg)](https://github.com/iv-borrezo/shopping-list/actions/workflows/product-service.yml)
-[![CI](https://github.com/iv-borrezo/shopping-list/actions/workflows/list-service.yml/badge.svg)](https://github.com/iv-borrezo/shopping-list/actions/workflows/list-service.yml)
+[![CI](https://github.com/ivborrezo/shopping-list/actions/workflows/product-service.yml/badge.svg)](https://github.com/ivborrezo/shopping-list/actions/workflows/product-service.yml)
+[![CI](https://github.com/ivborrezo/shopping-list/actions/workflows/list-service.yml/badge.svg)](https://github.com/ivborrezo/shopping-list/actions/workflows/list-service.yml)
 
 ---
 
@@ -91,6 +91,7 @@ shopping-list/
 │   │       ├── api-contract.yaml
 │   │       ├── database-schema.md
 │   │       ├── local-setup.md
+│   │       ├── overview.md
 │   │       └── img/             # Diagrama ER (draw.io + SVG)
 │   └── list-service/          # Spring Boot + PostgreSQL
 │       ├── Dockerfile (multi-stage)
@@ -99,6 +100,7 @@ shopping-list/
 │           ├── api-contract.yaml
 │           ├── database-schema.md
 │           ├── local-setup.md
+│           ├── overview.md
 │           ├── event-contracts.md
 │           ├── adr/             # ADR local del servicio
 │           └── img/             # Diagrama ER (draw.io + SVG)
@@ -121,7 +123,7 @@ multi-stage, tests con Testcontainers y pipeline de CI propio.
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/iv-borrezo/shopping-list.git
+git clone https://github.com/ivborrezo/shopping-list.git
 cd shopping-list
 
 # 2. Preparar variables de entorno
@@ -155,9 +157,10 @@ servicio), consulta el [Setup completo](./docs/contributing/setup.md).
 
 ### Contratos de API (diseño, Design-First)
 
-Redactados antes de implementar ningún controller, como contrato de
-diseño previo al código. Una vez exista la implementación, se marcarán
-como snapshot histórico de diseño.
+Los contratos OpenAPI de cada servicio se redactan y mantienen a mano:
+el `api-contract.yaml` es la fuente de verdad del contrato (Design-First)
+y el código se implementa contra él. El contrato no se genera desde el
+código.
 
 | Servicio | Contrato |
 |---|---|
@@ -199,7 +202,7 @@ Architecture Decision Records (ADR) en [`docs/adr/`](./docs/adr/).
 | [ADR-003 — Service Discovery nativo y descarte de Eureka](./docs/adr/ADR-003-service-discovery-nativo-y-descarte-de-eureka.md) | DNS interno (Docker Compose / AWS Cloud Map) en lugar de un Service Registry como Netflix Eureka | ✅ Redactado |
 | [ADR-004 — Estándares de Desarrollo y Gobernanza](./docs/adr/ADR-004-estandares-de-desarrollo-y-gobernanza.md) | Documentación de arquitectura (Markdown; Mermaid no se usa por el momento), Conventional Commits y Checkstyle (Google Java Style) | ✅ Redactado |
 | [ADR-005 — Convención de nombrado de eventos](./docs/adr/ADR-005-convencion-nombrado-eventos.md) | `<aggregate>.<past_tense_action>` en snake_case, agnóstica al lenguaje (proyecto políglota) | ✅ Redactado |
-| [ADR-006 — Identificación de propietario sin autenticación](./docs/adr/ADR-006-identificacion-propietario-sin-autenticacion.md) | `ownerId` como placeholder en el body (Fase 1-3), validado solo en formato, sin registro compartido entre servicios ni plan de migración a Fase 4 | ✅ Redactado |
+| [ADR-006 — Identificación de propietario sin autenticación](./docs/adr/ADR-006-identificacion-propietario-sin-autenticacion.md) | `ownerId` como placeholder (Fase 1-3): en el body en las escrituras del recurso y por query en los borrados y mutaciones de ítems, validado solo en formato, sin registro compartido entre servicios ni plan de migración a Fase 4 | ✅ Redactado |
 | [ADR-007 — Flyway como herramienta de migraciones](./docs/adr/ADR-007-flyway-como-herramienta-de-migraciones.md) | Flyway (edición Community) como gestor único del esquema de cada base de datos por servicio; `ddl-auto: none`, migraciones versionadas en SQL | ✅ Redactado |
 | [ADR-008 — Testcontainers para testing de integración](./docs/adr/ADR-008-testcontainers-para-testing-de-integracion.md) | Tests de integración contra PostgreSQL real vía contenedores efímeros; descarte de H2 por discrepancias de comportamiento | ✅ Redactado |
 | [ADR-009 — Estrategia de CI y Git Hooks](./docs/adr/ADR-009-estrategia-de-ci-y-git-hooks.md) | Estrategia de CI (sin CD) en dos capas (pre-commit local + GitHub Actions remoto) para el monorepo políglota: hook nativo vía `core.hooksPath` con tres capas y dispatch por servicio, gate híbrido advisory→hard, Testcontainers en `ubuntu-latest` hosted con paridad local↔CI, caching Maven + BuildKit `type=gha`. Cierra delegaciones pendientes de ADR-004 y ADR-008 | ✅ Aceptado |
