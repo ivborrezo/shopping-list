@@ -15,6 +15,14 @@
 > la integración de OpenTelemetry / Micrometer Tracing. En ese momento,
 > `traceId`/`spanId` gestionados por el stack de tracing sustituirán
 > (o convivirán con) el `correlationId` artesanal descrito aquí.
+>
+> **Estado de implementación:** el filtro `correlationId` (generación,
+> reenvío en la respuesta, MDC y propagación en llamadas internas) y el
+> criterio MDC vs. structured key-value están implementados en ambos
+> servicios. El **formato de salida por perfil** descrito más abajo
+> (`logback-spring.xml` con `logstash-logback-encoder`) es una
+> **especificación pendiente de implementar** en la fase de observabilidad
+> (Fase 6); hasta entonces rige el formato por defecto de Spring Boot.
 
 ## Objetivo
 
@@ -54,11 +62,13 @@ o Promtail leyendo stdout en Fase 6) ya se encarga de capturar y
 enrutar stdout — no hace falta gestionar rotación de ficheros ni
 volúmenes propios.
 
-- **Perfil `local`** (el del día a día en Docker Compose): texto plano
-  legible para humanos, con el `correlationId` visible entre corchetes.
-- **Cualquier otro perfil** (o el que se use al integrar Promtail en
-  Fase 6, o el despliegue en Fargate): JSON estructurado completo por
-  stdout, vía `logstash-logback-encoder`.
+- **Perfil `local`** (ejecución del servicio desde el host, fuera de
+  Docker Compose): texto plano legible para humanos, con el
+  `correlationId` visible entre corchetes.
+- **Cualquier otro perfil** (incluido el perfil `docker` que activa
+  Docker Compose, o el que se use al integrar Promtail en Fase 6, o el
+  despliegue en Fargate): JSON estructurado completo por stdout, vía
+  `logstash-logback-encoder`.
 
 ```xml
 <!-- logback-spring.xml -->
@@ -292,11 +302,12 @@ formato de salida), así que el método de filtrado cambia según cuál
 esté activo:
 
 ```bash
-# Perfil "local" (texto plano, el que se usa en el día a día):
-# el correlationId aparece entre corchetes, basta un grep.
-docker compose logs -f list-service | grep "abc-123"
+# Perfil "local" (servicio arrancado desde el host, fuera de Compose):
+# texto plano, correlationId entre corchetes -> basta un grep.
+<stdout del servicio> | grep "abc-123"
 
-# Cualquier otro perfil activo (JSON estructurado por stdout):
+# Perfil "docker" (contenedor de Docker Compose) u otro perfil no-local:
+# JSON estructurado por stdout -> filtrable con jq.
 docker compose logs -f list-service | jq 'select(.correlationId == "abc-123")'
 ```
 
