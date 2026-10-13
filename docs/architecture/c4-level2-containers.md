@@ -66,10 +66,11 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 
 > **Herramienta de generación:** este diagrama se ha producido con
 > **draw.io** como imagen estática (`.svg`), tras descartar Mermaid por
-> insuficiente calidad visual para un documento de portafolio. Esta
-> decisión se documentará formalmente en su correspondiente ADR de
-> herramientas/gobernanza, junto con el resto de estándares de
-> documentación del proyecto.
+> insuficiente calidad visual para un documento de portafolio. La
+> decisión está formalizada en
+> [ADR-004](../adr/ADR-004-estandares-de-desarrollo-y-gobernanza.md)
+> (Decisión 1), junto con el resto de estándares de documentación del
+> proyecto.
 >
 > **Trade-off asumido:** a diferencia de un diagrama en texto
 > (Mermaid/PlantUML), los cambios sobre este `.svg` **no son legibles
@@ -223,8 +224,6 @@ las confunda con decisiones firmes:
 
 ## Relación con otros documentos
 
-- `docs/architecture/c4-level1-context.md` — Vista de contexto (nivel
-  superior a este documento).
 - `docs/architecture/deployment-topology.md` — Topología de despliegue
   en AWS, incluyendo infraestructura de observabilidad (pendiente,
   Fase 6).
