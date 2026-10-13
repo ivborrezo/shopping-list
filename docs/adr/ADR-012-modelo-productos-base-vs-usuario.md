@@ -14,10 +14,7 @@ campos funcionales necesarios para el catálogo (descripción, categoría,
 unidad por defecto y calorías), revisé por completo el modelo.
 
 Documento esta decisión antes de implementar las migraciones que
-materializan el modelo, porque el diseño ya es concreto y costoso de revertir. Este ADR
-formaliza y cierra el placeholder
-`ADR-XXF1-modelo-productos-base-vs-usuario` que figuraba como pendiente en
-`contexto.md` y en la tabla de ADRs del README.
+materializan el modelo, porque el diseño ya es concreto y costoso de revertir.
 
 ## Alternativas consideradas
 
@@ -139,9 +136,3 @@ físico, con validación en aplicación.
 - La activación de identidad real se documentará en
   `ADR-XXF4-keycloak-como-identity-provider`, y el detalle de favoritos y
   recientes en ADR-013.
-
-La tabla de ADRs y `contexto.md` dejan de listar como pendiente
-`ADR-XXF1-modelo-productos-base-vs-usuario`: este ADR-012 lo materializa y lo
-cierra. La deuda asociada al borrado de productos referenciados, los flags
-inertes y el clonado user-to-user queda anotada como alcance futuro, no como
-una decisión pendiente de este documento.
