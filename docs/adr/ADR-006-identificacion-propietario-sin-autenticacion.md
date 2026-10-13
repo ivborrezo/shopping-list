@@ -42,7 +42,7 @@ técnica:
 ## Decisión
 
 `product-service` y `list-service` aceptan un campo `ownerId` (UUID) en
-el body de las peticiones de creación (`POST /products`, `POST
+el body de las peticiones de creación (`POST /user-products`, `POST
 /lists`), sin validarlo contra ningún proveedor de identidad.
 
 - **Validación de formato, no de identidad:** se valida que `ownerId`
