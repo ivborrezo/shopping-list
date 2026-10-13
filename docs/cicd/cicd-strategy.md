@@ -27,16 +27,19 @@ on:
     paths:
       - <servicio>/**
       - config/checkstyle/**
+      - docs/cicd/**
       - .github/workflows/<servicio>.yml
   workflow_dispatch:
 ```
 
-Tres motivos para los paths no-service (justificación detallada en
+Cuatro motivos para los paths no-service (justificación detallada en
 ADR-009, Decisión 4):
 
 - `<servicio>/**` — el servicio afectado.
 - `config/checkstyle/**` — ruleset compartido; un cambio puede romper
   cualquier servicio que lo use.
+- `docs/cicd/**` — documentación operativa del pipeline; un cambio ahí
+  puede afectar a cómo se ejecuta el workflow de cualquier servicio.
 - `.github/workflows/<servicio>.yml` — self-validation: un cambio del
   propio workflow debe re-ejecutarse para validar la modificación.
 
@@ -51,7 +54,7 @@ push de cada rama.
 
 ## 3. Job por servicio
 
-Un workflow por servicio (`product-service.yml`, futuro
+Un workflow por servicio (`product-service.yml`,
 `list-service.yml`, etc.), cada uno corriendo en su propio runner
 aislado `ubuntu-latest` (GitHub-hosted). No se comparten runners entre
 servicios en el mismo run: si un commit toca dos servicios
@@ -76,8 +79,8 @@ fallan.
 
 ```yaml
 steps:
-  - uses: actions/checkout@v4
-  - uses: actions/setup-java@v4
+  - uses: actions/checkout@v5
+  - uses: actions/setup-java@v5
     with:
       distribution: temurin
       java-version: 21
@@ -90,10 +93,14 @@ steps:
     run: ./services/product-service/mvnw -f services/product-service/pom.xml -q compile
   - name: Verify (Testcontainers)
     run: ./services/product-service/mvnw -f services/product-service/pom.xml clean verify
+  - uses: docker/setup-buildx-action@v4
   - name: Docker build (valida Dockerfile)
-    run: docker build -t shopping-list/product-service:ci services/product-service/
-    env:
-      DOCKER_BUILDKIT: 1
+    uses: docker/build-push-action@v7
+    with:
+      context: services/product-service/
+      push: false
+      cache-from: type=gha
+      cache-to: type=gha,mode=max
 ```
 
 Justificación del orden:
@@ -222,7 +229,7 @@ hasta estabilizar infra.
 
 ### 6.1 Maven
 
-`actions/setup-java@v4` con `cache: maven` sobre `~/.m2/repository`,
+`actions/setup-java@v5` con `cache: maven` sobre `~/.m2/repository`,
 con invalidación por hash del `pom.xml`. Sin invocar `actions/cache`
 directamente: `setup-java` con `cache: maven` hace lo mismo. Salta el
 download de dependencias desde Maven Central en cada run.
@@ -235,7 +242,7 @@ cache backend (límite 10 GB por repo, holgado para el monorepo).
 
 ```yaml
 - name: Docker build (valida Dockerfile)
-  uses: docker/build-push-action@v5
+  uses: docker/build-push-action@v7
   with:
     context: services/product-service/
     push: false
@@ -277,8 +284,8 @@ Consecuencias prácticas:
 Testcontainers arranca el contenedor singleton (estático por JVM/Surefire,
 patrón `static final PostgreSQLContainer` + `@Container` compartido
 en el JVM) con `@ServiceConnection` para wiring automático con Spring.
-El mismo `CategoryIntegrationTest` que funciona en local corre
-idéntico en CI, sin profile de test específico, sin overrides del
+Los mismos tests de integración que se ejecutan en local corren
+idénticos en CI, sin profile de test específico, sin overrides del
 datasource en el workflow.
 
 ## 8. Hook policy
@@ -373,26 +380,21 @@ comando tras el clone, sin dependencias adicionales.
 
 Adoptada como micro-decisión de implementación (no ADR):
 
-- **Tests unitarios** futuros: `*Test` (p. ej. `LocaleResolverTest`,
-  `CategoryServiceTest`).
-- **Tests de integración** con Testcontainers: `*IT` o
-  `*IntegrationTest` (como ya hace `CategoryIntegrationTest`).
+- **Tests unitarios:** `*Test` (p. ej. `CategoryServiceTest`,
+  `UuidV7Test`).
+- **Tests de integración** con Testcontainers: `*IT` (p. ej.
+  `CategoryCreationIntegrationIT`).
 
-Los nombres ya están alineados, de forma que la migración futura a
-Failsafe (separar unitarios de integración) será trivial cuando se
-justifique.
-
-**Sin configuración de Surefire/Failsafe hoy**: todos los tests corren
-bajo Surefire en `mvn verify`. Pendiente de activar la separación
-cuando aparezcan tests unitarios aislables dignos de ella (ver ADR-009,
-Decisión 8).
+Cada servicio declara `maven-failsafe-plugin`, de forma que `*Test`
+corre con Surefire en la fase `test` y `*IT` con Failsafe en la fase
+`integration-test`; ambos se ejecutan bajo `mvn verify`.
 
 ## 10. Matriz de servicios afectados
 
 | Servicio | Lenguaje | Workflow | Contenedor en CI | Hook |
 |---|---|---|---|---|
 | `product-service` | Java | `product-service.yml` ✅ | Testcontainers Postgres + docker build | Dispatch Java (Maven/Spotless/Checkstyle) |
-| `list-service` | Java | (futuro) | (replicará patrón product-service) | Dispatch Java (mismo patrón) |
+| `list-service` | Java | `list-service.yml` ✅ | Testcontainers Postgres + docker build | Dispatch Java (mismo patrón) |
 | `notification-service` | JS/Node.js | (futuro Fase 5) | Sin BD propia hoy (ADR-008); re-evaluable | Dispatch JS (npm/ESLint/Prettier) |
 | `frontend` (React) | JS | (futuro Fase 2) | Sin contenedor | Dispatch JS (npm/ESLint/Prettier) |
 
@@ -411,12 +413,13 @@ Cómo se añaden nuevos servicios:
 
 Lo que **no** cubre esta estrategia, coherente con ADR-009:
 
-- **CD (continuos deployment):** no hay target de despliegue todavía
-  (`product-service` no está ni integrado en `docker-compose.yml`
-  raíz; AWS Fargate llegaría en Fase 3
-  o posterior). Definir ahora si el deploy es continuo/gated/manual
-  es especular sobre infraestructura inexistente. Revisitar cuando
-  exista target de despliegue (AWS o equivalente).
+- **CD (continuos deployment):** no hay target de despliegue todavía.
+  `product-service` y `list-service` sí están integrados en el
+  `docker-compose.yml` raíz para el entorno local, pero no existe un
+  entorno desplegado (AWS Fargate llegaría en Fase 3 o posterior).
+  Definir ahora si el deploy es continuo/gated/manual es especular
+  sobre infraestructura inexistente. Revisitar cuando exista target de
+  despliegue (AWS o equivalente).
 - **Matrix cross-JDK:** el proyecto fija Java 21 en ADR del contexto
   maestro; no se testea contra múltiples JDK en paralelo.
 - **Self-hosted runners:** descartados por presupuesto $0 (un equipo
@@ -425,8 +428,6 @@ Lo que **no** cubre esta estrategia, coherente con ADR-009:
 - **Cobertura de tests (coverage):** sin caso concreto que lo motive
   todavía, se aplaza sin ADR. Revisitar cuando aparezca un módulo
   crítico que justifique la inversión en tooling.
-- **Aislamiento Surefire/Failsafe:** fuera de alcance, criterio de
-  revisita en ADR-009, Decisión 8.
 - **Smoke runtime del contenedor en CI:** `docker build` valida que el
   `Dockerfile` compila, no que el contenedor arranca y responde
   (`/actuator/health` UP, SIGTERM limpio → graceful shutdown). Un smoke
