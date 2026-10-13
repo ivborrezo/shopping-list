@@ -8,11 +8,9 @@ info:
     ciclo de vida, internacionalización y propiedad.
 
 
-    Nota de vigencia: este documento es el contrato de diseño de Fase 1,
-    redactado antes de implementar el servicio. Una vez exista código y
-    springdoc-openapi genere el contrato real a partir de él, este fichero se
-    marcará como snapshot histórico de diseño (no se mantendrá sincronizado a
-    mano), y el contrato vigente pasará a ser el expuesto en /v3/api-docs.
+    Nota de vigencia: este documento es la fuente de verdad del contrato del
+    servicio, redactado y mantenido a mano (Design-First). El código se
+    implementa contra él; el contrato no se genera a partir del código.
   version: 1.0.0
 servers:
   - url: http://localhost:8081
