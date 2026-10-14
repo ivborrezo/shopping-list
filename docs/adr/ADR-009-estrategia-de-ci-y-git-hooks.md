@@ -235,6 +235,10 @@ sin validación automática.
 
 ### Decisión 8 — Aislamiento Surefire/Failsafe fuera de alcance (criterio de revisita)
 
+> **Resolución posterior:** el criterio de revisita de esta decisión se cumplió y la
+> separación Surefire/Failsafe ya está aplicada; ver
+> [Resolución posterior](#resolución-posterior) al final del documento.
+
 Hoy todos los tests corren bajo Surefire en `mvn verify`, sin
 separación entre unitarios e integración. No existen tests unitarios
 aislables dignos de separación todavía (solo `CategoryIntegrationTest`
@@ -443,3 +447,27 @@ trivial.
   decisiones de este ADR (YAML de jobs, orden de steps, caching, gating,
   hook policy resumida). Documento mutable, evoluciona sin reabrir este
   ADR.
+
+## Resolución posterior
+
+El criterio de revisita que esta Decisión 8 dejó abierto se cumplió durante la
+Fase 1: aparecieron tests unitarios aislables conviviendo con los de integración,
+y con la convención de naming anterior `mvn verify` compilaba las clases de
+integración pero no las ejecutaba. El recuento de tests ejecutados era, por
+tanto, menor que el real; no era un fallo de la suite, sino de la infraestructura
+que la lanzaba.
+
+El estado vigente: cada servicio Java declara `maven-failsafe-plugin`, de modo
+que los tests `*Test` corren con Surefire en la fase `test` y los `*IT` con
+Failsafe en la fase `integration-test`, ambos bajo `mvn verify`. La convención
+operativa de nombrado y ejecución vive en
+[`docs/contributing/testing.md`](../contributing/testing.md) y en
+[`docs/cicd/cicd-strategy.md`](../cicd/cicd-strategy.md).
+
+La clase de integración que la decisión citaba como `CategoryIntegrationTest`
+pasó a llamarse `CategoryIntegrationIT` al unificar el sufijo `*IT`, de forma
+que el nombre determina la fase de ejecución sin configuración adicional.
+
+Esta resolución supera únicamente la parte "fuera de alcance" de la Decisión 8.
+El resto de decisiones del ADR siguen vigentes; el cuerpo de la decisión se
+conserva sin reescribir como registro del estado en que se redactó.

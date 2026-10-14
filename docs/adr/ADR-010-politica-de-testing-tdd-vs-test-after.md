@@ -158,6 +158,10 @@ en el historial del chat y en el commit message del paso.
 
 ### Decision 4 — Separacion Surefire/Failsafe (no aplica hoy)
 
+> **Resolución posterior:** el criterio de revisita compartido con
+> [ADR-009, Decisión 8](ADR-009-estrategia-de-ci-y-git-hooks.md) se cumplió; la
+> separación Surefire/Failsafe ya está aplicada (ver la "Resolución posterior" de ese ADR).
+
 Se confirma la Decision 8 de
 [ADR-009](ADR-009-estrategia-de-ci-y-git-hooks.md): la separacion
 Surefire/Failsafe esta fuera de alcance mientras no existan tests
