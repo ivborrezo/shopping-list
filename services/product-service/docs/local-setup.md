@@ -164,7 +164,7 @@ docker compose down -v
 ./services/product-service/mvnw -f services/product-service/pom.xml clean verify
 ```
 
-Testcontainers levanta un PostgreSQL `postgres:16-alpine` efímero — no
+Testcontainers levanta un contenedor PostgreSQL efímero — no
 depende de ningún paso previo (ni `.env`, ni `product-db` corriendo en
 Docker Compose). Es el mismo flujo que ejecuta el pipeline de CI.
 

@@ -4,7 +4,7 @@
 
 **Sistema de lista de la compra colaborativa construido como arquitectura de microservicios Cloud-Native.**
 
-Java 21 · Spring Boot 4.x · PostgreSQL · Docker
+Java · Spring Boot · PostgreSQL · Docker
 
 </div>
 

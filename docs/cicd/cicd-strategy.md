@@ -187,7 +187,7 @@ compartido por path relativo desde su pom.
 El check de CI arranca en modo **advisory**: se ejecuta y se ve en el
 PR/commit, pero no bloquea el merge a `main`. Motivado por los
 riesgos de infra anclados en el stack real (rate limit Docker Hub para
-`postgres:16-alpine`, timeout de Testcontainers en runners efímeros
+la imagen PostgreSQL, timeout de Testcontainers en runners efímeros
 sin cache de imagen, inestabilidad del nombre del check durante la
 iteración del workflow).
 
@@ -255,7 +255,7 @@ y `--mount=type=cache,target=/root/.m2` para el cache mount del stage
 builder. Con `type=gha`, ese cache mount persiste entre runs de CI
 vía el backend de GitHub Actions cache.
 
-Próximamente, valorar cache de imagen `postgres:16-alpine` si el
+Próximamente, valorar cache de la imagen PostgreSQL si el
 rate limit de Docker Hub se vuelve un problema (estrategia futura:
 `type=registry` o pull vía ghcr.io como mirror).
 

@@ -148,7 +148,7 @@ Tipos principales en uso: `feat`, `fix`, `docs`, `chore`, `refactor`,
 
 ### Contexto específico
 El proyecto combina dos lenguajes con responsabilidades distintas:
-Java 21 / Spring Boot 3.x en los microservicios backend, y JavaScript
+Java y Spring Boot en los microservicios backend, y JavaScript
 (React) en el frontend (Fase 2). Sin herramientas de verificación y
 formato automático, la consistencia del código depende exclusivamente
 de la disciplina manual de cada desarrollador, lo que es especialmente

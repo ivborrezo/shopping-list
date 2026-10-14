@@ -1,7 +1,7 @@
 # Contribuir a ShoppingList
 
 **ShoppingList** es un sistema de lista de la compra colaborativa construido
-como arquitectura de microservicios Cloud-Native (Java 21 · Spring Boot ·
+como arquitectura de microservicios Cloud-Native (Java · Spring Boot ·
 PostgreSQL · Docker).
 
 Este documento es el índice de guías de contribución del proyecto: cada tema

@@ -168,7 +168,7 @@ docker compose down -v
 ```
 
 `clean verify` ejecuta los tests de integración con **Testcontainers**, que
-levanta un PostgreSQL `postgres:16-alpine` efímero — no depende de H2 ni de
+levanta un contenedor PostgreSQL efímero — no depende de H2 ni de
 ningún paso previo (ni `.env`, ni `list-db` corriendo en Docker Compose). Es
 el mismo flujo que ejecuta el pipeline de CI.
 
