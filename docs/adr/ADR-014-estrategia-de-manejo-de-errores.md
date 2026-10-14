@@ -128,6 +128,10 @@ se enumera.
 
 ### Decisión 4 (A3) — Validación Bean Validation con errores por campo
 
+> **Resolución posterior:** este shape se amplió a los errores de parámetros
+> de petición (códigos `typeMismatch` y `missing`); ver
+> [Resolución posterior](#resolución-posterior) al final del documento.
+
 Cuando falla la validación de la petición, el `ProblemDetail` lleva
 `code: VALIDATION_FAILED` de nivel superior y un array `errors` con una
 entrada por campo:
@@ -246,3 +250,30 @@ que el frontend pueda traducir. El array `errors` con `code`, `field` y
 - El alcance es global: `list-service` replicará `ErrorCode`,
   `BusinessException` y `GlobalExceptionHandler` con su propio catálogo,
   sin reabrir el debate, mismo criterio que ADR-011.
+
+## Resolución posterior
+
+La Decisión 4 acotó el shape de validación al caso de Bean Validation: un
+`code: VALIDATION_FAILED` de nivel superior con un array `errors`, una
+entrada por campo, donde el `code` por entrada es el nombre de la
+constraint. La implementación del manejador global lo amplió al mismo shape
+para los errores de parámetros de petición: el `ProblemDetail` reutiliza
+`VALIDATION_FAILED` y el array `errors`.
+
+En esos casos el `code` por entrada no es el nombre de una constraint. Un
+parámetro no convertible —en query o en path— produce `typeMismatch`, y uno
+obligatorio ausente produce `missing`. Ambos son códigos sintéticos que
+aporta Spring MVC al enlazar la petición, no valores del vocabulario de
+Hibernate Validator. Una constraint sobre un parámetro de método, en
+cambio, sí usa el nombre de la constraint, igual que en el caso de Bean
+Validation.
+
+Un body no procesable responde `VALIDATION_FAILED` sin `errors`: el error se
+detecta antes de disponer de errores por campo.
+
+La negativa de la Decisión 4 a depender del vocabulario de Hibernate
+Validator queda, por tanto, extendida a los códigos sintéticos de Spring
+MVC: el consumidor no puede leer el `code` por entrada como el nombre de una
+constraint en todos los casos.
+
+El contrato detallado vive en el `api-contract.yaml` de cada servicio.
