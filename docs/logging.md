@@ -105,7 +105,7 @@ Perfil `local`:
 
 Perfil no-local (JSON por stdout):
 ```json
-{"@timestamp":"2026-07-06T10:15:23.123Z","level":"INFO","logger_name":"dev.ibborrezo.shoppinglist.list.service.list.service.ListItemService","message":"Adding item to list","correlationId":"abc-123"}
+{"@timestamp":"2026-07-06T10:15:23.123Z","level":"INFO","logger_name":"dev.ivborrezo.shoppinglist.list.service.list.service.ListItemService","message":"Adding item to list","correlationId":"abc-123"}
 ```
 
 Esto evita elegir entre "legible en desarrollo" y "listo para Loki en
