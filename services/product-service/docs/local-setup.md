@@ -175,7 +175,7 @@ Docker Compose). Es el mismo flujo que ejecuta el pipeline de CI.
 | Síntoma | Causa / Solución |
 |---|---|
 | `.env: No such file or directory` al hacer `source .env` | No has copiado la plantilla. Ejecuta `cp .env.example .env`. |
-| `Mockito is currently self-attaching` (WARN) | Esperado, no bloqueante. Maven añade Mockito como agente Java automático. Desaparecerá al configurar Mockito como `-javaagent` explícito en `surefire-plugin` cuando se añadan tests con mocks. |
+| `Mockito is currently self-attaching` (WARN) | Esperado, no bloqueante. Maven añade Mockito como agente Java automático al detectarlo en el classpath de test; el aviso desaparecerá si se configura Mockito como `-javaagent` explícito en `surefire-plugin`. |
 | `Could not connect to localhost:5434` | `product-db` no está corriendo. Ejecuta `docker compose up -d product-db`. |
 | `Flyway failed to determine applied migrations` | La BD existe pero tiene un estado inconsistente. Haz `docker compose down -v product-db && docker compose up -d product-db` para recrear desde cero. |
 | `port is already allocated` (8081 o 5434) | Otro proceso ocupa el puerto. Identifícalo con `lsof -i :8081` o `lsof -i :5434`. |

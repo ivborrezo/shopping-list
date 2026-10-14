@@ -89,6 +89,9 @@ proyecto:
 
 ### Decision 2 — Tipos de test y su ambito
 
+> **Resolución posterior:** la convención de naming de esta decisión quedó en
+> `*Test`/`*IT`; ver [Resolución posterior](#resolución-posterior) al final del documento.
+
 Se definen dos tipos de test que coexisten, no compiten:
 
 **Test unitario (Mockito, sin Spring):** para logica de negocio aislada
@@ -295,3 +298,20 @@ Gherkin y el codigo Java que la implementa) supera el beneficio.
   `*IntegrationTest`. Este ADR confirma ambas sin reabrirlas
   (Decisiones 2 y 4). La materializacion operativa en
   `docs/cicd/cicd-strategy.md` no se ve afectada por este ADR.
+
+## Resolución posterior
+
+La convención de naming que la Decisión 2 contemplaba como alternativa
+cerró finalmente en `*Test` para los tests unitarios y `*IT` para los de
+integración, en el momento de configurar Failsafe y unificar el sufijo.
+La forma `*IntegrationTest` que la decisión citaba dejó de usarse: el
+propio sufijo determina la fase de ejecución, de modo que la clase de
+integración se renombró a la convención `*IT`.
+
+La convención operativa de nombrado y ejecución vive en
+[`docs/contributing/testing.md`](../contributing/testing.md).
+
+Esta resolución afecta únicamente a la convención de naming de la
+Decisión 2; el resto de decisiones del ADR siguen vigentes y el cuerpo de
+la decisión se conserva sin reescribir como registro del estado en que se
+redactó.

@@ -160,7 +160,7 @@ sin conocer el broker concreto:
 
 ```java
 public interface DomainEventPublisher {
-    void publish(DomainEvent event);
+    void publish(DomainEvent<?> event);
 }
 ```
 

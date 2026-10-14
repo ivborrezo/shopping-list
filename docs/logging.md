@@ -100,12 +100,12 @@ Ejemplo de la misma línea en cada perfil:
 
 Perfil `local`:
 ```
-10:15:23 INFO  [abc-123] ListService - Adding item to list
+10:15:23 INFO  [abc-123] ListItemService - Adding item to list
 ```
 
 Perfil no-local (JSON por stdout):
 ```json
-{"@timestamp":"2026-07-06T10:15:23.123Z","level":"INFO","logger_name":"com.shoppinglist.ListService","message":"Adding item to list","correlationId":"abc-123"}
+{"@timestamp":"2026-07-06T10:15:23.123Z","level":"INFO","logger_name":"dev.ibborrezo.shoppinglist.list.service.list.service.ListItemService","message":"Adding item to list","correlationId":"abc-123"}
 ```
 
 Esto evita elegir entre "legible en desarrollo" y "listo para Loki en

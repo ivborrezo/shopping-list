@@ -214,7 +214,7 @@ en `docs/cicd/cicd-strategy.md`, no reabren este ADR.
 
 ### Decisión 7 — Caching Maven + BuildKit `type=gha,mode=max`
 
-1. **Maven**: `actions/setup-java@v4` con `cache: maven` sobre
+1. **Maven**: `actions/setup-java` con `cache: maven` sobre
    `~/.m2/repository`, invalidación por hash del `pom.xml`. Salta el
    download de dependencias desde Maven Central en cada run. Estándar,
    coste de configuración trivial, ahorro estimado 30-60s/run.
