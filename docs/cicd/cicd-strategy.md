@@ -420,8 +420,8 @@ Lo que **no** cubre esta estrategia, coherente con ADR-009:
   Definir ahora si el deploy es continuo/gated/manual es especular
   sobre infraestructura inexistente. Revisitar cuando exista target de
   despliegue (AWS o equivalente).
-- **Matrix cross-JDK:** el proyecto fija Java 21 en ADR del contexto
-  maestro; no se testea contra múltiples JDK en paralelo.
+- **Matrix cross-JDK:** el proyecto fija una única versión de Java; no
+  se testea contra múltiples JDK en paralelo.
 - **Self-hosted runners:** descartados por presupuesto $0 (un equipo
   gratis en GitHub Actions usa runners hosted). Re-evaluable si el
   proyecto crece y los minutos de CI se vuelven cuello de botella.
