@@ -312,6 +312,6 @@ La convención operativa de nombrado y ejecución vive en
 [`docs/contributing/testing.md`](../contributing/testing.md).
 
 Esta resolución afecta únicamente a la convención de naming de la
-Decisión 2; el resto de decisiones del ADR siguen vigentes y el cuerpo de
+Decisión 2; el resto de decisiones del ADR no se ven alteradas por ella y
 la decisión se conserva sin reescribir como registro del estado en que se
 redactó.
