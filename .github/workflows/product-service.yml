@@ -4,6 +4,7 @@ name: product-service CI
 #   - paths del servicio afectado
 #   - config/checkstyle/** (ruleset compartido; un cambio puede romper
 #     cualquier servicio que lo use)
+#   - docs/cicd/** (documentación operativa del pipeline)
 #   - el propio workflow (self-validation: un typo en el YAML se
 #     descubre al re-ejecutarse)
 on:

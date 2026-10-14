@@ -32,8 +32,8 @@ on:
   workflow_dispatch:
 ```
 
-Cuatro motivos para los paths no-service (justificación detallada en
-ADR-009, Decisión 4):
+Cuatro motivos (el del propio servicio y tres paths no-service; justificación detallada
+en ADR-009, Decisión 4):
 
 - `<servicio>/**` — el servicio afectado.
 - `config/checkstyle/**` — ruleset compartido; un cambio puede romper

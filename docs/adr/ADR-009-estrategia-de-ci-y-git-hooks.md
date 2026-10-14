@@ -135,6 +135,7 @@ El workflow de `product-service` se dispara con:
 paths:
   - services/product-service/**
   - config/checkstyle/**
+  - docs/cicd/**
   - .github/workflows/product-service.yml
 ```
 
@@ -146,6 +147,9 @@ Tres motivos distintos para los paths no-service:
   commit no relacionado toque el servicio días después. Anclado en
   incidente real del proyecto (el stock de checkstyle 9.3
   dejó de incluir `RegexpHeader`, descubierto solo al ejecutar).
+- **`docs/cicd/**` (correctness):** la documentación operativa del
+  pipeline describe cómo se ejecuta el workflow; un cambio ahí debe
+  re-validarse para que el run refleje la estrategia vigente.
 - **`.github/workflows/product-service.yml` (self-validation):** un
   cambio del propio workflow debe re-ejecutarse para validar la
   modificación; sin eso, un typo en el YAML se descubre en un push sin
@@ -153,9 +157,9 @@ Tres motivos distintos para los paths no-service:
 
 El principio que este ADR fija es "paths del servicio + compartidos
 relevantes + el propio workflow"; la lista concreta de paths
-compartidos evoluciona con el monorepo (hoy `config/checkstyle/**`;
-futuros compartidos Spotless u otros se añadirán a la lista cuando
-existan).
+compartidos evoluciona con el monorepo (hoy `config/checkstyle/**` y
+`docs/cicd/**`; futuros compartidos Spotless u otros se añadirán a la
+lista cuando existan).
 
 ### Decisión 5 — Gate híbrido: advisory temporal → hard gate por estabilidad observada
 
