@@ -26,7 +26,7 @@
 
 ## Objetivo
 
-Definir cómo se logueia en todos los microservicios del proyecto para que:
+Definir cómo se loguea en todos los microservicios del proyecto para que:
 
 1. Los logs sean legibles durante el desarrollo local.
 2. Los logs ya estén estructurados de forma compatible con Loki/Grafana,
