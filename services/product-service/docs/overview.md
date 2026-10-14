@@ -47,13 +47,13 @@ admite `null`. Los tests no se anotan. Reglas de anotación en
 
 Los errores siguen un contrato único: RFC 9457 `ProblemDetail`
 (`application/problem+json`) con extensión `code` y un catálogo estable de
-15 códigos (14 de negocio + `VALIDATION_FAILED`), sin localización de
+códigos `ErrorCode` (con `VALIDATION_FAILED` reservado), sin localización de
 mensajes en el backend (la localización es del frontend). Ver
 [ADR-014](../../../docs/adr/ADR-014-estrategia-de-manejo-de-errores.md).
 
 ## Tablas y migraciones
 
-7 tablas: `category`, `category_translation`, `base_product`,
+Tablas: `category`, `category_translation`, `base_product`,
 `base_product_translation`, `user_product`, `user_favorite_product` y
 `user_recent_product`. El esquema se define exclusivamente mediante
 migraciones Flyway V1-V11, incluidos los seeds de categorías y productos

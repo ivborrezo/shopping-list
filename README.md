@@ -77,7 +77,7 @@ shopping-list/
 ├── githooks/                # pre-commit + commit-msg
 ├── config/checkstyle/       # Google Java Style (compartido)
 ├── docs/
-│   ├── adr/                 # 16 ADRs
+│   ├── adr/                 # ADRs
 │   ├── architecture/        # C4 Level 2
 │   ├── cicd/                # Estrategia CI/CD
 │   ├── contributing/        # Guías de contribución
@@ -145,7 +145,7 @@ servicio), consulta el [Setup completo](./docs/contributing/setup.md).
 | Documento | Descripción |
 |---|---|
 | [C4 Nivel 2 — Diagrama de Contenedores](./docs/architecture/c4-level2-containers.md) | Vista de contenedores del sistema completo (arquitectura objetivo por fases, codificada por color según estado de implementación) |
-| [Diagrama ER de `product-service`](./services/product-service/docs/img/er-diagram.svg) | Esquema entidad-relación de las 7 tablas de `product-service` (snapshot a Flyway V11) |
+| [Diagrama ER de `product-service`](./services/product-service/docs/img/er-diagram.svg) | Esquema entidad-relación de `product-service` (snapshot a Flyway V11) |
 | [Diagrama ER de `list-service`](./services/list-service/docs/img/er-diagram.svg) | Esquema entidad-relación de las tablas `list` y `list_item` (snapshot a Flyway V2) |
 
 ### Arquitectura de eventos y convenciones
@@ -210,7 +210,7 @@ Architecture Decision Records (ADR) en [`docs/adr/`](./docs/adr/).
 | [ADR-011 — Estrategia de internacionalización y fallback](./docs/adr/ADR-011-estrategia-de-internacionalizacion-y-fallback.md) | Resolución de `Accept-Language` vía `AcceptHeaderLocaleResolver`, fallback exacto → inglés → primer disponible, resolución del nombre en capa de servicio (no JPQL), validación de `locale` en dos capas (Bean Validation + servicio) | ✅ Aceptado |
 | [ADR-012 — Modelo de productos base vs usuario](./docs/adr/ADR-012-modelo-productos-base-vs-usuario.md) | Dos agregados/tablas separados (`base_product` con i18n Table, `user_product` texto libre monolingüe). `based_on_base_id` como snapshot copy-on-create + trazabilidad inmutable. PK externa compuesta `(productId, productType)`. Flags de compartición inertes hasta Fase 4. Detalle de favoritos/recientes diferido a ADR-013 | ✅ Aceptado |
 | [ADR-013 — Favoritos y recientes (detalle de implementación)](./docs/adr/ADR-013-favoritos-y-recientes-detalle-de-implementacion.md) | PK surrogate `id` + clave natural `(user_id, product_type, product_public_id)` y referencia por `product_public_id` sin FK física (validación en capa de aplicación, precedente de `list_item` en `list-service`), `last_used_at` como criterio de ordenación de recientes, disparador de recientes solo en el toggle de favorito en Fases 1-3, sin endpoint de touch explícito | ✅ Aceptado |
-| [ADR-014 — Estrategia de manejo de errores](./docs/adr/ADR-014-estrategia-de-manejo-de-errores.md) | RFC 9457 `ProblemDetail` con extensión `code` y content-type `application/problem+json`, mensajes en inglés sin i18n en el backend, catálogo `ErrorCode` de 15 códigos (14 de negocio + `VALIDATION_FAILED` reservado), `BusinessException` con un único `GlobalExceptionHandler`, validación con `errors` por campo y fallback 500 con `INTERNAL_ERROR` | ✅ Aceptado |
+| [ADR-014 — Estrategia de manejo de errores](./docs/adr/ADR-014-estrategia-de-manejo-de-errores.md) | RFC 9457 `ProblemDetail` con extensión `code` y content-type `application/problem+json`, mensajes en inglés sin i18n en el backend, catálogo `ErrorCode` (con `VALIDATION_FAILED` reservado), `BusinessException` con un único `GlobalExceptionHandler`, validación con `errors` por campo y fallback 500 con `INTERNAL_ERROR` | ✅ Aceptado |
 | [ADR-015 — Estrategia de nulabilidad con JSpecify](./docs/adr/ADR-015-estrategia-de-nulabilidad-con-jspecify.md) | JSpecify como set único de anotaciones, `@NullMarked` por paquete (non-null por defecto), `@Nullable` en la superficie nulable; alcance solo `main` y sin enforcement de build (evolución opcional) | ✅ Aceptado |
 | [ADR-016 — Estrategia de identificadores públicos](./docs/adr/ADR-016-estrategia-de-identificadores-publicos.md) | Dual-key: `id` interno + `public_id` UUID único/inmutable expuesto como `id` en HTTP; generación v7 en aplicación (`uuid-creator`); referencias cross-service por `(productType, publicId)`; FKs internas siguen en Long | ✅ Aceptado |
 

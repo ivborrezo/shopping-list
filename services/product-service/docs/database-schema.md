@@ -35,7 +35,7 @@ Categorías del catálogo gestionado por el sistema. Entidad JPA:
 
 - `V1__create_category_table.sql` — DDL de la tabla, con `public_id` (UUID,
   NOT NULL, UNIQUE).
-- `V2__seed_categories.sql` — seed de 10 categorías activas (dairy, bakery,
+- `V2__seed_categories.sql` — seed de categorías activas (dairy, bakery,
   produce, meat, fish, pantry, beverages, frozen, household, personal_care)
   con su `public_id` fijo.
 
@@ -61,8 +61,8 @@ categoría (patrón i18n Table). Entidad JPA:
 **Migraciones**
 
 - `V3__create_category_translation_table.sql` — DDL de la tabla.
-- `V4__seed_category_translations.sql` — seed de 30 traducciones
-  (10 categorías × 3 idiomas: es/en/eu).
+- `V4__seed_category_translations.sql` — seed de traducciones
+  (una por idioma soportado de cada categoría: es/en/eu).
 
 ### `base_product`
 
@@ -105,8 +105,8 @@ aplicación (UUID v7) en runtime; el seed V7 inserta UUID fijos (v4).
 
 - `V5__create_base_product_table.sql` — DDL de la tabla, con `public_id`
   (UUID, NOT NULL, UNIQUE).
-- `V7__seed_base_products.sql` — seed de 30 productos base repartidos entre
-  las 10 categorías del seed V2, con su `public_id` fijo.
+- `V7__seed_base_products.sql` — seed de productos base repartidos entre
+  las categorías del seed V2, con su `public_id` fijo.
 
 ### `base_product_translation`
 
@@ -131,8 +131,8 @@ soportado (patrón i18n Table). Entidad JPA:
 **Migraciones**
 
 - `V6__create_base_product_translation_table.sql` — DDL de la tabla.
-- `V7__seed_base_products.sql` — seed de 90 traducciones
-  (30 productos × 3 idiomas: es/en/eu), en la misma migración que el seed
+- `V7__seed_base_products.sql` — seed de traducciones
+  (una por idioma soportado de cada producto base: es/en/eu), en la misma migración que el seed
   de productos base.
 
 ### `user_product`
@@ -340,12 +340,12 @@ registra en la tabla `flyway_schema_history`).
 | Versión | Migración | Contenido |
 |---|---|---|
 | `V1` | `V1__create_category_table.sql` | DDL de `category`, con `public_id` (UUID, NOT NULL, UNIQUE). |
-| `V2` | `V2__seed_categories.sql` | Seed de 10 categorías con `public_id` fijo. |
+| `V2` | `V2__seed_categories.sql` | Seed de categorías con `public_id` fijo. |
 | `V3` | `V3__create_category_translation_table.sql` | DDL de `category_translation`. |
-| `V4` | `V4__seed_category_translations.sql` | Seed de 30 traducciones (es/en/eu). |
+| `V4` | `V4__seed_category_translations.sql` | Seed de traducciones (es/en/eu). |
 | `V5` | `V5__create_base_product_table.sql` | DDL de `base_product`, con `public_id` (UUID, NOT NULL, UNIQUE). |
 | `V6` | `V6__create_base_product_translation_table.sql` | DDL de `base_product_translation`. |
-| `V7` | `V7__seed_base_products.sql` | Seed de 30 productos base (con `public_id` fijo) + 90 traducciones (es/en/eu). |
+| `V7` | `V7__seed_base_products.sql` | Seed de productos base (con `public_id` fijo) + sus traducciones (es/en/eu). |
 | `V8` | `V8__sync_base_product_sequence.sql` | Sincroniza la secuencia identity tras el seed V7 con IDs explícitos. |
 | `V9` | `V9__create_user_product_table.sql` | DDL de `user_product`, con `public_id` (UUID, NOT NULL, UNIQUE). |
 | `V10` | `V10__create_user_favorite_product_table.sql` | DDL de `user_favorite_product`. |

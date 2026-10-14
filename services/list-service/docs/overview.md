@@ -31,7 +31,7 @@ totalidad para Fase 1.
 
 Los errores siguen un contrato único: RFC 9457 `ProblemDetail`
 (`application/problem+json`) con extensión `code` y un catálogo estable de
-8 códigos (7 de negocio + `VALIDATION_FAILED`), sin localización de mensajes
+códigos `ErrorCode` (con `VALIDATION_FAILED` reservado), sin localización de mensajes
 en el backend (la localización es del frontend). Ver
 [ADR-014](../../../docs/adr/ADR-014-estrategia-de-manejo-de-errores.md).
 
