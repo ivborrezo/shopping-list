@@ -18,6 +18,7 @@ justificaciones ni trade-offs: los motivos de las decisiones viven en los
 | Entorno local | [local-environment.md](./local-environment.md) |
 | Plantilla de overview de servicio | [service-overview-template.md](./service-overview-template.md) |
 | Convenciones de redacción de ADR | [adr-conventions.md](./adr-conventions.md) |
+| Convenciones de documentación | [documentation.md](./documentation.md) |
 
 ## Layout del monorepo
 
