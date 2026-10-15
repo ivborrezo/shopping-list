@@ -302,12 +302,6 @@ monorepo. Activación por clon:
 git config core.hooksPath githooks
 ```
 
-La carga de variables de entorno del servicio (datasource, puertos)
-se redactará en `<servicio>/docs/local-setup.md`, ya que es
-específica de cada servicio. Para `product-service`, ese documento
-se redactará una vez que todo lo anterior (wiring en `docker-compose.yml`
-incluido) esté verificado y se pueda documentar con precisión.
-
 ### Contenido del hook
 
 Tres capas con dispatch por servicio:
