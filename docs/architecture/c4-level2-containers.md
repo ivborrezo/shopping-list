@@ -115,7 +115,7 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 | list-service | Message Broker | Asíncrono | AMQP / Kafka protocol | Publicación de eventos de dominio (lista creada, producto añadido). |
 | Message Broker | product-service | Asíncrono | AMQP / Kafka protocol | Consumo de eventos (recientes, Fase 5). |
 | Message Broker | Notification Service | Asíncrono | AMQP / Kafka protocol | Consumo de eventos para generar notificaciones. |
-| Notification Service | SendGrid | Síncrono | SMTP / HTTPS API | Envío de notificaciones por email. |
+| Notification Service | Email Provider | Síncrono | SMTP / API | Envío de notificaciones por email. |
 
 | Color | Significado |
 |---|---|
