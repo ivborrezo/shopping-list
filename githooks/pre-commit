@@ -134,11 +134,12 @@ if ((${#staged[@]})); then
   fi
 fi
 
-# ─── Dispatch Java: servicios afectados bajo services/ con pom.xml ──
+# ─── Dispatch Java: servicios con .java staged bajo services/ y pom.xml ──
 services=()
 for f in "${staged[@]+"${staged[@]}"}"; do
   [[ -z "$f" ]] && continue
   [[ "$f" == services/* ]] || continue
+  [[ "$f" == *.java ]] || continue
   rel="${f#services/}"
   svc="${rel%%/*}"
   [[ "$svc" == "$rel" ]] && continue
