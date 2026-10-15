@@ -23,6 +23,8 @@ rápido, consulta el [README](./README.md).
 | Entorno local | [local-environment.md](./docs/contributing/local-environment.md) |
 | Estrategia de CI/CD | [cicd-strategy.md](./docs/cicd/cicd-strategy.md) |
 | Setup local de product-service | [local-setup.md](./services/product-service/docs/local-setup.md) |
+| Setup local de list-service | [local-setup.md](./services/list-service/docs/local-setup.md) |
 | Convenciones de redacción de ADR | [adr-conventions.md](./docs/contributing/adr-conventions.md) |
 | Convenciones de documentación | [documentation.md](./docs/contributing/documentation.md) |
+| Plantilla de overview de servicio | [service-overview-template.md](./docs/contributing/service-overview-template.md) |
 | Decisiones de arquitectura (ADRs) | [docs/adr/](./docs/adr/) |
