@@ -12,7 +12,7 @@ migraciones Flyway, resuelve de forma de solo lectura el nombre del producto
 contra `product-service` como snapshot `display_name` al añadir un ítem, y
 publica los eventos de dominio de listas e ítems. El contrato está definido
 Design-First en [`api-contract.yaml`](./api-contract.yaml) e implementado en su
-totalidad para Fase 1.
+totalidad para el MVP.
 
 ## Endpoints implementados
 
@@ -63,7 +63,7 @@ es la fuente de detalle (tablas, constraints, relaciones y diagrama ER).
 
 - **Disparador de recientes.** El segundo disparador de recientes
   (`last_used_at`) depende de que `product-service` consuma el evento
-  `list.item.added` (Fase 5); hasta entonces el único camino hacia la marca de
+  `list.item.added` (fase de mensajería y notificaciones); hasta entonces el único camino hacia la marca de
   reciente es el toggle de favorito
   ([ADR-013](../../../docs/adr/ADR-013-favoritos-y-recientes-detalle-de-implementacion.md)).
 - **`product.deleted`.** El borrado de un `user_product` referenciado desde un
@@ -79,15 +79,15 @@ es la fuente de detalle (tablas, constraints, relaciones y diagrama ER).
 
 ## Fuera de alcance
 
-- **Autorización de lectura (Fase 4).** Las lecturas (`GET /lists/{id}`) no
+- **Autorización de lectura (pendiente de autenticación real).** Las lecturas (`GET /lists/{id}`) no
   comprueban propiedad: cualquiera que conozca el identificador puede leer una
-  lista. Es un hueco aceptado de forma consciente durante las Fases 1-3, mientras
+  lista. Es un hueco aceptado de forma consciente mientras
   el propietario es un placeholder sin identidad real
   ([ADR-006](../../../docs/adr/ADR-006-identificacion-propietario-sin-autenticacion.md));
-  se cierra en Fase 4 con autorización por membresía.
-- **Colaboración y membresía (Fase 4).** La compartición de listas entre
-  colaboradores queda fuera de Fase 1, sin campos reservados en el contrato; se
-  añadirá de forma aditiva en Fase 4 con el modelo real de identidad. Se registra
+  se cierra con la autenticación real y la autorización por membresía.
+- **Colaboración y membresía.** La compartición de listas entre
+  colaboradores queda fuera del MVP, sin campos reservados en el contrato; se
+  añadirá de forma aditiva con el modelo real de identidad. Se registra
   como alcance diferido en el [ROADMAP](../../../ROADMAP.md).
 - **`snapshot_locale`.** El snapshot `display_name` es monolingüe: el idioma se
   resuelve al vuelo en `product-service` reenviando `Accept-Language`, y

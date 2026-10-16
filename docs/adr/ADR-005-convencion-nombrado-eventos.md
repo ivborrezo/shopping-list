@@ -6,7 +6,7 @@ Aceptado.
 
 ## Contexto
 
-`list-service` publica eventos de dominio desde Fase 1 (`docs/events/event-architecture.md`
+`list-service` publica eventos de dominio desde el MVP (`docs/events/event-architecture.md`
 define el catálogo inicial: `list.created`, `list.renamed`, `list.deleted`,
 `list.item.added`, `list.item.removed`, `list.item.purchased`). Antes de escribir la primera
 clase de evento en código, es necesario fijar una convención de nombrado
@@ -19,8 +19,8 @@ valor de `eventType`, tests, documentación), además de cualquier dato ya
 persistido o en tránsito que referencie el nombre antiguo.
 
 Al ser ShoppingList un sistema políglota (Java/Spring Boot en
-`product-service` y `list-service`, Node.js en `notification-service` desde
-Fase 5), la convención elegida no debe favorecer culturalmente a ningún
+`product-service` y `list-service`, Node.js en `notification-service` en la
+fase de mensajería y notificaciones), la convención elegida no debe favorecer culturalmente a ningún
 lenguaje de programación concreto.
 
 ### Alternativas consideradas
@@ -71,7 +71,7 @@ Se adopta el patrón **`<aggregate>.<past_tense_action>`**:
 - Este nombre es el valor del campo `eventType` dentro del payload del
   mensaje. Es independiente del nombre físico del canal de transporte
   (topic de Kafka o exchange/cola de RabbitMQ), que se decide en
-  `ADR-XXF1-eleccion-message-broker` y puede agrupar varios `eventType` en
+  `ADR-XXF6-eleccion-message-broker` y puede agrupar varios `eventType` en
   un mismo canal físico.
 
 Ejemplos ya adoptados en el catálogo de `list-service`:
@@ -89,7 +89,7 @@ list.item.purchased
 
 - Todo evento de dominio nuevo, en cualquier servicio, debe seguir este
   patrón; se revisa en code review.
-- La convención es estable frente a la elección de broker (`ADR-XXF1-eleccion-message-broker`)
+- La convención es estable frente a la elección de broker (`ADR-XXF6-eleccion-message-broker`)
   y frente al canal físico de transporte: cambiar de Kafka a RabbitMQ (o
   viceversa) no obliga a renombrar ningún `eventType`.
 - `docs/events/event-architecture.md` ya adoptaba este patrón de facto
@@ -111,7 +111,7 @@ list.item.purchased
   lenguaje por encima de la comodidad de la serialización reflexiva nativa.
 - Queda pendiente de definir, fuera del alcance de este ADR, la
   correspondencia exacta entre `eventType` y canal físico (topic/exchange),
-  que se resolverá junto con `ADR-XXF1-eleccion-message-broker`.
+  que se resolverá junto con `ADR-XXF6-eleccion-message-broker`.
 - Si el proyecto evoluciona hacia múltiples equipos o dominios claramente
   separados que empiecen a compartir nombres de aggregate de forma
   ambigua, revisar la introducción de un prefijo de bounded context

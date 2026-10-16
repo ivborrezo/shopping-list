@@ -74,14 +74,14 @@ mantiene el default como red de seguridad para inserciones, pero la marca
 efectiva que se sirve y se ordena la pone la capa de aplicación, que controla
 el valor exacto y evita depender del reloj de la base de datos.
 
-### Decisión 3 — Disparador de `last_used_at` limitado al toggle de favorito en Fases 1-3
+### Decisión 3 — Disparador de `last_used_at` limitado al toggle de favorito mientras no exista consumo de eventos
 
 Al **marcar** un favorito se actualiza —o se inserta, si no existe— la fila
 de reciente del mismo usuario y producto, refrescando su `last_used_at`. Al
 **desmarcar** un favorito no se toca la fila de reciente: la desmarcación no
 es una interacción con el producto y no debe desplazarlo en el ranking.
 
-Este es el único disparador de recientes en Fases 1-3. Cuando `list-service`
+Este es el único disparador de recientes mientras no exista el consumo de eventos. Cuando `list-service`
 publique el evento "producto añadido a lista" existirá un segundo disparador
 para esas interacciones; queda pendiente de la elección del message broker,
 no de una decisión que tome aquí.
@@ -153,7 +153,7 @@ Marcar recientes en cada interacción con un producto (crear, modificar,
 toggle...) y/o exponer un endpoint para refrescar la marca a mano.
 
 **Por qué se descartó:** amplía la superficie de cambio sin un consumidor
-real que la justifique en Fases 1-3. El único consumidor actual es el ranking
+real que la justifique mientras no exista el consumo de eventos. El único consumidor actual es el ranking
 de recientes y basta con los dos caminos de la Decisión 3; un endpoint de
 touch adicional no aportaría nada que el toggle no cubra y añadiría contrato
 a mantener.
@@ -199,7 +199,7 @@ disparador de recientes de las Decisiones 3 y 4.
 La Decisión 3 condicionaba ese disparador a que `list-service` publicara el
 evento "producto añadido a lista" y lo ligaba a la elección del message broker.
 La publicación no es el cuello de botella: `list-service` ya publica
-`list.item.added` desde Fase 1. Lo que activa realmente el segundo disparador es
+`list.item.added` desde el MVP. Lo que activa realmente el segundo disparador es
 que `product-service` **consuma** ese evento para actualizar `last_used_at`; hasta
 entonces el único camino hacia la marca de reciente sigue siendo el toggle de
 favorito. El catálogo central lo refleja en

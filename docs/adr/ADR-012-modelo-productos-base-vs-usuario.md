@@ -87,10 +87,10 @@ entre ambos productos.
 
 `share_with_list_members` y `share_with_friends` serán booleanos con
 `DEFAULT FALSE`. Product-service los define como preferencias, pero no
-construye su enforcement en Fases 1-3: la membresía de listas vive en
+construye su enforcement por el momento: la membresía de listas vive en
 `list-service` y los amigos dependerán de un futuro servicio social. La
-validación de permisos vivirá en esos servicios cuando exista identidad real
-en Fase 4 o posterior. Hasta entonces, los flags son inertes, con el mismo
+validación de permisos vivirá en esos servicios cuando exista identidad real y
+el modelo de compartición. Hasta entonces, los flags son inertes, con el mismo
 criterio de placeholder que `owner_id` en ADR-006.
 
 Las secuencias de las dos tablas son independientes. Toda PK externa en
@@ -102,11 +102,11 @@ El borrado de un `user_product` referenciado desde `list_item` queda como
 deuda. La recomendación tentativa, no vinculante en este ADR, es marcar el
 ítem como "producto no disponible" y preservar su snapshot
 `display_name`. Se diseñará cuando product-service publique `product.deleted`,
-pendiente de `ADR-XXF1-eleccion-message-broker` y de la decisión de publicar
-ese evento. En esta fase, `docs/events/event-architecture.md` sigue
+pendiente de `ADR-XXF6-eleccion-message-broker` y de la decisión de publicar
+ese evento. Hoy, `docs/events/event-architecture.md` sigue
 declarando que product-service no publica eventos.
 
-El clonado user-to-user no se implementa en Fase 1. Cuando exista un modelo
+El clonado user-to-user no se implementa en el MVP. Cuando exista un modelo
 de amistad, se añadirá de forma aditiva `based_on_user_id` nullable con FK a
 `user_product.id` y `CHECK (based_on_base_id IS NULL OR based_on_user_id IS NULL)`;
 como máximo una de las dos trazabilidades podrá estar poblada.
@@ -127,12 +127,13 @@ físico, con validación en aplicación.
   sección de categorías permanece intacta.
 - `list_item` no cambia: ya referencia `(productId, productType)` y guarda
   `display_name` como snapshot. ADR-002 y ADR-006 siguen siendo correctos.
-- Los flags de compartición permanecen inertes en Fases 1-3. Cualquier
+- Los flags de compartición permanecen inertes hasta que exista el modelo de
+  compartición. Cualquier
   usuario que conozca un id puede leer o añadir cualquier `user_product` a
   una lista; es una consecuencia explícita del placeholder de ADR-006, no
   una autorización implementada.
 - El snapshot protege la presentación histórica aunque cambie el catálogo;
   la publicación de `product.deleted` y el soft mark quedan diferidos.
 - La activación de identidad real se documentará en
-  `ADR-XXF4-keycloak-como-identity-provider`, y el detalle de favoritos y
+  `ADR-XXF3-keycloak-como-identity-provider`, y el detalle de favoritos y
   recientes en ADR-013.

@@ -21,7 +21,7 @@ Resilience4j).
 
 Trigger: cuando exista un side effect cross-service real (por ejemplo,
 `product-service` consumiendo `list.item.added`) o un broker con requisito de
-entrega. La integración de Fase 1 entre ambos servicios es de solo lectura
+entrega. La integración del MVP entre ambos servicios es de solo lectura
 (`list-service` resuelve el nombre del producto para su snapshot), no una
 transacción distribuida, así que no activa por sí sola esta deuda. El ADR
 pendiente (`ADR-XXFX-gestion-de-transacciones-distribuidas-con-saga`) la
@@ -35,23 +35,24 @@ marcar el ítem como "producto no disponible" y preservar el snapshot
 `display_name` ([ADR-012](./docs/adr/ADR-012-modelo-productos-base-vs-usuario.md)).
 
 Trigger: la relación de `list-service` con los productos por referencia ya
-existe (Fase 1); queda pendiente que `product-service` publique el evento
+existe (el MVP); queda pendiente que `product-service` publique el evento
 `product.deleted`.
 
 ### Clonado user-to-user de productos
 
-No se implementa en Fase 1. Cuando exista un modelo de amistad real se
+No se implementa en el MVP. Cuando exista un modelo de amistad real se
 añadirá de forma aditiva `based_on_user_id` nullable con FK a
 `user_product.id` y un `CHECK` que lo haga mutuamente excluyente con
 `based_on_base_id` ([ADR-012](./docs/adr/ADR-012-modelo-productos-base-vs-usuario.md)).
 
-Trigger: cuando exista modelo de amistad/identidad real (Fase 4 o
-posterior).
+Trigger: cuando exista modelo de amistad/identidad real (autenticación
+real y relaciones sociales).
 
 ### Disparador de recientes limitado al toggle de favorito
 
-En Fases 1-3 el único disparador de `last_used_at` en recientes es el
-toggle de favorito; no existe endpoint de touch explícito
+Mientras no exista el consumo de eventos, el único disparador de
+`last_used_at` en recientes es el toggle de favorito; no existe endpoint de
+touch explícito
 ([ADR-013](./docs/adr/ADR-013-favoritos-y-recientes-detalle-de-implementacion.md)).
 
 Trigger: cuando `product-service` **consuma** el evento `list.item.added` de
@@ -73,11 +74,12 @@ Trigger: el N+1 se vuelve medible con datos reales.
 ### Flags de compartición inertes
 
 `share_with_list_members` y `share_with_friends` se persisten pero no tienen
-enforcement en las Fases 1-3. Se activarán cuando exista un modelo real de
+enforcement todavía. Se activarán cuando exista un modelo real de
 compartición (listas colaborativas, relaciones sociales)
 ([ADR-012](./docs/adr/ADR-012-modelo-productos-base-vs-usuario.md)).
 
-Trigger: se diseña el enforcement de compartición (Fase 4 o posterior).
+Trigger: se diseña el enforcement de compartición (autenticación real y
+modelo de compartición).
 
 ## Decisiones opcionales
 

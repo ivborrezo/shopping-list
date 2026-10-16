@@ -35,7 +35,7 @@ cambios se aplicaron y cuándo, y mezcla la responsabilidad de
 preocupaciones distintas con ciclos de vida distintos.
 
 La decisión sobre la herramienta de migraciones debía tomarse en
-el momento del scaffolding de `product-service` (Fase 1), antes de
+el momento del scaffolding de `product-service` (el MVP), antes de
 escribir la primera entidad JPA, porque condiciona directamente cómo
 se estructura la carpeta de recursos del servicio, cómo se inicia la
 base de datos por primera vez y qué ciclo de vida siguen los cambios
@@ -92,7 +92,7 @@ scripts versionados en su repositorio.
 Esta decisión aplica a `product-service` y al futuro `list-service`
 (ambos microservicios Spring con base de datos PostgreSQL propia).
 
-**No aplica a notification-service:** según el diseño actual (Fase 5),
+**No aplica a notification-service:** según el diseño actual (fase de mensajería y notificaciones),
 es un consumidor de eventos sin base de datos propia — resuelve
 estado (idioma, colaboradores) consultando a Keycloak y a
 `list-service` en el momento del consumo. Si en el futuro

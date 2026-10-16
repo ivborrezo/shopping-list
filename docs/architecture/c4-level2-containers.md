@@ -54,11 +54,12 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
   componente de observabilidad, degradando la legibilidad del diagrama
   sin aportar información sobre el funcionamiento de negocio del
   sistema. Esta infraestructura se documentará en
-  `docs/architecture/deployment-topology.md` (Fase 6).
+  `docs/architecture/deployment-topology.md` (fase de observabilidad).
 - **Distinción entre roles de usuario** (usuario estándar vs.
   administrador). Ambos perfiles acceden al sistema por el mismo canal
   y protocolo; la diferencia es una cuestión de autorización a nivel de
-  rol (Fase 4, Keycloak), no de arquitectura de contenedores.
+  rol (Keycloak, cuando exista autenticación real), no de arquitectura
+  de contenedores.
 
 ---
 
@@ -113,17 +114,17 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 | list-service | list-db | Síncrono | JDBC/SQL | Lectura/escritura de listas e ítems de lista. |
 | list-service | product-service | Síncrono | REST/HTTPS | Consulta puntual de producto referenciado (sin join entre BDs). |
 | list-service | Message Broker | Asíncrono | AMQP / Kafka protocol | Publicación de eventos de dominio (lista creada, producto añadido). |
-| Message Broker | product-service | Asíncrono | AMQP / Kafka protocol | Consumo de eventos (recientes, Fase 5). |
+| Message Broker | product-service | Asíncrono | AMQP / Kafka protocol | Consumo de eventos (recientes, fase de mensajería y notificaciones). |
 | Message Broker | Notification Service | Asíncrono | AMQP / Kafka protocol | Consumo de eventos para generar notificaciones. |
 | Notification Service | Email Provider | Síncrono | SMTP / API | Envío de notificaciones por email. |
 
 | Color | Significado |
 |---|---|
-| 🟢 Verde | **Implementado** — contenedor activo en el sistema actual (Fase 1: product-service, list-service y sus bases de datos) |
-| 🟡 Amarillo | Roadmap — Frontend (Fase 2: React App) |
-| 🔵 Azul | Roadmap — Plataforma (Fase 3: API Gateway, Config Service) |
-| 🟣 Morado | Roadmap — Seguridad (Fase 4: Auth Service y su base de datos) |
-| 🟠 Naranja | Roadmap — Mensajería y notificaciones (Fase 5: Message Broker, Notification Service) |
+| 🟢 Verde | **Implementado** — contenedor activo en el sistema actual (MVP: product-service, list-service y sus bases de datos) |
+| 🟡 Amarillo | Roadmap — Frontend (React App) |
+| 🔵 Azul | Roadmap — Plataforma (API Gateway, Config Service) |
+| 🟣 Morado | Roadmap — Seguridad (Auth Service y su base de datos) |
+| 🟠 Naranja | Roadmap — Mensajería y notificaciones (Message Broker, Notification Service) |
 | ⚫ Gris (borde discontinuo) | Sistema externo, fuera del límite del sistema ShoppingList |
 | ⬛ Pizarra | Actor humano |
 
@@ -138,18 +139,18 @@ evento**.
 ## Notas por contenedor
 
 ### React App
-Roadmap — Fase 2 (Frontend, aún no implementado). Será el único punto
+Roadmap — Frontend (aún no implementado). Será el único punto
 de interacción directo del usuario con el sistema. En este nivel de
 detalle no se distingue entre la futura SPA y su evolución hacia PWA
 (documentada como roadmap en la descripción del proyecto); ambas
 comparten el mismo contenedor lógico.
 
 ### API Gateway
-Una vez implementado (Fase 3), se convertirá en el único punto de
+Una vez implementado (fase de plataforma), se convertirá en el único punto de
 entrada del Frontend hacia el backend, asumiendo responsabilidades hoy
 inexistentes como rate limiting y CORS centralizado. Aplica el patrón
 **API Gateway**, y es el punto natural donde se integrará la validación
-de tokens de Auth Service en Fase 4.
+de tokens de Auth Service cuando exista autenticación real.
 
 ### Config Service
 Aplica el patrón **Externalized Configuration**. Sus relaciones con el
@@ -178,13 +179,14 @@ datos exclusiva, sin joins directos entre ellas. La relación
 `list-service → product-service` (consulta de producto referenciado) es
 una llamada síncrona REST, coherente con la decisión documentada de usar
 "REST síncrono para queries, eventos asíncronos para side effects".
-`product-service` no publica eventos en Fase 1; será el consumidor
-previsto de `list.item.added` (recientes, Fase 5), coherente con la
+`product-service` no publica eventos en el MVP; será el consumidor
+previsto de `list.item.added` (recientes, fase de mensajería y
+notificaciones), coherente con la
 relación de consumo reflejada en la matriz de comunicaciones.
 
 ### Message Broker
 Representado de forma genérica porque la elección final entre Kafka y
-RabbitMQ está pendiente (ver `ADR-XXF1-eleccion-message-broker`). El
+RabbitMQ está pendiente (ver `ADR-XXF6-eleccion-message-broker`). El
 contrato de las relaciones de entrada/salida (publicación/consumo de
 eventos) no cambia según cuál se elija, por lo que el diagrama es válido
 independientemente del resultado de esa decisión.
@@ -194,7 +196,8 @@ independientemente del resultado de esa decisión.
 Message Broker y los traduce en notificaciones multicanal. El evento
 describe el hecho ocurrido y no incluye `locale` ni destinatarios:
 `notification-service` resuelve el idioma de cada destinatario en el
-momento del consumo, contra la fuente de identidad (Fase 4). Ver
+momento del consumo, contra la fuente de identidad (cuando exista
+autenticación real). Ver
 `docs/events/event-architecture.md`.
 
 ### Bases de datos (product-db, list-db, auth-db)
@@ -212,7 +215,7 @@ cerradas formalmente en un ADR. Se documentan aquí para que el lector no
 las confunda con decisiones firmes:
 
 - **Elección de message broker** (Kafka vs. RabbitMQ) — pendiente en
-  `ADR-XXF1-eleccion-message-broker`.
+  `ADR-XXF6-eleccion-message-broker`.
 - **Gestión de transacciones distribuidas** entre `product-service` y
   `list-service` — actualmente sin Saga ni Resilience4j (deuda técnica
   aceptada en ADR-002). El diagrama no representa mecanismos de
@@ -225,11 +228,11 @@ las confunda con decisiones firmes:
 ## Relación con otros documentos
 
 - `docs/architecture/deployment-topology.md` — Topología de despliegue
-  en AWS, incluyendo infraestructura de observabilidad (pendiente,
-  Fase 6).
+  en AWS (pendiente; nace en la fase de despliegue y se amplía con la
+  infraestructura de observabilidad en la fase de observabilidad).
 - `docs/events/event-architecture.md` — Detalle de los eventos
   publicados/consumidos a través del Message Broker.
 - `<servicio>/docs/database-schema.md` — Esquema relacional detallado
   de cada base de datos representada aquí como caja única.
-- `docs/adr/ADR-XXF1-eleccion-message-broker.md` — Decisión pendiente
+- `docs/adr/ADR-XXF6-eleccion-message-broker.md` — Decisión pendiente
   sobre Kafka vs. RabbitMQ.

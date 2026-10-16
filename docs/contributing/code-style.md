@@ -3,7 +3,7 @@
 - **Java**: Checkstyle como linter (ruleset Google Java Style en
   [`config/checkstyle/checkstyle.xml`](../../config/checkstyle/checkstyle.xml))
   y Spotless (Google Java Format) como formatter.
-- **JavaScript/React** (Fase 2, no implementado aún): ESLint como linter
+- **JavaScript/React** (fase de frontend, no implementado aún): ESLint como linter
   y Prettier como formatter.
 
 ## Javadocs

@@ -1,4 +1,4 @@
-# ADR-006: Identificación de propietario sin autenticación real (Fase 1-3)
+# ADR-006: Identificación de propietario sin autenticación real (temporal)
 
 ## Estado
 
@@ -7,17 +7,17 @@ Aceptado.
 ## Contexto
 
 `product-service` (productos de usuario) y `list-service` (listas e
-ítems) necesitan asociar cada recurso a un propietario desde Fase 1,
-pero no existe ningún sistema de identidad hasta Fase 4
-(`auth-service`, Keycloak + OAuth2/OIDC). Es necesario decidir cómo se
-identifica al "usuario" durante las Fases 1-3, sin bloquear el
+ítems) necesitan asociar cada recurso a un propietario desde el MVP,
+pero no existe ningún sistema de identidad hasta que se implemente
+`auth-service` (Keycloak + OAuth2/OIDC). Es necesario decidir cómo se
+identifica al "usuario" mientras tanto, sin bloquear el
 desarrollo del resto del sistema a la espera de la autenticación real.
 
 Aunque en apariencia es un detalle de implementación menor, cualifica
 para ADR por el coste real de revertirlo, no por su complejidad
 técnica:
 
-- Cualquier dato creado en Fase 1-3 (demos públicas, capturas para
+- Cualquier dato creado antes de la autenticación real (demos públicas, capturas para
   portafolio, pruebas) tendrá un `ownerId` arbitrario sin relación con
   un usuario real de Keycloak.
 - Es una decisión de **seguridad explícita** (cualquiera puede pasar
@@ -30,13 +30,13 @@ técnica:
 ### Alternativas consideradas
 
 1. **Cabecera custom** (ej. `X-Debug-User-Id`): más parecida a como se
-   recibirá el usuario autenticado en Fase 4 (vía cabecera/token), pero
+   recibirá el usuario autenticado cuando exista autenticación real (vía cabecera/token), pero
    añade una convención de transporte adicional que también habrá que
-   descartar por completo en Fase 4. Se descarta.
+   descartar por completo al introducir la autenticación real. Se descarta.
 2. **`ownerId` como campo del body** (UUID), sin validar contra ningún
    proveedor de identidad: más simple, más visible como placeholder
    (viaja junto al resto de datos del recurso, no oculto en una
-   cabecera), y su eliminación en Fase 4 es un cambio de contrato más
+   cabecera), y su eliminación al introducir la autenticación real es un cambio de contrato más
    directo. Elegida.
 
 ## Decisión
@@ -56,18 +56,18 @@ el body de las peticiones de creación (`POST /user-products`, `POST
   el borde de la API.
 - **No existe identidad real detrás del dato:** no se valida que el
   `ownerId` recibido corresponda a ningún usuario existente, porque no
-  hay ningún registro de usuarios en Fase 1-3.
+  hay ningún registro de usuarios todavía.
 - **Sin registro compartido entre servicios:** `product-service` y
   `list-service` no comparten ninguna tabla ni servicio de usuarios, ni
   siquiera como placeholder. Cada uno confía en el `ownerId` que recibe
   de forma independiente, coherente con Database-per-Service y evitando
   introducir acoplamiento nuevo para una pieza que se va a eliminar por
-  completo en Fase 4.
+   completo cuando exista autenticación real.
 - **Riesgo de suplantación aceptado sin mitigación adicional:**
   cualquiera puede acceder o modificar recursos de cualquier otro
   `ownerId` con solo conocerlo o adivinarlo. No se introduce ninguna
   medida compensatoria (rate limiting, ofuscación, etc.), porque las
-  Fases 1-3 no pretenden ser una versión estable de cara a usuarios
+  fases sin autenticación no pretenden ser una versión estable de cara a usuarios
   reales — su propósito es validar que el sistema funciona
   end-to-end, no proteger datos de valor.
 
@@ -76,22 +76,22 @@ el body de las peticiones de creación (`POST /user-products`, `POST
 - El código de ambos servicios trata `ownerId` como un dato de entrada
   más, sin lógica de autorización asociada (cualquier request con
   cualquier `ownerId` es válido si el UUID está bien formado).
-- **Sin plan de migración de datos a Fase 4:** los datos creados en
-  Fase 1-3 (incluida cualquier demo pública) se descartan por completo
-  al implementar `auth-service`. No se intenta reasociar el `ownerId`
+- **Sin plan de migración de datos:** los datos creados antes de la
+  autenticación real (incluida cualquier demo pública) se descartan por completo
+  al introducir la autenticación real. No se intenta reasociar el `ownerId`
   placeholder a un usuario real de Keycloak — no existe una
   correspondencia significativa que preservar, y forzarla sería más
   complejo y menos honesto que empezar de cero.
 - Este ADR queda **superado** en el momento en que se implemente
-  `ADR-XXF4-keycloak-como-identity-provider`, que debe referenciar este
+  `ADR-XXF3-keycloak-como-identity-provider`, que debe referenciar este
   documento como `Supersedes`. A partir de ese momento, el `ownerId` de
   cada recurso se deriva del token de autenticación (JWT/OIDC), no de
   un campo de entrada del body.
-- Cuando se redacte `ADR-XXF4-keycloak-como-identity-provider`, este
-  documento cambia su estado a `Superseded by ADR-XXF4-keycloak-como-identity-provider`,
+- Cuando se redacte `ADR-XXF3-keycloak-como-identity-provider`, este
+  documento cambia su estado a `Superseded by ADR-XXF3-keycloak-como-identity-provider`,
   y no se elimina — queda en `docs/adr/` como registro histórico de por
-  qué el sistema funcionó así durante tres fases.
-- Revisar también en Fase 4, junto con esta decisión, el uso de `Long`
+  qué el sistema funcionó así mientras no existió autenticación.
+- Revisar también al introducir la autenticación real, junto con esta decisión, el uso de `Long`
   autoincremental (en vez de `UUID`) como identificador de recursos
   (`list`, `product`): el
   riesgo de enumeración de recursos que `UUID` mitigaría es hoy
@@ -113,7 +113,7 @@ Todas las mutaciones exigen `ownerId` y responden `403 OWNER_MISMATCH` si no
 coincide con el propietario del recurso. La propiedad de un ítem se comprueba
 contra la lista padre, que es la dueña del ítem. Las lecturas (`GET /lists/{id}`)
 siguen sin comprobar propiedad, coherente con `product-service`; el hueco de
-lectura se cierra en Fase 4 con autorización por membresía.
+lectura se cierra con la autenticación real y la autorización por membresía.
 
 El detalle por operación vive en
 [`services/list-service/docs/api-contract.yaml`](../../services/list-service/docs/api-contract.yaml).

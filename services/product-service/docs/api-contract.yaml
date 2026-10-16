@@ -132,8 +132,8 @@ paths:
       summary: Crear un producto base
       description: >
         Operación administrativa. Mismo criterio placeholder que ADR-006 para
-        propietario: sin auth real hasta Fase 4
-        (ADR-XXF4-keycloak-como-identity-provider pendiente).
+        propietario: placeholder hasta que exista autenticación real
+        (ADR-XXF3-keycloak-como-identity-provider pendiente).
       requestBody:
         required: true
         content:
@@ -189,8 +189,8 @@ paths:
       summary: Editar un producto base
       description: >
         Operación administrativa. Mismo criterio placeholder que ADR-006 para
-        propietario: sin auth real hasta Fase 4
-        (ADR-XXF4-keycloak-como-identity-provider pendiente).
+        propietario: placeholder hasta que exista autenticación real
+        (ADR-XXF3-keycloak-como-identity-provider pendiente).
       parameters:
         - name: id
           in: path
@@ -226,8 +226,8 @@ paths:
       summary: Eliminar un producto base
       description: >
         Operación administrativa. Mismo criterio placeholder que ADR-006 para
-        propietario: sin auth real hasta Fase 4
-        (ADR-XXF4-keycloak-como-identity-provider pendiente).
+        propietario: placeholder hasta que exista autenticación real
+        (ADR-XXF3-keycloak-como-identity-provider pendiente).
       parameters:
         - name: id
           in: path
@@ -249,7 +249,7 @@ paths:
       summary: Listar productos de un propietario
       description: >
         Placeholder de ADR-006: se listan los productos del `ownerId` indicado
-        sin enforcement de identidad real hasta Fase 4.
+        sin enforcement de identidad real hasta que exista autenticación real.
       parameters:
         - name: ownerId
           in: query
@@ -807,7 +807,7 @@ components:
           type: string
           format: uuid
           description: >
-            Placeholder sin autenticación real hasta Fase 4 (ver
+            Placeholder hasta que exista autenticación real (ver
             ADR-006-identificacion-propietario-sin-autenticacion).
         name:
           type: string
