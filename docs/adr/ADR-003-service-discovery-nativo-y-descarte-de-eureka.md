@@ -8,20 +8,21 @@ Aceptado.
 En una arquitectura de microservicios, los servicios necesitan
 comunicarse entre sí de forma síncrona (REST) para resolver
 operaciones que requieren datos de otro dominio. En este proyecto,
-el caso concreto ya presente en Fase 1 es `list-service` necesitando
+el caso concreto ya presente en el MVP es `list-service` necesitando
 consultar a `product-service` (por ejemplo, para validar la existencia
 de un producto base al añadirlo a una lista).
 
 Esta comunicación es **interna entre servicios** (server-to-server) y
 es conceptualmente distinta de la comunicación **externa hacia el
-sistema** (cliente → API Gateway), que se resolverá en la Fase 3. El
+sistema** (cliente → API Gateway), que se resolverá con la fase de
+plataforma. El
 API Gateway no sustituye la necesidad de que los servicios se
 localicen entre sí; ambos mecanismos coexisten y resuelven tramos
 distintos de la comunicación:
 
 ```
 Cliente externo  ─────▶  API Gateway  ─────▶  product-service
-(navegador, app)         (Fase 3)
+(navegador, app)         (plataforma)
 
 list-service     ─────▶  product-service
 (server-to-server, vía Service Discovery)
@@ -87,7 +88,7 @@ discovery añadida al classpath.
    `spring-cloud-starter-netflix-eureka-client` a cada servicio.
    Esto añade una fricción crítica al integrar componentes fuera
    del ecosistema Java, como nuestro Notification Service en
-   Node.js (Fase 5), el cual tendría que emular dicho cliente de
+   Node.js (fase de mensajería y notificaciones), el cual tendría que emular dicho cliente de
    registro. Con DNS, el sistema es 100% agnóstico al lenguaje.
 3. **Estado del proyecto.** Spring Cloud Netflix (incluyendo Eureka)
    se encuentra en modo de mantenimiento dentro del ecosistema
@@ -101,8 +102,8 @@ Este ADR fija el **principio** (DNS interno como mecanismo de
 discovery, tanto en local como en AWS) pero no detalla **cómo** se
 configurará Cloud Map con ECS (namespaces, integración con Service
 Connect/Service Discovery de ECS, TTLs de DNS, etc.). Esa
-configuración concreta pertenece a la Fase 3 (infraestructura de
-plataforma) y se documentará en un ADR específico cuando esa fase
+configuración concreta pertenece a la fase de despliegue (el sistema
+sobre AWS) y se documentará en un ADR específico cuando esa fase
 se aborde de forma irreversible.
 
 Esto no se considera deuda técnica: no existe hoy un problema sin

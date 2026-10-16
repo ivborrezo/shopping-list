@@ -113,7 +113,7 @@ pasa a ser el `public_id` (UUID) del producto.
 
 ### Decisión 7 — Identidad de usuario
 
-`ownerId`/`user_id` es un UUID que en Fase 4 provendrá del IdP (hoy
+`ownerId`/`user_id` es un UUID que cuando exista autenticación real provendrá del IdP (hoy
 placeholder de ADR-006): los servicios de dominio no generan ids de usuario
 y no se refactoriza `ownerId` en este ADR.
 

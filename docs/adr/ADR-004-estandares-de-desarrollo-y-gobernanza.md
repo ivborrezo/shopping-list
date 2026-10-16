@@ -5,7 +5,7 @@ Aceptado
 
 ## Contexto
 
-A medida que el proyecto avanza desde la infraestructura base (Fase 1)
+A medida que el proyecto avanza desde la infraestructura base (el MVP)
 hacia la implementación de lógica de negocio, surge la necesidad de
 fijar un conjunto de convenciones transversales que no son decisiones
 de **arquitectura del sistema** (no afectan a cómo se comunican los
@@ -149,7 +149,7 @@ Tipos principales en uso: `feat`, `fix`, `docs`, `chore`, `refactor`,
 ### Contexto específico
 El proyecto combina dos lenguajes con responsabilidades distintas:
 Java y Spring Boot en los microservicios backend, y JavaScript
-(React) en el frontend (Fase 2). Sin herramientas de verificación y
+(React) en el frontend (fase de frontend). Sin herramientas de verificación y
 formato automático, la consistencia del código depende exclusivamente
 de la disciplina manual de cada desarrollador, lo que es especialmente
 frágil en un proyecto cuyo propósito incluye ser revisado por terceros

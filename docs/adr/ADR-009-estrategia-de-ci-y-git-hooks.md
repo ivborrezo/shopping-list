@@ -232,7 +232,7 @@ en `docs/cicd/cicd-strategy.md`, no reabren este ADR.
 Como consecuencia de activar caching de Docker, el workflow incluye un
 step de `docker build` (sin push de imagen, sin despliegue) que valida
 que el `Dockerfile` construye en cada push. Sin este step, regresiones
-del `Dockerfile` se detectarían tarde (Fase 3 al desplegar); un smoke
+del `Dockerfile` se detectarían tarde (la fase de despliegue); un smoke
 manual verificó el `Dockerfile` una vez a mano,
 pero sin reproducirse en CI, cualquier cambio del `Dockerfile` queda
 sin validación automática.
@@ -419,7 +419,7 @@ workflow).
 ### Decisión 7 — Caching
 
 **Solo Maven sin Docker cache (descartada).** Más simple, pierde
-~60-90s/run de rebuild Docker desde cero. En Fase 1 sin CD no duele
+~60-90s/run de rebuild Docker desde cero. En el MVP sin CD no duele
 mucho, pero el caveat "cache-to: type=gha" anotado durante la
 implementación del `Dockerfile` multi-stage quedaría abierto. No dejar deuda
 diferida.
@@ -454,8 +454,8 @@ trivial.
 
 ## Resolución posterior
 
-El criterio de revisita que esta Decisión 8 dejó abierto se cumplió durante la
-Fase 1: aparecieron tests unitarios aislables conviviendo con los de integración,
+El criterio de revisita que esta Decisión 8 dejó abierto se cumplió durante el
+MVP: aparecieron tests unitarios aislables conviviendo con los de integración,
 y con la convención de naming anterior `mvn verify` compilaba las clases de
 integración pero no las ejecutaba. El recuento de tests ejecutados era, por
 tanto, menor que el real; no era un fallo de la suite, sino de la infraestructura

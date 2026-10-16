@@ -7,7 +7,7 @@ Aceptado
 
 ShoppingList se diseña desde el inicio como un sistema de microservicios,
 con `product-service` y `list-service` como los dos primeros servicios
-de negocio (Fase 1 — MVP Core). Antes de implementar la lógica de
+de negocio (MVP Core). Antes de implementar la lógica de
 negocio de ninguno de los dos, era necesario decidir cómo se relacionan
 sus datos a nivel de persistencia.
 
@@ -52,7 +52,7 @@ implementar la lógica de negocio de `product-service` y
 `list-service`, porque condiciona directamente cómo se diseñan sus
 APIs, cómo se relacionan sus entidades, y qué mecanismos de
 comunicación son necesarios entre ellos. Esta decisión se tomó de
-forma irreversible durante el diseño inicial de la Fase 1, antes del
+forma irreversible durante el diseño inicial del MVP, antes del
 scaffolding de infraestructura, y este documento formaliza por
 escrito una decisión que ya gobernó las sesiones de implementación
 posteriores.
@@ -115,7 +115,7 @@ ejemplo, `list_item` almacena el `product_id` y su tipo, `BASE` o
   - **Deuda técnica aceptada explícitamente**: la implementación de
     Saga pattern y de mecanismos de resiliencia ante fallos de red
     entre servicios (timeouts, retries, circuit breakers — p. ej. con
-    Resilience4j) queda **fuera de alcance del MVP actual (Fase 1)**.
+    Resilience4j) queda **fuera de alcance del MVP**.
     Esta decisión se revisará en un ADR futuro,
     `ADR-XXFX-gestion-de-transacciones-distribuidas-con-saga`
     (nombre provisional, pendiente de número de fase y redacción
@@ -191,7 +191,7 @@ real que el patrón Database-per-Service persigue.
 
 ## Resolución posterior
 
-La integración de Fase 1 entre `list-service` y `product-service` es de **solo
+La integración del MVP entre `list-service` y `product-service` es de **solo
 lectura**: al añadir un ítem, `list-service` consulta el nombre del producto por
 API síncrona y persiste un snapshot (`display_name`); no hay escritura cruzada ni
 una transacción distribuida que abarcar. La deuda de transacciones distribuidas

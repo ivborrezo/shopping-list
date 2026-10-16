@@ -58,7 +58,7 @@ refactoriza con la red de seguridad de los tests (fase Refactor).
 **Alcance:** servicios Spring con logica de negocio (`product-service`,
 futuro `list-service`). No aplica a `notification-service` (Node.js)
 en este momento: la politica de testing para ese servicio se decidira
-cuando llegue su implementacion (Fase 5).
+cuando llegue su implementacion (fase de mensajería y notificaciones).
 
 **Motivacion:** dos razones concretas, ancladas en el contexto real del
 proyecto:
