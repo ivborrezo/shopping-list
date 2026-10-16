@@ -120,8 +120,8 @@ Justificación del orden:
   Flyway, carga el contexto de Spring, corre los tests.
 - **Docker build (validación de Dockerfile)**: sin push de imagen, sin
   despliegue. Valida que el `Dockerfile` construye en cada push. Sin
-  este step, regresiones del `Dockerfile` se detectarían tarde (Fase 3
-  al desplegar); un smoke manual verificó el
+  este step, regresiones del `Dockerfile` se detectarían tarde (al desplegar);
+  un smoke manual verificó el
   `Dockerfile` una vez a mano, pero cualquier cambio posterior
   queda sin validación automática sin este step.
 
@@ -389,8 +389,8 @@ corre con Surefire en la fase `test` y `*IT` con Failsafe en la fase
 |---|---|---|---|---|
 | `product-service` | Java | `product-service.yml` ✅ | Testcontainers Postgres + docker build | Dispatch Java (Maven/Spotless/Checkstyle) |
 | `list-service` | Java | `list-service.yml` ✅ | Testcontainers Postgres + docker build | Dispatch Java (mismo patrón) |
-| `notification-service` | JS/Node.js | (futuro Fase 5) | Sin BD propia hoy (ADR-008); re-evaluable | Dispatch JS (npm/ESLint/Prettier) |
-| `frontend` (React) | JS | (futuro Fase 2) | Sin contenedor | Dispatch JS (npm/ESLint/Prettier) |
+| `notification-service` | JS/Node.js | (fase de mensajería y notificaciones) | Sin BD propia hoy (ADR-008); re-evaluable | Dispatch JS (npm/ESLint/Prettier) |
+| `frontend` (React) | JS | (fase de frontend) | Sin contenedor | Dispatch JS (npm/ESLint/Prettier) |
 
 Cómo se añaden nuevos servicios:
 
@@ -410,7 +410,7 @@ Lo que **no** cubre esta estrategia, coherente con ADR-009:
 - **CD (continuos deployment):** no hay target de despliegue todavía.
   `product-service` y `list-service` sí están integrados en el
   `docker-compose.yml` raíz para el entorno local, pero no existe un
-  entorno desplegado (AWS Fargate llegaría en Fase 3 o posterior).
+  entorno desplegado (AWS Fargate llegaría en la fase de despliegue o posterior).
   Definir ahora si el deploy es continuo/gated/manual es especular
   sobre infraestructura inexistente. Revisitar cuando exista target de
   despliegue (AWS o equivalente).
@@ -429,7 +429,7 @@ Lo que **no** cubre esta estrategia, coherente con ADR-009:
   Reproducirlo en CI requiere levantar el contenedor con datasource
   accesible — vía service container (contradice ADR-009, Decisión 6:
   paridad local↔CI estricta, sin `services:`) o como smoke parcial
-  sin DB (no cubre el wiring real). Aplazar a Fase 3 / cuando exista
+  sin DB (no cubre el wiring real). Aplazar a la fase de despliegue / cuando exista
   CD con target de despliegue concreto, donde el smoke runtime es
   pieza natural del pipeline de CD, no del de CI puro que ADR-009
   acota.
