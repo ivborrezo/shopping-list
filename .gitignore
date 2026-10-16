@@ -82,7 +82,7 @@ coverage/
 docker/volumes/
 data/
 
-# Estado local de Terraform / AWS (Previsión para la fase de infraestructura)
+# Estado local de Terraform / AWS (Previsión para la fase de despliegue)
 .terraform/
 *.tfstate
 *.tfstate.backup
