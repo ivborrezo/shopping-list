@@ -1,16 +1,16 @@
 # Convenciones de Logging
 
-> **Estado:** documento provisional (Fase 1-5). Cubre únicamente
-> convenciones de código relativas a logging: qué información se loguea,
-> cómo se estructura y cómo se correlaciona entre servicios. No cubre
-> distributed tracing, métricas ni dashboards — eso llega en Fase 6.
+> **Estado:** documento provisional (hasta la fase de observabilidad). Cubre
+> únicamente convenciones de código relativas a logging: qué información se
+> loguea, cómo se estructura y cómo se correlaciona entre servicios. No cubre
+> distributed tracing, métricas ni dashboards — eso llega con la observabilidad.
 >
 > Este documento contiene el **detalle completo** (motivos e
 > implementación) de las convenciones de logging. La versión resumida con
 > las convenciones puras para el equipo de desarrollo vive en
 > `docs/contributing/logging.md`.
 >
-> **Fase 6 (Observabilidad):** este documento se trasladará (`git mv`,
+> **Observabilidad:** este documento se trasladará (`git mv`,
 > para conservar el historial) a `docs/observability/` y se ampliará con
 > la integración de OpenTelemetry / Micrometer Tracing. En ese momento,
 > `traceId`/`spanId` gestionados por el stack de tracing sustituirán
@@ -21,8 +21,8 @@
 > criterio MDC vs. structured key-value están implementados en ambos
 > servicios. El **formato de salida por perfil** descrito más abajo
 > (`logback-spring.xml` con `logstash-logback-encoder`) es una
-> **especificación pendiente de implementar** en la fase de observabilidad
-> (Fase 6); hasta entonces rige el formato por defecto de Spring Boot.
+> **especificación pendiente de implementar** en la fase de observabilidad;
+> hasta entonces rige el formato por defecto de Spring Boot.
 
 ## Objetivo
 
@@ -30,8 +30,8 @@ Definir cómo se loguea en todos los microservicios del proyecto para que:
 
 1. Los logs sean legibles durante el desarrollo local.
 2. Los logs ya estén estructurados de forma compatible con Loki/Grafana,
-   de modo que en Fase 6 baste con añadir un consumidor (Promtail) sin
-   modificar código de negocio ya escrito.
+   de modo que en la fase de observabilidad baste con añadir un consumidor
+   (Promtail) sin modificar código de negocio ya escrito.
 3. Sea posible reconstruir el recorrido completo de una petición a través
    de varios servicios.
 
@@ -45,7 +45,8 @@ Definir cómo se loguea en todos los microservicios del proyecto para que:
   - `WARN`: situación anómala pero recuperable (ej. fallback de
     traducción a inglés cuando no existe la entrada solicitada).
   - `INFO`: eventos de negocio relevantes (lista creada, producto
-    añadido). Son los candidatos naturales a dashboards en Fase 6.
+    añadido). Son los candidatos naturales a dashboards en la fase de
+    observabilidad.
   - `DEBUG`: detalle técnico, desactivado por defecto salvo depuración
     puntual.
 
@@ -58,7 +59,7 @@ producción): el sistema de ficheros del contenedor es efímero, así que
 escribir logs a disco no aporta nada y, si conviviera con la salida por
 consola, duplicaría innecesariamente el I/O de la aplicación. La
 plataforma (driver de logs de Docker, agente de CloudWatch en Fargate,
-o Promtail leyendo stdout en Fase 6) ya se encarga de capturar y
+o Promtail leyendo stdout en la fase de observabilidad) ya se encarga de capturar y
 enrutar stdout — no hace falta gestionar rotación de ficheros ni
 volúmenes propios.
 
@@ -66,7 +67,8 @@ volúmenes propios.
   Docker Compose): texto plano legible para humanos, con el
   `correlationId` visible entre corchetes.
 - **Cualquier otro perfil** (incluido el perfil `docker` que activa
-  Docker Compose, o el que se use al integrar Promtail en Fase 6, o el
+  Docker Compose, o el que se use al integrar Promtail en la fase de
+  observabilidad, o el
   despliegue en Fargate): JSON estructurado completo por stdout, vía
   `logstash-logback-encoder`.
 
@@ -108,8 +110,8 @@ Perfil no-local (JSON por stdout):
 {"@timestamp":"2026-07-06T10:15:23.123Z","level":"INFO","logger_name":"dev.ivborrezo.shoppinglist.list.service.list.service.ListItemService","message":"Adding item to list","correlationId":"abc-123"}
 ```
 
-Esto evita elegir entre "legible en desarrollo" y "listo para Loki en
-Fase 6": el perfil `local` da comodidad inmediata en el día a día, y el
+Esto evita elegir entre "legible en desarrollo" y "listo para Loki en la
+fase de observabilidad": el perfil `local` da comodidad inmediata en el día a día, y el
 resto de perfiles ya emiten exactamente el formato que Promtail/Loki
 esperarán, sin tocar código de negocio cuando llegue esa fase.
 
@@ -122,7 +124,7 @@ negocio?**
 
 | Tipo de dato | Mecanismo | Ejemplos |
 |---|---|---|
-| Contexto ambiental de toda la petición | **MDC** | `correlationId`, `userId` (Fase 4), `locale` |
+| Contexto ambiental de toda la petición | **MDC** | `correlationId`, `userId` (con autenticación real), `locale` |
 | Contenido puntual de un evento de negocio | **KV (structured arguments)** | `listId`, `productId` |
 
 - **MDC** se establece una vez (típicamente en un filtro HTTP) y
@@ -217,13 +219,13 @@ contexto podría borrarse prematuramente. Al añadir nuevos filtros que
 usen MDC, revisar el orden explícito (`@Order` o el registro en
 `FilterRegistrationBean`).
 
-**Fase 1-2 (actual):** cada servicio actúa como su propio punto de
+**Sin API Gateway:** cada servicio actúa como su propio punto de
 entrada y genera su `correlationId` si no lo recibe.
 
-**Fase 3 (API Gateway):** el Gateway se convierte en el punto de
-entrada real del sistema y será quien, en la práctica, genere el
-`correlationId` casi siempre. El filtro de cada servicio no cambia: sigue
-haciendo exactamente lo mismo (reutilizar si viene, generar si no).
+**Con el API Gateway:** el Gateway se convierte en el punto de entrada
+real del sistema y será quien, en la práctica, genere el `correlationId`
+casi siempre. El filtro de cada servicio no cambia: sigue haciendo
+exactamente lo mismo (reutilizar si viene, generar si no).
 
 **Cualquier otro punto de entrada:** el filtro cubre las peticiones HTTP, pero
 un flujo que no entra por HTTP —un job programado, un consumidor de mensajes que
@@ -231,9 +233,9 @@ a su vez publica, un runner de arranque— también debe establecer su contexto 
 correlación antes de ejecutar lógica de negocio o publicar eventos: genera un
 `correlationId` y publícalo en el MDC igual que hace el filtro. Así el
 `correlationId` de los eventos emitidos es siempre **no nulo** y correlacionable,
-con independencia del origen. En Fase 6 lo cubrirá el contexto de traza (W3C
-Trace Context / OpenTelemetry), que genera un `traceId` nuevo cuando no hay
-contexto entrante.
+con independencia del origen. En la fase de observabilidad lo cubrirá el
+contexto de traza (W3C Trace Context / OpenTelemetry), que genera un `traceId`
+nuevo cuando no hay contexto entrante.
 
 ### Propagación en llamadas internas (REST)
 
@@ -288,14 +290,14 @@ interceptor.
 Cuando una petición da lugar a la publicación de un evento, el
 `correlationId` de origen debe incluirse como header del mensaje, para
 permitir correlación causal con los consumidores (ej.
-`notification-service` en Fase 5), aunque el consumo ocurra de forma
+`notification-service`), aunque el consumo ocurra de forma
 asíncrona y en un hilo/momento distinto al de la petición original. El
 contrato exacto de qué campos lleva cada evento (incluido este) se
 documenta en `docs/events/event-architecture.md` y en el
 `event-contracts.md` de cada servicio productor — este documento cubre
 el concepto y su origen, no el contrato de mensaje en sí.
 
-## Consulta de logs en local (Fase 1-5, sin Loki todavía)
+## Consulta de logs en local (sin Loki todavía)
 
 El formato de consola depende del perfil activo (ver sección de
 formato de salida), así que el método de filtrado cambia según cuál
@@ -311,5 +313,5 @@ esté activo:
 docker compose logs -f list-service | jq 'select(.correlationId == "abc-123")'
 ```
 
-En Fase 6, el equivalente en Grafana/Loki será una consulta LogQL sobre
-el campo indexado `correlationId`, sin cambios en cómo se genera el dato.
+Con la observabilidad, el equivalente en Grafana/Loki será una consulta LogQL
+sobre el campo indexado `correlationId`, sin cambios en cómo se genera el dato.
