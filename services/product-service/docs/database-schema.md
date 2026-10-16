@@ -152,8 +152,8 @@ Productos creados por el usuario a partir de su catálogo personal. Entidad JPA:
 | `default_unit` | `VARCHAR(10)` | no | — | Unidad por defecto (misma codificación que `base_product`). |
 | `calories` | `INT` | sí | — | Calorías por ración, opcional. |
 | `calories_per` | `VARCHAR(10)` | no | — | Base de las calorías (misma codificación que `base_product`). |
-| `share_with_list_members` | `BOOLEAN` | no | `FALSE` | Preferencia de compartición; inerte hasta fases futuras (placeholder ADR-006). |
-| `share_with_friends` | `BOOLEAN` | no | `FALSE` | Preferencia de compartición; inerte hasta fases futuras. |
+| `share_with_list_members` | `BOOLEAN` | no | `FALSE` | Preferencia de compartición; inerte hasta que exista el modelo de compartición (placeholder ADR-006). |
+| `share_with_friends` | `BOOLEAN` | no | `FALSE` | Preferencia de compartición; inerte hasta que exista el modelo de compartición. |
 | `is_active` | `BOOLEAN` | no | `TRUE` | Indica si el producto está activo. |
 | `created_at` | `TIMESTAMPTZ` | no | `CURRENT_TIMESTAMP` | Marca de creación (runtime → `@CreatedDate`). |
 | `updated_at` | `TIMESTAMPTZ` | no | `CURRENT_TIMESTAMP` | Marca de última modificación (runtime → `@LastModifiedDate`). |
