@@ -2,14 +2,14 @@
 
 > **Estado:** documento provisional. Cubre la relación productor-consumidor
 > y el catálogo de eventos de dominio, de forma agnóstica al broker
-> concreto. La elección de broker (`ADR-XXF1-eleccion-message-broker`)
+> concreto. La elección de broker (`ADR-XXF6-eleccion-message-broker`)
 > sigue pendiente. La convención de nombrado ya está formalizada en
 > `ADR-005-convencion-nombrado-eventos` (Aceptado), adoptada de facto en
 > este documento desde su primera versión.
 > `notification-service`
-> (Fase 5) no existe todavía: las entradas de "consumidores" de eventos
-> con valor de notificación reflejan el consumidor previsto, no uno
-> implementado.
+> (fase de mensajería y notificaciones) no existe todavía: las entradas de
+> "consumidores" de eventos con valor de notificación reflejan el consumidor
+> previsto, no uno implementado.
 
 ## Qué cubre este documento, y qué no
 
@@ -35,7 +35,7 @@ complementa, cada uno a un nivel de detalle distinto:
 La convención actual de `event-contracts.md` cubre únicamente el lado
 productor ("servicios que publican eventos"). No existe todavía un
 documento equivalente para el lado consumidor. Mientras
-`notification-service` no exista (Fase 5), este documento asume ese
+`notification-service` no exista, este documento asume ese
 papel de forma ligera, listando qué consumidor está previsto para cada
 evento y con qué propósito. Cuando `notification-service` se implemente,
 se decidirá si esto es suficiente o si merece su propio documento de
@@ -60,7 +60,7 @@ Shopify).
   proyecto (Spring Boot + Node.js).
 - Este naming es el valor del campo `eventType` dentro del payload del
   mensaje — es independiente del nombre físico del topic/exchange, que
-  se decide en `ADR-XXF1-eleccion-message-broker` y puede agrupar
+  se decide en `ADR-XXF6-eleccion-message-broker` y puede agrupar
   varios `eventType` en un mismo canal físico.
 
 ## Campos obligatorios de todo evento
@@ -100,46 +100,47 @@ destinatario — son responsabilidad de `notification-service` en el
 momento de consumo, no del evento en el momento de publicación:
 
 - El `locale` de cada usuario se resolverá contra la fuente de
-  identidad (Keycloak, Fase 4), que ya está prevista para soportar los
-  tres idiomas del proyecto.
+  identidad (Keycloak, cuando exista autenticación real), que ya está prevista
+  para soportar los tres idiomas del proyecto.
 - Los colaboradores de una lista se resolverán consultando la
   información de membresía de la lista (vía API síncrona a
   `list-service`, o un mecanismo a definir cuando exista colaboración
   real en el roadmap).
 
-Ambos puntos quedan pendientes de diseño concreto para Fase 5, cuando
-`notification-service` se implemente.
+Ambos puntos quedan pendientes de diseño concreto para cuando
+`notification-service` se implemente (fase de mensajería y notificaciones).
 
 ## Catálogo de eventos
 
 ### `list-service`
 
 `list-service` es el **productor activo** de los seis eventos de esta
-tabla desde Fase 1. `product-service` es el consumidor previsto de
-`list.item.added`, para el ranking de recientes (Fase 5).
+tabla desde el MVP. `product-service` es el consumidor previsto de
+`list.item.added`, para el ranking de recientes (fase de mensajería y
+notificaciones).
 
 | Evento | Disparado por | Consumidor previsto | Propósito de negocio |
 |---|---|---|---|
 | `list.created` | `POST /lists` | — (sin consumidor activo) | Se ha creado una nueva lista. |
 | `list.renamed` | `PATCH /lists/{id}` | — (sin consumidor activo) | Se ha renombrado una lista. |
-| `list.deleted` | `DELETE /lists/{id}` | `notification-service` (Fase 5) | Notificar a los colaboradores de la lista que ha sido eliminada. |
-| `list.item.added` | `POST /lists/{id}/items` | `product-service` (recientes, Fase 5) | Se ha añadido un producto a una lista existente. |
-| `list.item.removed` | `DELETE /lists/{id}/items/{itemId}` | `notification-service` (Fase 5) | Notificar a los colaboradores de que un producto fue eliminado de la lista. |
-| `list.item.purchased` | `PATCH /lists/{id}/items/{itemId}` | `notification-service` (Fase 5) | Notificar a los colaboradores de que un ítem fue marcado como comprado o pendiente (el mismo evento cubre ambos sentidos mediante un campo booleano en el payload, ej. `purchased: true/false`). |
+| `list.deleted` | `DELETE /lists/{id}` | `notification-service` | Notificar a los colaboradores de la lista que ha sido eliminada. |
+| `list.item.added` | `POST /lists/{id}/items` | `product-service` (recientes) | Se ha añadido un producto a una lista existente. |
+| `list.item.removed` | `DELETE /lists/{id}/items/{itemId}` | `notification-service` | Notificar a los colaboradores de que un producto fue eliminado de la lista. |
+| `list.item.purchased` | `PATCH /lists/{id}/items/{itemId}` | `notification-service` | Notificar a los colaboradores de que un ítem fue marcado como comprado o pendiente (el mismo evento cubre ambos sentidos mediante un campo booleano en el payload, ej. `purchased: true/false`). |
 
 **Nota sobre eventos sin consumidor activo:** `list.created` y
-`list.renamed` se publican desde Fase 1 sin que ningún servicio los
+`list.renamed` se publican desde el MVP sin que ningún servicio los
 consuma todavía. Esto es una decisión consciente, no un descuido: el
 desacoplamiento propio de la mensajería asíncrona permite instrumentar
 la publicación ahora, evitando tener que modificar el código de
 negocio de `list-service` retroactivamente cuando aparezca un
 consumidor futuro. `list.item.added` tiene un consumidor previsto
-(`product-service`, para el ranking de recientes, Fase 5) todavía no
+(`product-service`, para el ranking de recientes) todavía no
 implementado, coherente con la entrada "Disparador de recientes
 limitado al toggle de favorito" de [`TECH_DEBT.md`](../../TECH_DEBT.md).
 `list.deleted` y `list.item.removed` siguen el mismo razonamiento: se
 publican desde ya pensando en el valor de notificación que aportarán
-en Fase 5.
+cuando `notification-service` se implemente.
 
 ### `product-service`
 
@@ -153,7 +154,7 @@ cambios futuros en el catálogo, eliminando la necesidad de que
 ## Publicación desacoplada del broker: Ports and Adapters
 
 Para poder implementar `list-service` sin esperar a
-`ADR-XXF1-eleccion-message-broker`, la publicación de eventos se
+`ADR-XXF6-eleccion-message-broker`, la publicación de eventos se
 diseña detrás de un puerto de salida (patrón **Ports and Adapters /
 Arquitectura Hexagonal**), de forma que el dominio invoca una interfaz
 sin conocer el broker concreto:
@@ -177,18 +178,18 @@ alcance actual de este documento:
 
 - **Canal físico de transporte** (topic de Kafka vs. exchange/cola de
   RabbitMQ), agrupación de eventos por canal, particionado — depende
-  de `ADR-XXF1-eleccion-message-broker`.
+  de `ADR-XXF6-eleccion-message-broker`.
 - **Naming convention**: ya formalizada en `ADR-005-convencion-nombrado-eventos`
   (Aceptado). Este documento adoptaba el criterio de facto desde su primera
   versión; el ADR referencia este catálogo como precedente de uso.
 - **Semántica de entrega** (at-least-once, idempotencia en el
   consumidor) — se definirá cuando exista un consumidor real
-  (`notification-service`, Fase 5).
+  (`notification-service`).
 - **Resolución de `locale` y destinatarios por evento**: mecanismo
   concreto por el que `notification-service` obtendrá el idioma de
   cada colaborador y la lista de colaboradores de una lista — a
-  definir en Fase 5 (ver sección "Por qué el evento no lleva `locale`
-  ni lista de destinatarios").
+  definir cuando se implemente `notification-service` (ver sección
+  "Por qué el evento no lleva `locale` ni lista de destinatarios").
 - **Contrato de consumidor**: si el listado ligero de esta primera
-  versión es suficiente o si merece un documento propio, a decidir en
-  Fase 5.
+  versión es suficiente o si merece un documento propio, a decidir
+  cuando se implemente `notification-service`.
