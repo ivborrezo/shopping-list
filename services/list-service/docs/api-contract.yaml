@@ -32,7 +32,7 @@ paths:
           in: query
           required: true
           description: >
-            Placeholder sin autenticación real hasta Fase 4
+            Placeholder hasta que exista autenticación real
             (ver ADR-006-identificacion-propietario-sin-autenticacion).
           schema:
             type: string
@@ -143,7 +143,7 @@ paths:
           in: query
           required: true
           description: >
-            Placeholder sin autenticación real hasta Fase 4
+            Placeholder hasta que exista autenticación real
             (ver ADR-006-identificacion-propietario-sin-autenticacion).
           schema:
             type: string
@@ -179,7 +179,7 @@ paths:
           in: query
           required: true
           description: >
-            Placeholder sin autenticación real hasta Fase 4
+            Placeholder hasta que exista autenticación real
             (ver ADR-006-identificacion-propietario-sin-autenticacion).
           schema:
             type: string
@@ -243,7 +243,7 @@ paths:
           in: query
           required: true
           description: >
-            Placeholder sin autenticación real hasta Fase 4
+            Placeholder hasta que exista autenticación real
             (ver ADR-006-identificacion-propietario-sin-autenticacion).
           schema:
             type: string
@@ -282,7 +282,7 @@ paths:
           in: query
           required: true
           description: >
-            Placeholder sin autenticación real hasta Fase 4
+            Placeholder hasta que exista autenticación real
             (ver ADR-006-identificacion-propietario-sin-autenticacion).
           schema:
             type: string
@@ -430,7 +430,7 @@ components:
           type: string
           format: uuid
           description: >
-            Placeholder sin autenticación real hasta Fase 4
+            Placeholder hasta que exista autenticación real
             (ver ADR-006-identificacion-propietario-sin-autenticacion).
         name:
           type: string
@@ -445,7 +445,7 @@ components:
           type: string
           format: uuid
           description: >
-            Placeholder sin autenticación real hasta Fase 4
+            Placeholder hasta que exista autenticación real
             (ver ADR-006-identificacion-propietario-sin-autenticacion).
         name:
           type: string
