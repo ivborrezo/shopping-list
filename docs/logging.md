@@ -19,7 +19,7 @@
 > **Estado de implementación:** el filtro `correlationId` (generación,
 > reenvío en la respuesta, MDC y propagación en llamadas internas) y el
 > criterio MDC vs. structured key-value están implementados en ambos
-> servicios. El **formato de salida por perfil** descrito más abajo
+> servicios y en el borde. El **formato de salida por perfil** descrito más abajo
 > (`logback-spring.xml` con `logstash-logback-encoder`) es una
 > **especificación pendiente de implementar** en la fase de observabilidad;
 > hasta entonces rige el formato por defecto de Spring Boot.
@@ -148,16 +148,25 @@ log.atInfo()
 
 ### Condición de validez de MDC
 
-Esta convención asume que el procesamiento de una petición ocurre en
-**un único hilo, de entrada a salida** (modelo síncrono actual del
-proyecto, incluyendo un futuro uso de virtual threads como sustituto
-directo de Tomcat). MDC es thread-local: si en el futuro se introduce
-**concurrencia estructurada** dentro de una misma petición (hilos hijos
-paralelos) o un **modelo reactivo** (WebFlux), MDC deja de propagarse
-correctamente y esta estrategia debe revisarse (alternativas: copiar el
-mapa de MDC manualmente a los hilos hijos, `ScopedValue`, o el puente
-`context-propagation` de Reactor/Micrometer para WebFlux). No se
-espera necesidad de este cambio a corto/medio plazo.
+MDC es thread-local, así que su propagación depende del modelo de
+ejecución. En los servicios servlet la petición se procesa en un único
+hilo de entrada a salida: el filtro establece el `correlationId` al
+entrar y limpia el mapa en `finally`, y todas las líneas de esa petición
+lo heredan.
+
+En el API Gateway, que es reactivo (WebFlux), la petición atraviesa
+operadores y puede cambiar de hilo. El `correlationId` vive en el
+`Reactor Context` y viaja con la suscripción; el puente
+`context-propagation` de Reactor/Micrometer, mediante un
+`ThreadLocalAccessor`, lo renderiza en MDC alrededor de cada señal. El
+arranque activa la propagación automática de Reactor, de modo que el
+patrón de log sigue siendo `%X{correlationId}` y el código de negocio no
+copia mapas a mano. Al terminar la suscripción no queda estado de hilo
+que limpiar.
+
+La concurrencia estructurada dentro de una misma petición (hilos hijos
+paralelos) no hereda MDC por sí sola; un flujo así debe declarar su
+propio contexto de correlación o apoyarse en el mismo puente.
 
 ## correlationId: qué es y cómo se gestiona
 
@@ -222,10 +231,15 @@ usen MDC, revisar el orden explícito (`@Order` o el registro en
 **Sin API Gateway:** cada servicio actúa como su propio punto de
 entrada y genera su `correlationId` si no lo recibe.
 
-**Con el API Gateway:** el Gateway se convierte en el punto de entrada
-real del sistema y será quien, en la práctica, genere el `correlationId`
-casi siempre. El filtro de cada servicio no cambia: sigue haciendo
-exactamente lo mismo (reutilizar si viene, generar si no).
+**Con el API Gateway:** el Gateway es el punto de entrada del sistema y
+normaliza el `correlationId` de toda petición antes de reenviarla. Un
+valor entrante solo se conserva si llega como valor único y es un UUID
+canónico (36 caracteres con guiones en las posiciones 8, 13, 18 y 23);
+si falta, llega repetido o no es un UUID, el borde genera un UUID v4. El
+valor normalizado es el que reciben los servicios y el que devuelve el
+eco de la respuesta, con un único valor: si el destino escribe su propia
+cabecera, el valor del borde prevalece y el ajeno se descarta. El filtro
+de cada servicio no cambia: reutiliza el valor recibido.
 
 **Cualquier otro punto de entrada:** el filtro cubre las peticiones HTTP, pero
 un flujo que no entra por HTTP —un job programado, un consumidor de mensajes que
