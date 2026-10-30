@@ -60,10 +60,11 @@ documentadas en
 
 | Servicio | Contenedor | Puerto local |
 |---|---|---|
-| `product-service` | `shopping-list-product-service` | `8081` |
-| `list-service` | `shopping-list-list-service` | `8082` |
-| `product-db` | `shopping-list-product-db` (PostgreSQL) | `5434` |
-| `list-db` | `shopping-list-list-db` (PostgreSQL) | `5435` |
+| `api-gateway` | `shopping-list-api-gateway` | `8080` (único publicado) |
+| `product-service` | `shopping-list-product-service` | `8081` (solo interno) |
+| `list-service` | `shopping-list-list-service` | `8082` (solo interno) |
+| `product-db` | `shopping-list-product-db` (PostgreSQL) | `127.0.0.1:5434` |
+| `list-db` | `shopping-list-list-db` (PostgreSQL) | `127.0.0.1:5435` |
 
 ---
 

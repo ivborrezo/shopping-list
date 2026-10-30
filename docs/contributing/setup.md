@@ -39,17 +39,23 @@ Una vez arrancado:
 
 | Servicio | URL local |
 |---|---|
-| `product-service` (API REST) | `http://localhost:8081` |
-| `list-service` (API REST) | `http://localhost:8082` |
-| `product-db` (PostgreSQL) | `localhost:5434` |
-| `list-db` (PostgreSQL) | `localhost:5435` |
+| `api-gateway` (API REST pública) | `http://localhost:8080` |
+| `product-service` (interno) | `http://product-service:8081` (red Docker) |
+| `list-service` (interno) | `http://list-service:8082` (red Docker) |
+| `product-db` (PostgreSQL, loopback) | `127.0.0.1:5434` |
+| `list-db` (PostgreSQL, loopback) | `127.0.0.1:5435` |
+
+La API se consume siempre por `http://localhost:8080`. `product-service` y
+`list-service` no publican su puerto HTTP en el host; solo son accesibles
+desde la red interna de Compose. Las bases de datos se enlazan
+explícitamente a `127.0.0.1` para depuración local.
 
 ## Verificación
 
 ```bash
-curl -s http://localhost:8081/actuator/health
-curl -s http://localhost:8081/categories | head -c 200
-curl -s http://localhost:8082/actuator/health
+curl -s http://localhost:8080/actuator/health
+curl -s http://localhost:8080/categories | head -c 200
+curl -s "http://localhost:8080/lists?ownerId=3f2504e0-4f89-41d3-9a0c-0305e82c3301"
 ```
 
 ## Parar y limpiar

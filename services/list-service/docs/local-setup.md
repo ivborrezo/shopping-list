@@ -62,7 +62,9 @@ set -a; source .env; set +a       # bash/zsh
 ```
 
 El servicio arranca en `http://localhost:8082` con el perfil `local`,
-conectando a PostgreSQL en `localhost:5435`.
+conectando a PostgreSQL en `localhost:5435`. Este escenario es el modo
+"servicios a mano": se llama al servicio directamente en `8082`, sin el
+gateway (`8080`).
 
 **Verificación:**
 
@@ -130,10 +132,15 @@ Si `envFile` no resuelve rutas relativas en tu sistema, usa
 docker compose up -d
 ```
 
-Esto levanta los cuatro contenedores del entorno de dos servicios:
-`shopping-list-product-db` (PostgreSQL), `shopping-list-product-service`,
-`shopping-list-list-db` (PostgreSQL) y `shopping-list-list-service`. El
-smoke e2e necesita ambos servicios en marcha.
+Esto levanta los cinco contenedores del sistema: `shopping-list-product-db`
+(PostgreSQL), `shopping-list-product-service`, `shopping-list-list-db`
+(PostgreSQL), `shopping-list-list-service` y `shopping-list-api-gateway`.
+Toda la API se consume por `http://localhost:8080`; los servicios de
+dominio no publican su puerto HTTP en el host.
+
+El arranque está ordenado por salud: las bases de datos, después los dos
+servicios y por último el gateway (`depends_on: condition: service_healthy`).
+El smoke e2e necesita el sistema completo en marcha.
 
 `list-service` construye su imagen desde el `Dockerfile` local y arranca con
 el perfil `docker`, conectando a PostgreSQL en `list-db:5432` (DNS interno de
@@ -147,17 +154,32 @@ rebuild.
 **Verificación:**
 
 ```bash
-docker compose ps                          # contenedores healthy/Up
+docker compose ps                          # 5 contenedores healthy/Up
 docker compose logs list-service
-curl -s http://localhost:8082/actuator/health
-curl -s http://localhost:8081/actuator/health
+curl -s http://localhost:8080/actuator/health
+curl -s http://localhost:8080/categories | head -c 200
 ```
+
+**Bases de datos en loopback.** `product-db` escucha en el host solo en
+`127.0.0.1:5434` y `list-db` en `127.0.0.1:5435`. Es una decisión
+operativa, no un incidente: permite conectar un cliente de PostgreSQL
+desde la propia máquina para depurar sin exponer las bases de datos en la
+red. No cambies ese binding a `0.0.0.0`.
 
 **Parar y limpiar volúmenes:**
 
 ```bash
 docker compose down -v
 ```
+
+### Modo "servicios a mano"
+
+Los escenarios A y B arrancan `list-service` en el host con el perfil
+`local`. En ese modo el servicio sigue escuchando en
+`http://localhost:8082` y se llama directamente, sin pasar por el gateway
+(que no está arrancado). Es entorno de desarrollo, no el sistema
+desplegado: no esperes que `8082` sea accesible cuando el sistema está
+levantado con Compose.
 
 ---
 
@@ -186,8 +208,10 @@ productos.
 - **Endpoint consultado:** `GET /base-products/{productId}` para
   `productType=BASE` y `GET /user-products/{productId}` para
   `productType=USER`.
-- **URL base:** `http://localhost:8081` con el perfil `local`;
-  `http://product-service:8081` con el perfil `docker` (DNS interno).
+- **URL base:** `http://localhost:8081` en el modo "servicios a mano"
+  (perfil `local`); `http://product-service:8081` con el perfil `docker`
+  (DNS interno de Compose). En el sistema desplegado ese puerto no se
+  publica en el host.
 - **Timeouts:** 1s de conexión y 2s de lectura.
 - **Cabeceras propagadas:** `Accept-Language` y `X-Correlation-Id` de la
   petición entrante, tal cual (lista blanca explícita; no se reenvían el
@@ -212,12 +236,11 @@ cuando exista CD.
 Vía reproducible con `curl`; el `jq` indicado solo sirve para capturar
 identificadores (también puedes copiarlos a mano de la respuesta).
 
-**Prerrequisito.** Stack arriba y ambos servicios `UP`:
+**Prerrequisito.** Stack arriba y gateway sano:
 
 ```bash
 docker compose up -d
-curl -s http://localhost:8081/actuator/health
-curl -s http://localhost:8082/actuator/health
+curl -s http://localhost:8080/actuator/health
 ```
 
 **1. Crear la lista y capturar su `id`.**
@@ -226,7 +249,7 @@ La respuesta es `201 Created` con la lista creada; `jq` extrae el `id` y lo
 guarda en la variable `LIST_ID`:
 
 ```bash
-LIST_ID=$(curl -s -X POST http://localhost:8082/lists \
+LIST_ID=$(curl -s -X POST http://localhost:8080/lists \
   -H 'Content-Type: application/json' \
   -d '{"ownerId":"3f2504e0-4f89-41d3-9a0c-0305e82c3301","name":"Compra de la semana"}' \
   | jq -r .id)
@@ -239,7 +262,7 @@ respuesta; no hace falta crear la lista dos veces.
 **2. Añadir un ítem.**
 
 ```bash
-curl -s -X POST "http://localhost:8082/lists/${LIST_ID}/items?ownerId=3f2504e0-4f89-41d3-9a0c-0305e82c3301" \
+curl -s -X POST "http://localhost:8080/lists/${LIST_ID}/items?ownerId=3f2504e0-4f89-41d3-9a0c-0305e82c3301" \
   -H 'Content-Type: application/json' \
   -H 'Accept-Language: es' \
   -d '{"productId":"5b597bf7-446e-463e-a2f9-839c360a01cc","productType":"BASE"}'
@@ -265,7 +288,7 @@ generado en runtime: el valor concreto es ilustrativo.
 **(Opcional) 3. Leer la lista con el ítem embebido.**
 
 ```bash
-curl -s http://localhost:8082/lists/${LIST_ID}
+curl -s http://localhost:8080/lists/${LIST_ID}
 ```
 
 El ítem aparece con su `displayName` ya persistido como snapshot, sin volver
@@ -282,6 +305,7 @@ a llamar a `product-service`.
 | `POST /lists/{id}/items` responde `503 PRODUCT_SERVICE_UNAVAILABLE` | `product-service` no está levantado. Arráncalo con `docker compose up -d product-service`. |
 | `list-service` no resuelve `product-service` en Compose | El DNS interno falla. Revisa que ambos contenedores estén en la red `shopping-list-net` y que sus `depends_on`/healthchecks estén satisfechos (`docker compose ps`). |
 | `POST /lists/{id}/items` responde `400 INVALID_PRODUCT_REFERENCE` | El `productId` no existe o no tiene nombre en `product-service`. Verifica que es un UUID de producto existente y que `productType` coincide (`BASE`/`USER`). |
-| `port is already allocated` (8081, 8082, 5434 o 5435) | Otro proceso ocupa el puerto. Identifícalo con `lsof -i :8081`, `lsof -i :8082`, `lsof -i :5434` o `lsof -i :5435`. |
+| `port is already allocated` (8080, 5434 o 5435) | Otro proceso ocupa el puerto publicado. Identifícalo con `lsof -i :8080`, `lsof -i :5434` o `lsof -i :5435`. El `8081`/`8082` solo entra en juego en el modo "servicios a mano". |
 | `unknown shorthand flag: 'a' in -a` al hacer `set -a` | Usas una shell no compatible. Usa el `export` alternativo del Escenario A. |
-| El health no responde `UP` (`8081` o `8082`) | Revisa los logs del servicio implicado: `docker compose logs list-service` (8082) o `docker compose logs product-service` (8081). |
+| `curl http://localhost:8082` falla con Compose levantado | Esperado: `list-service` no publica su puerto HTTP. Usa `http://localhost:8080`. |
+| El health del gateway no responde `UP` | Revisa los logs en orden: `docker compose logs list-db list-service` y después `docker compose logs api-gateway`. El gateway no arranca hasta que los dos servicios están sanos. |
