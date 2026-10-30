@@ -58,7 +58,8 @@ set -a; source .env; set +a       # bash/zsh
 ```
 
 El servicio arranca en `http://localhost:8081`, conectando a PostgreSQL en
-`localhost:5434`.
+`localhost:5434`. Este escenario es el modo "servicios a mano": se llama al
+servicio directamente en `8081`, sin el gateway (`8080`).
 
 **Verificación:**
 
@@ -127,16 +128,21 @@ Si `envFile` no resuelve rutas relativas en tu sistema, usa
 docker compose up -d
 ```
 
-Esto levanta los cuatro contenedores existentes hoy:
-`shopping-list-product-db` (PostgreSQL),
-`shopping-list-list-db` (PostgreSQL),
-`shopping-list-product-service` y
-`shopping-list-list-service`.
+Esto levanta los cinco contenedores del sistema: las dos bases de datos
+(`shopping-list-product-db` y `shopping-list-list-db`), los dos servicios
+(`shopping-list-product-service` y `shopping-list-list-service`) y el
+`shopping-list-api-gateway`. Toda la API se consume por
+`http://localhost:8080`; los servicios de dominio no publican su puerto
+HTTP en el host.
 
 `product-service` construye su imagen desde el `Dockerfile` local (build
 lento la primera vez por descarga de dependencias Maven; builds posteriores
 reutilizan la cache de BuildKit). Flyway aplica las migraciones contra
 `product-db:5432` (DNS interno de la red Docker) al arrancar.
+
+El arranque está ordenado por salud: las bases de datos, después los dos
+servicios y por último el gateway (`depends_on: condition: service_healthy`).
+Los tres servicios exponen `/actuator/health` para ese healthcheck.
 
 Tras cambios en el código, `docker compose up -d` no recompila la imagen
 por sí solo. Usa `docker compose up -d --build product-service` para
@@ -145,16 +151,32 @@ forzar el rebuild.
 **Verificación:**
 
 ```bash
-docker compose ps                          # 4 servicios healthy/Up
+docker compose ps                          # 5 contenedores healthy/Up
 docker compose logs product-service | grep "Successfully applied"  # Flyway OK
-curl -s http://localhost:8081/actuator/health
+curl -s http://localhost:8080/actuator/health
+curl -s http://localhost:8080/categories | head -c 200
 ```
+
+**Bases de datos en loopback.** `product-db` escucha en el host solo en
+`127.0.0.1:5434` y `list-db` en `127.0.0.1:5435`. Es una decisión
+operativa, no un incidente: permite conectar un cliente de PostgreSQL
+desde la propia máquina para depurar sin exponer las bases de datos en la
+red. No cambies ese binding a `0.0.0.0`.
 
 **Parar y limpiar volúmenes:**
 
 ```bash
 docker compose down -v
 ```
+
+### Modo "servicios a mano"
+
+Los escenarios A y B arrancan `product-service` en el host con el perfil
+`local`. En ese modo el servicio sigue escuchando en
+`http://localhost:8081` y se llama directamente, sin pasar por el gateway
+(que no está arrancado). El modo "servicios a mano" es entorno de
+desarrollo, no el sistema desplegado: no esperes que `8081` sea accesible
+cuando el sistema está levantado con Compose.
 
 ---
 
@@ -178,5 +200,8 @@ Docker Compose). Es el mismo flujo que ejecuta el pipeline de CI.
 | `Mockito is currently self-attaching` (WARN) | Esperado, no bloqueante. Maven añade Mockito como agente Java automático al detectarlo en el classpath de test; el aviso desaparecerá si se configura Mockito como `-javaagent` explícito en `surefire-plugin`. |
 | `Could not connect to localhost:5434` | `product-db` no está corriendo. Ejecuta `docker compose up -d product-db`. |
 | `Flyway failed to determine applied migrations` | La BD existe pero tiene un estado inconsistente. Haz `docker compose down -v product-db && docker compose up -d product-db` para recrear desde cero. |
-| `port is already allocated` (8081 o 5434) | Otro proceso ocupa el puerto. Identifícalo con `lsof -i :8081` o `lsof -i :5434`. |
+| `port is already allocated` (8080, 5434 o 5435) | Otro proceso ocupa el puerto publicado. Identifícalo con `lsof -i :8080`, `lsof -i :5434` o `lsof -i :5435`. El `8081` solo entra en juego en el modo "servicios a mano". |
+| `curl http://localhost:8081` falla con Compose levantado | Esperado: `product-service` no publica su puerto HTTP. Usa `http://localhost:8080`. |
+| El health del gateway no responde `UP` | Revisa los logs en orden: `docker compose logs product-db product-service` y después `docker compose logs api-gateway`. El gateway no arranca hasta que los dos servicios están sanos. |
+| `docker compose port api-gateway 8080` devuelve `invalid IP:0` | El gateway no está levantado o no tiene el puerto publicado. Ejecuta `docker compose up -d` y revisa `docker compose ps`. |
 | `unknown shorthand flag: 'a' in -a` al hacer `set -a` | Usas una shell no compatible. Usa el `export` alternativo del Escenario A. |

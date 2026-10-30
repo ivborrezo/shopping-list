@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: local
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: product-service
+              uri: ${product-service.client.base-url}
+              predicates:
+                - Path=/categories/**,/base-products/**,/user-products/**
+            - id: list-service
+              uri: ${list-service.client.base-url}
+              predicates:
+                - Path=/lists/**
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+product-service:
+  client:
+    base-url: http://localhost:8081
+
+list-service:
+  client:
+    base-url: http://localhost:8082

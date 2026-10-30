@@ -4,15 +4,23 @@ Convenciones del entorno de desarrollo local. El proceso completo de
 instalación y arranque del repositorio se describe en el
 [setup](setup.md).
 
-## Puertos de base de datos
+## Puertos
 
-- Las bases de datos se exponen al host en puertos **no estándar** para
-  evitar conflicto con una instancia local de PostgreSQL:
-  - `product-db` → host `5434`
-  - `list-db` → host `5435`
-- El puerto interno del contenedor es siempre `5432` (formato
-  `"HOST:CONTENEDOR"` en `docker-compose.yml`).
-- Configurables vía `.env` (`PRODUCT_DB_PORT_OUT`, `LIST_DB_PORT_OUT`).
+- Solo `api-gateway` publica un puerto HTTP en el host: `8080`.
+- `product-service` y `list-service` quedan en la red interna de Compose;
+  sus puertos `8081`/`8082` solo se usan en el modo "servicios a mano"
+  (perfil `local` arrancado con `mvnw` en el host).
+- Las bases de datos se exponen al host en puertos **no estándar** y
+  enlazadas explícitamente a loopback:
+  - `product-db` → `127.0.0.1:5434`
+  - `list-db` → `127.0.0.1:5435`
+- El puerto interno del contenedor es siempre `5432`. El binding
+  `127.0.0.1` es una decisión operativa (H-06 CA-03): permite depurar desde
+  el host sin exponer las bases de datos en la red.
+- El formato de publicación está fijado en `docker-compose.yml`; no se
+  configura con `PRODUCT_DB_PORT_OUT`/`LIST_DB_PORT_OUT`. Esas variables
+  siguen disponibles para el perfil `local` de los servicios cuando se
+  arrancan contra una base de datos en el host.
 
 ## Nomenclatura
 
