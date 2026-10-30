@@ -86,8 +86,8 @@ class ContractRouteCoverageIntegrationIT {
   @Test
   void allContractOperations_areForwardedToTheirService() {
     List<Operation> operations = new ArrayList<>();
-    for (Map<String, Object> contract : contracts()) {
-      operations.addAll(operationsOf(contract));
+    for (ContractSource contract : contracts()) {
+      operations.addAll(operationsOf(contract.document()));
     }
 
     assertThat(operations).as("operaciones de los dos contratos").hasSize(24);
@@ -134,14 +134,14 @@ class ContractRouteCoverageIntegrationIT {
 
   @Test
   void contractsDeclareAd12Metadata() throws IOException {
-    for (Map<String, Object> contract : contracts()) {
-      assertPublicServer(contract);
-      assertCorrelationParameter(contract);
-      assertCorrelationHeader(contract);
-      assertSharedErrorHeaders(contract);
+    for (ContractSource contract : contracts()) {
+      assertPublicServer(contract.document());
+      assertCorrelationParameter(contract.document());
+      assertCorrelationHeader(contract.document());
+      assertSharedErrorHeaders(contract.document());
       assertOperationCoverage(contract);
-      assertErrorCodes(contract);
-      assertEdgeNotes(contract);
+      assertErrorCodes(contract.document());
+      assertEdgeNotes(contract.document());
     }
   }
 
@@ -191,11 +191,11 @@ class ContractRouteCoverageIntegrationIT {
     }
   }
 
-  private void assertOperationCoverage(Map<String, Object> contract) {
+  private void assertOperationCoverage(ContractSource contract) {
     int operations = 0;
     int rateLimited = 0;
     int serviceUnavailable = 0;
-    for (Map.Entry<String, Object> path : map(contract.get("paths")).entrySet()) {
+    for (Map.Entry<String, Object> path : map(contract.document().get("paths")).entrySet()) {
       for (String method : METHODS) {
         Object operation = map(path.getValue()).get(method);
         if (operation == null) {
@@ -222,8 +222,7 @@ class ContractRouteCoverageIntegrationIT {
     }
 
     assertThat(operations).as("operaciones").isEqualTo(rateLimited);
-    String title = (String) map(contract.get("info")).get("title");
-    if (title.contains("List Service")) {
+    if (contract.kind() == ContractKind.LIST_SERVICE) {
       assertThat(operations).isEqualTo(8);
       assertThat(serviceUnavailable).isEqualTo(7);
     } else {
@@ -260,11 +259,14 @@ class ContractRouteCoverageIntegrationIT {
         .isEqualTo(CORRELATION_HEADER_REF);
   }
 
-  private List<Map<String, Object>> contracts() {
-    List<Map<String, Object>> contracts = new ArrayList<>();
-    contracts.add(readContract(CONTRACTS_ROOT.resolve("product-service/docs/api-contract.yaml")));
-    contracts.add(readContract(CONTRACTS_ROOT.resolve("list-service/docs/api-contract.yaml")));
-    return contracts;
+  private List<ContractSource> contracts() {
+    return List.of(
+        new ContractSource(
+            ContractKind.PRODUCT_SERVICE,
+            readContract(CONTRACTS_ROOT.resolve("product-service/docs/api-contract.yaml"))),
+        new ContractSource(
+            ContractKind.LIST_SERVICE,
+            readContract(CONTRACTS_ROOT.resolve("list-service/docs/api-contract.yaml"))));
   }
 
   private Map<String, Object> readContract(Path path) {
@@ -319,6 +321,13 @@ class ContractRouteCoverageIntegrationIT {
   private static List<Object> list(Object value) {
     return (List<Object>) value;
   }
+
+  private enum ContractKind {
+    PRODUCT_SERVICE,
+    LIST_SERVICE
+  }
+
+  private record ContractSource(ContractKind kind, Map<String, Object> document) {}
 
   private record Operation(String method, String template, String path) {}
 }
