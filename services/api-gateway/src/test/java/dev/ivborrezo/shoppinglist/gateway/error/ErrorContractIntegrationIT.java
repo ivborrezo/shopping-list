@@ -44,6 +44,10 @@ class ErrorContractIntegrationIT {
 
   private static final String HEADER = "X-Correlation-Id";
 
+  private static final String GATEWAY_ID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
+
+  private static final String DESTINATION_ECHO = "11111111-1111-4111-8111-111111111111";
+
   private static final int CLOSED_PORT = findClosedPort();
 
   private static final GatewayTestDestinations DESTINATIONS = GatewayTestDestinations.start();
@@ -181,12 +185,14 @@ class ErrorContractIntegrationIT {
                     aResponse()
                         .withStatus(503)
                         .withHeader("Content-Type", MediaType.APPLICATION_PROBLEM_JSON_VALUE)
+                        .withHeader(HEADER, DESTINATION_ECHO)
                         .withBody(errorBody)));
 
     ExchangeResult result =
         webTestClient
             .get()
             .uri("/base-products")
+            .header(HEADER, GATEWAY_ID)
             .exchange()
             .expectStatus()
             .isEqualTo(503)
@@ -196,6 +202,8 @@ class ErrorContractIntegrationIT {
     assertThat(new String(result.getResponseBodyContent()))
         .contains("\"code\":\"PRODUCT_SERVICE_UNAVAILABLE\"")
         .doesNotContain("\"code\":\"SERVICE_UNAVAILABLE\"");
+    assertThat(result.getResponseHeaders().get(HEADER)).containsExactly(GATEWAY_ID);
+    assertThat(result.getResponseHeaders().get(HEADER)).doesNotContain(DESTINATION_ECHO);
   }
 
   @Test

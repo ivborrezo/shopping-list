@@ -1,6 +1,7 @@
 package dev.ivborrezo.shoppinglist.gateway.resilience;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
@@ -42,6 +43,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 class GatewayResilienceIntegrationIT {
 
   private static final String HEADER = "X-Correlation-Id";
+
+  private static final String LARGE_HEADER_VALUE = "a".repeat(10 * 1024);
 
   private static final int CLOSED_PORT = findClosedPort();
 
@@ -146,6 +149,25 @@ class GatewayResilienceIntegrationIT {
     DESTINATIONS
         .listService()
         .verify(getRequestedFor(urlPathEqualTo("/lists")).withoutHeader("X-Hop"));
+  }
+
+  @Test
+  void headerWithinConfiguredLimit_isForwarded() {
+    DESTINATIONS.listService().stubFor(get(urlPathEqualTo("/lists")).willReturn(okJson("{}")));
+
+    webTestClient
+        .get()
+        .uri("/lists")
+        .header("X-Large", LARGE_HEADER_VALUE)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    DESTINATIONS
+        .listService()
+        .verify(
+            getRequestedFor(urlPathEqualTo("/lists"))
+                .withHeader("X-Large", equalTo(LARGE_HEADER_VALUE)));
   }
 
   @Test
