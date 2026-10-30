@@ -1,0 +1,7 @@
+product-service:
+  client:
+    base-url: http://product-service:8081
+
+list-service:
+  client:
+    base-url: http://list-service:8082
