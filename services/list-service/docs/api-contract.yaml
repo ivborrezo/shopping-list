@@ -8,10 +8,24 @@ info:
     Nota de vigencia: este documento es la fuente de verdad del contrato del
     servicio, redactado y mantenido a mano (Design-First). El código se
     implementa contra él; el contrato no se genera a partir del código.
+
+    Alcance del borde: el contrato se sirve a través del API Gateway en la
+    base URL pública. Un path no descrito en este documento responde 404
+    generado por el borde, sin reenviar la petición a ningún servicio; ese
+    caso no pertenece al enum de `code` (`ROUTE_NOT_FOUND` no forma parte del
+    contrato de negocio). La cabecera `X-Correlation-Id` se ecoa en todas las
+    respuestas; si la petición no la envía, el borde genera el identificador.
+    Tras un 503, las operaciones no idempotentes (`POST`, `PATCH`, `DELETE`)
+    no deben reintentarse a ciegas: el cliente comprueba el estado del
+    recurso antes de repetir la operación. El borde limita el cuerpo de las
+    peticiones a 1 MB y responde 413 cuando se supera; los cuerpos enviados
+    sin `Content-Length` no se limitan en esta fase. Los rechazos del borde
+    ajenos al contrato de error (403 de CORS y 431/413 de la capa HTTP) no
+    incluyen cabeceras CORS.
   version: 1.0.0
 servers:
-  - url: http://localhost:8082
-    description: Entorno local (Docker Compose)
+  - url: http://localhost:8080
+    description: Base URL pública (API Gateway)
 
 tags:
   - name: lists
@@ -21,6 +35,8 @@ tags:
 
 paths:
   /lists:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [lists]
       summary: Listar listas de un propietario
@@ -48,6 +64,10 @@ paths:
                 $ref: '#/components/schemas/ListPage'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
     post:
       tags: [lists]
@@ -73,8 +93,14 @@ paths:
                 $ref: '#/components/schemas/ShoppingList'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
   /lists/{id}:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [lists]
       summary: Obtener una lista por id
@@ -94,6 +120,10 @@ paths:
                 $ref: '#/components/schemas/ShoppingList'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
     patch:
       tags: [lists]
@@ -127,6 +157,10 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
     delete:
       tags: [lists]
@@ -157,8 +191,14 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
   /lists/{id}/items:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     post:
       tags: [list-items]
       summary: Añadir un producto a la lista
@@ -210,18 +250,31 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           description: La lista ya contiene ese producto.
+          headers:
+            X-CorrelationId:
+              $ref: '#/components/headers/XCorrelationId'
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
         '503':
-          description: product-service no está disponible para resolver el producto.
+          description: >
+            El producto no se pudo resolver: product-service no está disponible
+            (`PRODUCT_SERVICE_UNAVAILABLE`) o el borde no pudo completar la
+            petición (`SERVICE_UNAVAILABLE`).
+          headers:
+            X-CorrelationId:
+              $ref: '#/components/headers/XCorrelationId'
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          $ref: '#/components/responses/RateLimited'
 
   /lists/{id}/items/{itemId}:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     delete:
       tags: [list-items]
       summary: Eliminar un producto de la lista
@@ -257,6 +310,10 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
     patch:
       tags: [list-items]
@@ -306,6 +363,10 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
 components:
   parameters:
@@ -337,9 +398,23 @@ components:
         maximum: 100
         default: 20
 
+    XCorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: >
+        Identificador de correlación de la petición. Si no se envía, el borde
+        genera uno; el valor recibido o generado se ecoa en la respuesta.
+      schema:
+        type: string
+        format: uuid
+
   responses:
     NotFound:
       description: El recurso solicitado no existe.
+      headers:
+        X-CorrelationId:
+          $ref: '#/components/headers/XCorrelationId'
       content:
         application/problem+json:
           schema:
@@ -353,16 +428,53 @@ components:
         VALIDATION_FAILED sin errors. Los errores de negocio 400 (referencia de
         producto inválida o inexistente, tipo de producto no soportado, etc.)
         usan el shape ProblemDetail sin errors.
+      headers:
+        X-CorrelationId:
+          $ref: '#/components/headers/XCorrelationId'
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ValidationProblemDetail'
     Forbidden:
       description: El `ownerId` no coincide con el propietario del recurso.
+      headers:
+        X-CorrelationId:
+          $ref: '#/components/headers/XCorrelationId'
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetail'
+
+    RateLimited:
+      description: >
+        Se ha superado el límite de peticiones del borde.
+      headers:
+        X-CorrelationId:
+          $ref: '#/components/headers/XCorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
+    ServiceUnavailable:
+      description: >
+        Un servicio de destino no está disponible para completar la petición.
+      headers:
+        X-CorrelationId:
+          $ref: '#/components/headers/XCorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
+  headers:
+    XCorrelationId:
+      description: >
+        Identificador de correlación de la petición, ecoado por el servicio y
+        por el borde.
+      schema:
+        type: string
+        format: uuid
 
   schemas:
     ShoppingList:
@@ -520,7 +632,7 @@ components:
           description: URI del recurso de la petición que produjo el error.
         code:
           type: string
-          enum: [LIST_NOT_FOUND, LIST_ITEM_NOT_FOUND, OWNER_MISMATCH, DUPLICATE_LIST_ITEM, INVALID_PRODUCT_REFERENCE, PRODUCT_SERVICE_UNAVAILABLE, INVALID_PRODUCT_TYPE, VALIDATION_FAILED]
+          enum: [LIST_NOT_FOUND, LIST_ITEM_NOT_FOUND, OWNER_MISMATCH, DUPLICATE_LIST_ITEM, INVALID_PRODUCT_REFERENCE, PRODUCT_SERVICE_UNAVAILABLE, INVALID_PRODUCT_TYPE, RATE_LIMIT_EXCEEDED, SERVICE_UNAVAILABLE, VALIDATION_FAILED]
           description: Identificador machine-readable del error; el contrato entre el backend y el frontend.
 
     FieldError:
