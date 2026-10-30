@@ -3,10 +3,15 @@ spring:
     name: api-gateway
   profiles:
     active: local
+  reactor:
+    context-propagation: auto
   cloud:
     gateway:
       server:
         webflux:
+          httpclient:
+            connect-timeout: 1000
+            response-timeout: 5s
           routes:
             - id: product-service
               uri: ${product-service.client.base-url}
@@ -19,6 +24,10 @@ spring:
 
 server:
   port: 8080
+  max-http-request-header-size: 16KB
+
+gateway:
+  max-body-size: 1MB
 
 management:
   endpoints:
