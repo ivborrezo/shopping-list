@@ -2,6 +2,7 @@ package dev.ivborrezo.shoppinglist.gateway.error;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -110,6 +111,7 @@ class ErrorContractIntegrationIT {
         .doesNotContain("127.0.0.1")
         .doesNotContain(String.valueOf(CLOSED_PORT));
     assertCorrelationHeader(result);
+    DESTINATIONS.listService().verify(0, getRequestedFor(urlPathEqualTo("/lists")));
   }
 
   @Test
@@ -161,6 +163,7 @@ class ErrorContractIntegrationIT {
         .contains("\"code\":\"INTERNAL_ERROR\"")
         .doesNotContain("Sensitive internal failure");
     assertCorrelationHeader(result);
+    DESTINATIONS.productService().verify(0, getRequestedFor(urlPathEqualTo("/categories")));
   }
 
   @Test
