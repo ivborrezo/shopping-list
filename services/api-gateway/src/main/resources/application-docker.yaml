@@ -5,3 +5,7 @@ product-service:
 list-service:
   client:
     base-url: http://list-service:8082
+
+api-gateway:
+  rate-limit:
+    requests: 120

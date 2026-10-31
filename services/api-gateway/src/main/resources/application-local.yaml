@@ -6,3 +6,7 @@ management:
   endpoint:
     gateway:
       access: read-only
+
+api-gateway:
+  rate-limit:
+    requests: 600

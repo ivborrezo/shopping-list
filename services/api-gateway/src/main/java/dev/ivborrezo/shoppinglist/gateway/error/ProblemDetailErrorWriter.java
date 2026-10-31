@@ -2,6 +2,7 @@ package dev.ivborrezo.shoppinglist.gateway.error;
 
 import dev.ivborrezo.shoppinglist.gateway.correlation.CorrelationContext;
 import dev.ivborrezo.shoppinglist.gateway.cors.BorderCorsSupport;
+import dev.ivborrezo.shoppinglist.gateway.ratelimit.RateLimitExceededException;
 import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +10,7 @@ import org.slf4j.MDC;
 import org.springframework.boot.webflux.error.ErrorWebExceptionHandler;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -69,6 +71,9 @@ public class ProblemDetailErrorWriter implements ErrorWebExceptionHandler {
     response.setStatusCode(HttpStatus.valueOf(code.getHttpStatus()));
     response.getHeaders().setContentType(MediaType.APPLICATION_PROBLEM_JSON);
     response.getHeaders().setContentLength(body.length);
+    if (code == ErrorCode.RATE_LIMIT_EXCEEDED) {
+      response.getHeaders().set(HttpHeaders.RETRY_AFTER, Long.toString(retryAfterSeconds(ex)));
+    }
     corsSupport.apply(exchange);
     return response.writeWith(Mono.just(response.bufferFactory().wrap(body)));
   }
@@ -94,6 +99,8 @@ public class ProblemDetailErrorWriter implements ErrorWebExceptionHandler {
     try {
       if (code == ErrorCode.ROUTE_NOT_FOUND) {
         log.debug("No route matched {}", exchange.getRequest().getPath());
+      } else if (code == ErrorCode.RATE_LIMIT_EXCEEDED) {
+        log.debug("Rate limit exceeded for {}", exchange.getRequest().getPath());
       } else if (code == ErrorCode.SERVICE_UNAVAILABLE) {
         log.warn("Upstream service unavailable", ex);
       } else {
@@ -104,5 +111,16 @@ public class ProblemDetailErrorWriter implements ErrorWebExceptionHandler {
         MDC.remove(CorrelationContext.CONTEXT_KEY);
       }
     }
+  }
+
+  private long retryAfterSeconds(Throwable error) {
+    Throwable current = error;
+    while (current != null) {
+      if (current instanceof RateLimitExceededException rateLimitExceeded) {
+        return rateLimitExceeded.getRetryAfterSeconds();
+      }
+      current = current.getCause() == current ? null : current.getCause();
+    }
+    return 1L;
   }
 }
