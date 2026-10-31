@@ -12,10 +12,10 @@ import org.springframework.web.server.ServerWebExchange;
  * Aplica la política CORS a las respuestas que no pasan por el procesador del framework.
  *
  * <p>Lee la misma configuración global que usa el gateway, de modo que la whitelist, el reflejo del
- * origen y las cabeceras expuestas tienen una única fuente. Cuando el origen de la petición está
- * permitido, refleja el origen, expone las cabeceras configuradas y añade {@code Vary: Origin};
- * cuando no lo está, no añade nada. No gestiona el preflight: esa respuesta la produce el
- * procesador CORS.
+ * origen y las cabeceras expuestas tienen una única fuente. La whitelist es exacta: los patrones de
+ * origen no cuentan como orígenes permitidos. Cuando el origen de la petición está permitido,
+ * refleja el origen, expone las cabeceras configuradas y añade {@code Vary: Origin}; cuando no lo
+ * está, no añade nada. No gestiona el preflight: esa respuesta la produce el procesador CORS.
  */
 @Component
 public class BorderCorsSupport {
@@ -66,9 +66,6 @@ public class BorderCorsSupport {
 
   private static boolean hasAllowedOrigins(GlobalCorsProperties globalCorsProperties) {
     return globalCorsProperties.getCorsConfigurations().values().stream()
-        .anyMatch(
-            configuration ->
-                !CollectionUtils.isEmpty(configuration.getAllowedOrigins())
-                    || !CollectionUtils.isEmpty(configuration.getAllowedOriginPatterns()));
+        .anyMatch(configuration -> !CollectionUtils.isEmpty(configuration.getAllowedOrigins()));
   }
 }

@@ -66,6 +66,16 @@ class BorderCorsSupportTest {
         .hasMessageContaining("spring.cloud.gateway.server.webflux.globalcors");
   }
 
+  @Test
+  void originPatternsOnly_failFast() {
+    GlobalCorsProperties properties = new GlobalCorsProperties();
+    properties.getCorsConfigurations().put("/**", patternConfiguration());
+
+    assertThatThrownBy(() -> new BorderCorsSupport(properties))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("spring.cloud.gateway.server.webflux.globalcors");
+  }
+
   private static MockServerWebExchange exchangeWithOrigin(String origin) {
     return MockServerWebExchange.from(
         MockServerHttpRequest.get("/lists").header(HttpHeaders.ORIGIN, origin).build());
@@ -79,5 +89,11 @@ class BorderCorsSupportTest {
     GlobalCorsProperties properties = new GlobalCorsProperties();
     properties.getCorsConfigurations().put("/**", configuration);
     return properties;
+  }
+
+  private static CorsConfiguration patternConfiguration() {
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOriginPatterns(List.of("http://*.test"));
+    return configuration;
   }
 }
