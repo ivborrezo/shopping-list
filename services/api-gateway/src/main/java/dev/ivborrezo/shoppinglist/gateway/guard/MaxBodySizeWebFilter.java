@@ -30,7 +30,7 @@ public class MaxBodySizeWebFilter implements WebFilter {
    *
    * @param maxBodySize tamaño máximo aceptado por {@code Content-Length}
    */
-  public MaxBodySizeWebFilter(@Value("${gateway.max-body-size:1MB}") DataSize maxBodySize) {
+  public MaxBodySizeWebFilter(@Value("${api-gateway.max-body-size:1MB}") DataSize maxBodySize) {
     this.maxBodySizeBytes = maxBodySize.toBytes();
   }
 
