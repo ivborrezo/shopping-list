@@ -9,6 +9,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.ivborrezo.shoppinglist.gateway.correlation.CorrelationContext;
 import dev.ivborrezo.shoppinglist.gateway.support.GatewayTestDestinations;
 import dev.ivborrezo.shoppinglist.gateway.support.RateLimitTestConfiguration;
 import org.junit.jupiter.api.AfterAll;
@@ -46,6 +47,10 @@ class BodyGuardOrderIntegrationIT {
   private static final String TEST_CLIENT_HEADER = RateLimitTestConfiguration.TEST_CLIENT_HEADER;
 
   private static final String CLIENT = "body-guard-client";
+
+  private static final String ALLOWED_ORIGIN = "http://localhost:5173";
+
+  private static final String CORRELATION_ID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 
   private static final GatewayTestDestinations DESTINATIONS = GatewayTestDestinations.start();
 
@@ -98,6 +103,8 @@ class BodyGuardOrderIntegrationIT {
             .post()
             .uri("/lists")
             .header(TEST_CLIENT_HEADER, CLIENT)
+            .header(CorrelationContext.HEADER_NAME, CORRELATION_ID)
+            .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .bodyValue(body(100 * 1024))
             .exchange()
@@ -107,6 +114,9 @@ class BodyGuardOrderIntegrationIT {
 
     assertThat(rejected.getResponseHeaders().getContentType())
         .isNotEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
+    assertThat(rejected.getResponseHeaders().get(CorrelationContext.HEADER_NAME))
+        .containsExactly(CORRELATION_ID);
+    assertThat(rejected.getResponseHeaders().getAccessControlAllowOrigin()).isNull();
     DESTINATIONS.listService().verify(0, postRequestedFor(urlPathEqualTo("/lists")));
 
     webTestClient

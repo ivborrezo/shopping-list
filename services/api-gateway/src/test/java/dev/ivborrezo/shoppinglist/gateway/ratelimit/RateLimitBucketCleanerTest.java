@@ -7,12 +7,6 @@ import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
-/**
- * Pruebas unitarias de la purga periódica de cubos.
- *
- * <p>Comprueba la delegación del planificador sobre el limitador con un reloj avanzable, sin
- * esperas reales: los cubos inactivos desaparecen y los refrescados sobreviven.
- */
 class RateLimitBucketCleanerTest {
 
   private static final Instant START = Instant.parse("2026-01-01T00:00:00Z");

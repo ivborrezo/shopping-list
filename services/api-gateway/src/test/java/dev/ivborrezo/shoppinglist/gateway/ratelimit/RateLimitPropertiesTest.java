@@ -6,12 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
-/**
- * Pruebas unitarias de la configuración tipada del rate limiting.
- *
- * <p>Fija la casa feliz de capacidad y ventana y que ambas rechazan valores no positivos con el
- * nombre exacto de la propiedad.
- */
 class RateLimitPropertiesTest {
 
   @Test

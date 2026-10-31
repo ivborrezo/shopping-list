@@ -31,8 +31,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
  *
  * <p>Cubre H-03 con la clave de test: las peticiones dentro del límite llegan al destino, el
  * rechazo responde 429 con {@code ProblemDetail}, {@code Retry-After}, eco de correlación y CORS,
- * cada clave mantiene su cubo, las rutas no expuestas también se limitan y ni el preflight ni el
- * actuator consumen cupo.
+ * cada clave mantiene su cubo, las rutas no expuestas también se limitan, ni el preflight ni el
+ * actuator consumen cupo y un {@code OPTIONS} sin cabeceras de preflight sí lo consume.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
