@@ -1,6 +1,7 @@
 package dev.ivborrezo.shoppinglist.gateway.error;
 
 import dev.ivborrezo.shoppinglist.gateway.correlation.CorrelationContext;
+import dev.ivborrezo.shoppinglist.gateway.cors.BorderCorsSupport;
 import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,8 @@ import tools.jackson.databind.ObjectMapper;
  * status, título, detalle, instancia y código del catálogo, y lo serializa como {@code
  * application/problem+json}. El diagnóstico técnico se registra en el log con el {@code
  * correlationId} de la petición; el cuerpo nunca expone el mensaje original ni la topología
- * interna.
+ * interna. La respuesta lleva las cabeceras CORS del origen permitido que aplica {@link
+ * BorderCorsSupport}.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -37,15 +39,20 @@ public class ProblemDetailErrorWriter implements ErrorWebExceptionHandler {
 
   private final ObjectMapper objectMapper;
 
+  private final BorderCorsSupport corsSupport;
+
   /**
-   * Inyecta el mapeo de errores y el serializador del cuerpo.
+   * Inyecta el mapeo de errores, el serializador del cuerpo y la política CORS del borde.
    *
    * @param errorMapper traductor de excepciones a códigos del borde
    * @param objectMapper serializador de Jackson configurado por la aplicación
+   * @param corsSupport aplicación de la política CORS a las respuestas de error
    */
-  public ProblemDetailErrorWriter(BorderErrorMapper errorMapper, ObjectMapper objectMapper) {
+  public ProblemDetailErrorWriter(
+      BorderErrorMapper errorMapper, ObjectMapper objectMapper, BorderCorsSupport corsSupport) {
     this.errorMapper = errorMapper;
     this.objectMapper = objectMapper;
+    this.corsSupport = corsSupport;
   }
 
   @Override
@@ -62,6 +69,7 @@ public class ProblemDetailErrorWriter implements ErrorWebExceptionHandler {
     response.setStatusCode(HttpStatus.valueOf(code.getHttpStatus()));
     response.getHeaders().setContentType(MediaType.APPLICATION_PROBLEM_JSON);
     response.getHeaders().setContentLength(body.length);
+    corsSupport.apply(exchange);
     return response.writeWith(Mono.just(response.bufferFactory().wrap(body)));
   }
 

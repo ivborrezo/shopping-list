@@ -21,6 +21,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -48,6 +49,13 @@ class ErrorContractIntegrationIT {
 
   private static final String DESTINATION_ECHO = "11111111-1111-4111-8111-111111111111";
 
+  private static final String CORS_CONFIGURATION =
+      "spring.cloud.gateway.server.webflux.globalcors.cors-configurations.[/**]";
+
+  private static final String ALLOWED_ORIGIN = "http://app.test";
+
+  private static final String SECOND_ALLOWED_ORIGIN = "http://preview.test";
+
   private static final int CLOSED_PORT = findClosedPort();
 
   private static final GatewayTestDestinations DESTINATIONS = GatewayTestDestinations.start();
@@ -68,6 +76,8 @@ class ErrorContractIntegrationIT {
   static void destinations(DynamicPropertyRegistry registry) {
     DESTINATIONS.register(registry);
     registry.add("list-service.client.base-url", () -> "http://127.0.0.1:" + CLOSED_PORT);
+    registry.add(CORS_CONFIGURATION + ".allowed-origins[0]", () -> ALLOWED_ORIGIN);
+    registry.add(CORS_CONFIGURATION + ".allowed-origins[1]", () -> SECOND_ALLOWED_ORIGIN);
   }
 
   @AfterAll
@@ -227,10 +237,54 @@ class ErrorContractIntegrationIT {
     assertCorrelationHeader(internalError);
   }
 
+  @Test
+  void ownErrors_includeCorsHeadersForAllowedOrigin() {
+    ExchangeResult notFound =
+        webTestClient
+            .get()
+            .uri("/dataviz")
+            .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
+            .exchange()
+            .expectStatus()
+            .isNotFound()
+            .returnResult();
+    ExchangeResult unavailable =
+        webTestClient
+            .get()
+            .uri("/lists")
+            .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
+            .exchange()
+            .expectStatus()
+            .isEqualTo(503)
+            .returnResult();
+    ExchangeResult internalError =
+        webTestClient
+            .get()
+            .uri("/categories")
+            .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
+            .header("X-Test-Trigger", "internal-error")
+            .exchange()
+            .expectStatus()
+            .isEqualTo(500)
+            .returnResult();
+
+    assertCorsHeaders(notFound);
+    assertCorsHeaders(unavailable);
+    assertCorsHeaders(internalError);
+  }
+
   private void assertCorrelationHeader(ExchangeResult result) {
     List<String> values = result.getResponseHeaders().get(HEADER);
     assertThat(values).hasSize(1);
     assertThat(UUID.fromString(values.getFirst())).isNotNull();
+  }
+
+  private void assertCorsHeaders(ExchangeResult result) {
+    HttpHeaders headers = result.getResponseHeaders();
+    assertThat(headers.getAccessControlAllowOrigin()).isEqualTo(ALLOWED_ORIGIN);
+    assertThat(headers.getAccessControlExposeHeaders()).containsExactly(HEADER);
+    assertThat(headers.getVary()).contains(HttpHeaders.ORIGIN);
+    assertThat(headers.getAccessControlAllowCredentials()).isFalse();
   }
 
   private static int findClosedPort() {

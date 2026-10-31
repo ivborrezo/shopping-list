@@ -9,6 +9,26 @@ spring:
     gateway:
       server:
         webflux:
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowed-origins:
+                  - http://localhost:5173
+                  - http://localhost:4173
+                allowed-methods:
+                  - GET
+                  - POST
+                  - PATCH
+                  - DELETE
+                allowed-headers:
+                  - Content-Type
+                  - Accept-Language
+                  - X-Correlation-Id
+                exposed-headers:
+                  - X-Correlation-Id
+                max-age: 1800
+                allow-credentials: false
           httpclient:
             connect-timeout: 1000
             response-timeout: 5s

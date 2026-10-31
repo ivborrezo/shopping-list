@@ -2,17 +2,23 @@ package dev.ivborrezo.shoppinglist.gateway.error;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.ivborrezo.shoppinglist.gateway.correlation.CorrelationContext;
+import dev.ivborrezo.shoppinglist.gateway.cors.BorderCorsSupport;
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.handler.timeout.ReadTimeoutException;
 import java.net.ConnectException;
 import java.net.URI;
+import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.cloud.gateway.config.GlobalCorsProperties;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.json.ProblemDetailJacksonMixin;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
+import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.reactive.resource.NoResourceFoundException;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.netty.http.client.PrematureCloseException;
@@ -22,13 +28,17 @@ import tools.jackson.databind.json.JsonMapper;
 
 class ProblemDetailErrorWriterTest {
 
+  private static final String ALLOWED_ORIGIN = "http://app.test";
+
   private final ObjectMapper objectMapper =
       JsonMapper.builder().addMixIn(ProblemDetail.class, ProblemDetailJacksonMixin.class).build();
 
   private final BorderErrorMapper errorMapper = new BorderErrorMapper();
 
+  private final BorderCorsSupport corsSupport = corsSupport();
+
   private final ProblemDetailErrorWriter errorWriter =
-      new ProblemDetailErrorWriter(errorMapper, objectMapper);
+      new ProblemDetailErrorWriter(errorMapper, objectMapper, corsSupport);
 
   @Test
   void responseStatusNotFound_isMappedToRouteNotFound() {
@@ -149,7 +159,47 @@ class ProblemDetailErrorWriterTest {
     assertThat(bodyOf(exchange).get("title").asString()).isEqualTo("Internal Server Error");
   }
 
+  @Test
+  void ownError_includesCorsHeadersForAllowedOrigin() {
+    MockServerWebExchange exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/dataviz")
+                .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
+                .build());
+
+    errorWriter.handle(exchange, new ResponseStatusException(HttpStatus.NOT_FOUND)).block();
+
+    HttpHeaders headers = exchange.getResponse().getHeaders();
+    assertThat(headers.getAccessControlAllowOrigin()).isEqualTo(ALLOWED_ORIGIN);
+    assertThat(headers.getAccessControlExposeHeaders())
+        .containsExactly(CorrelationContext.HEADER_NAME);
+    assertThat(headers.getVary()).contains(HttpHeaders.ORIGIN);
+    assertThat(headers.getAccessControlAllowCredentials()).isFalse();
+  }
+
+  @Test
+  void ownError_withoutOrigin_hasNoCorsHeaders() {
+    MockServerWebExchange exchange =
+        MockServerWebExchange.from(MockServerHttpRequest.get("/dataviz").build());
+
+    errorWriter.handle(exchange, new ResponseStatusException(HttpStatus.NOT_FOUND)).block();
+
+    HttpHeaders headers = exchange.getResponse().getHeaders();
+    assertThat(headers.getAccessControlAllowOrigin()).isNull();
+    assertThat(headers.getAccessControlExposeHeaders()).isEmpty();
+    assertThat(headers.getVary()).doesNotContain(HttpHeaders.ORIGIN);
+  }
+
   private JsonNode bodyOf(MockServerWebExchange exchange) {
     return objectMapper.readTree(exchange.getResponse().getBodyAsString().block());
+  }
+
+  private static BorderCorsSupport corsSupport() {
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOrigins(List.of(ALLOWED_ORIGIN));
+    configuration.setExposedHeaders(List.of(CorrelationContext.HEADER_NAME));
+    GlobalCorsProperties properties = new GlobalCorsProperties();
+    properties.getCorsConfigurations().put("/**", configuration);
+    return new BorderCorsSupport(properties);
   }
 }
