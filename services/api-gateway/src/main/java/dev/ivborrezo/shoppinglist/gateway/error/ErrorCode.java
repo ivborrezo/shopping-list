@@ -10,6 +10,7 @@ public enum ErrorCode {
   ROUTE_NOT_FOUND(404, "Route not found", "No route matches the requested path"),
   SERVICE_UNAVAILABLE(
       503, "Service temporarily unavailable", "The upstream service is currently unavailable"),
+  RATE_LIMIT_EXCEEDED(429, "Too many requests", "The request rate limit has been exceeded"),
   INTERNAL_ERROR(500, "Internal Server Error", "An unexpected error occurred");
 
   private final int httpStatus;

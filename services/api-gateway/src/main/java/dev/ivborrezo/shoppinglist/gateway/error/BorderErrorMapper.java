@@ -1,5 +1,6 @@
 package dev.ivborrezo.shoppinglist.gateway.error;
 
+import dev.ivborrezo.shoppinglist.gateway.ratelimit.RateLimitExceededException;
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.handler.timeout.TimeoutException;
@@ -15,10 +16,10 @@ import reactor.netty.http.client.PrematureCloseException;
 /**
  * Traduce la excepción del borde a su código de error propio.
  *
- * <p>Recorre la cadena de causas y reconoce el tipo real de cada fallo: el 404 de enrutado por su
- * status, los fallos de transporte de Reactor Netty como servicio no disponible y cualquier otra
- * excepción como error interno. Una respuesta del destino, incluidas sus 4xx/5xx, no pasa por este
- * mapeo.
+ * <p>Recorre la cadena de causas y reconoce el tipo real de cada fallo: el rechazo del rate
+ * limiting, el 404 de enrutado por su status, los fallos de transporte de Reactor Netty como
+ * servicio no disponible y cualquier otra excepción como error interno. Una respuesta del destino,
+ * incluidas sus 4xx/5xx, no pasa por este mapeo.
  */
 @Component
 public class BorderErrorMapper {
@@ -42,6 +43,9 @@ public class BorderErrorMapper {
   }
 
   private @Nullable ErrorCode mapCause(Throwable error) {
+    if (error instanceof RateLimitExceededException) {
+      return ErrorCode.RATE_LIMIT_EXCEEDED;
+    }
     if (error instanceof NoResourceFoundException || isNotFound(error)) {
       return ErrorCode.ROUTE_NOT_FOUND;
     }

@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.ivborrezo.shoppinglist.gateway.correlation.CorrelationContext;
 import dev.ivborrezo.shoppinglist.gateway.cors.BorderCorsSupport;
+import dev.ivborrezo.shoppinglist.gateway.ratelimit.RateLimitExceededException;
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.handler.timeout.ReadTimeoutException;
 import java.net.ConnectException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.cloud.gateway.config.GlobalCorsProperties;
@@ -113,6 +115,13 @@ class ProblemDetailErrorWriterTest {
   }
 
   @Test
+  void rateLimitExceeded_isMappedToRateLimitExceeded() {
+    ErrorCode code = errorMapper.map(new RateLimitExceededException(Duration.ofSeconds(3)));
+
+    assertThat(code).isEqualTo(ErrorCode.RATE_LIMIT_EXCEEDED);
+  }
+
+  @Test
   void routeNotFound_writesProblemDetailWithCorrelationOfPath() {
     MockServerWebExchange exchange =
         MockServerWebExchange.from(MockServerHttpRequest.get("/dataviz").build());
@@ -157,6 +166,41 @@ class ProblemDetailErrorWriterTest {
     assertThat(body).doesNotContain("secret internal detail");
     assertThat(bodyOf(exchange).get("code").asString()).isEqualTo("INTERNAL_ERROR");
     assertThat(bodyOf(exchange).get("title").asString()).isEqualTo("Internal Server Error");
+  }
+
+  @Test
+  void rateLimitExceeded_writesProblemDetailWithRetryAfterAndCors() {
+    MockServerWebExchange exchange =
+        MockServerWebExchange.from(
+            MockServerHttpRequest.get("/lists").header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN).build());
+
+    errorWriter.handle(exchange, new RateLimitExceededException(Duration.ofSeconds(7))).block();
+
+    JsonNode body = bodyOf(exchange);
+    HttpHeaders headers = exchange.getResponse().getHeaders();
+    assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+    assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
+    assertThat(headers.getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("7");
+    assertThat(body.get("type").asString()).isEqualTo("about:blank");
+    assertThat(body.get("title").asString()).isEqualTo("Too many requests");
+    assertThat(body.get("status").intValue()).isEqualTo(429);
+    assertThat(body.get("instance").asString()).isEqualTo("/lists");
+    assertThat(body.get("code").asString()).isEqualTo("RATE_LIMIT_EXCEEDED");
+    assertThat(headers.getAccessControlAllowOrigin()).isEqualTo(ALLOWED_ORIGIN);
+    assertThat(headers.getAccessControlExposeHeaders())
+        .containsExactly(CorrelationContext.HEADER_NAME);
+    assertThat(headers.getVary()).contains(HttpHeaders.ORIGIN);
+  }
+
+  @Test
+  void rateLimitExceeded_retryAfterNeverFallsBelowOneSecond() {
+    MockServerWebExchange exchange =
+        MockServerWebExchange.from(MockServerHttpRequest.get("/lists").build());
+
+    errorWriter.handle(exchange, new RateLimitExceededException(Duration.ofMillis(250))).block();
+
+    assertThat(exchange.getResponse().getHeaders().getFirst(HttpHeaders.RETRY_AFTER))
+        .isEqualTo("1");
   }
 
   @Test
