@@ -15,12 +15,15 @@ import reactor.core.publisher.Mono;
 /**
  * Rechaza las peticiones cuyo cuerpo declarado supera el tope configurado.
  *
- * <p>Comprueba solo {@code Content-Length} para no bufferizar el cuerpo ni romper el streaming:
+ * <p>Se ejecuta después de la correlación y del access log, de modo que el 413 conserva el eco del
+ * identificador y queda registrado, y antes del rate limiting, de modo que un cuerpo
+ * sobredimensionado no consume cupo. La respuesta no pasa por el escritor de errores ni por CORS.
+ * Comprueba solo {@code Content-Length} para no bufferizar el cuerpo ni romper el streaming:
  * responde 413 sin reenviar cuando la longitud anunciada supera el límite. Los cuerpos sin longitud
  * declarada no se limitan en este punto.
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 20)
+@Order(Ordered.HIGHEST_PRECEDENCE + 15)
 public class MaxBodySizeWebFilter implements WebFilter {
 
   private final long maxBodySizeBytes;

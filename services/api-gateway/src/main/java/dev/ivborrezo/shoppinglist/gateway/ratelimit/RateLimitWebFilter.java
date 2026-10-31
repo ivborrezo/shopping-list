@@ -16,13 +16,14 @@ import reactor.core.publisher.Mono;
 /**
  * Aplica el rate limiting a todas las peticiones de API que entran por el borde.
  *
- * <p>Se ejecuta después de la correlación para que el rechazo pueda ecoar el identificador, y antes
- * del enrutado para que el límite cubra también los paths no expuestos. El preflight CORS y la
- * superficie de actuator no consumen cupo. Cuando el cubo de la clave no tiene tokens, lanza {@link
+ * <p>Se ejecuta después de la correlación, del access log y del guard de cuerpo: el rechazo puede
+ * ecoar el identificador y un cuerpo sobredimensionado no consume cupo. Va antes del enrutado para
+ * que el límite cubra también los paths no expuestos. El preflight CORS y la superficie de actuator
+ * no consumen cupo. Cuando el cubo de la clave no tiene tokens, lanza {@link
  * RateLimitExceededException} y deja la respuesta al escritor único de errores.
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 15)
+@Order(Ordered.HIGHEST_PRECEDENCE + 20)
 public class RateLimitWebFilter implements WebFilter {
 
   private static final String ACTUATOR_PATH = "/actuator";
