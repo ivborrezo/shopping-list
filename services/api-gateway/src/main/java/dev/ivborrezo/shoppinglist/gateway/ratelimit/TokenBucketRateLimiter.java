@@ -19,6 +19,8 @@ public class TokenBucketRateLimiter {
 
   private static final double NANOS_PER_SECOND = 1_000_000_000.0;
 
+  private static final int MAX_PURGE_ATTEMPTS = 4;
+
   private final int capacity;
 
   private final double tokensPerNano;
@@ -58,14 +60,18 @@ public class TokenBucketRateLimiter {
   /**
    * Elimina los cubos que llevan sin uso más de dos ventanas.
    *
+   * <p>El estado de cada cubo se revalida justo antes de borrarlo: si se ha refrescado durante el
+   * barrido, el cubo se conserva para que no se recreen con la capacidad completa y concedan una
+   * ráfaga extra.
+   *
    * @return número de cubos eliminados
    */
   public int purgeInactive() {
     long nowNanos = nowNanos();
     int before = buckets.size();
-    buckets
-        .entrySet()
-        .removeIf(entry -> nowNanos - entry.getValue().lastRefillNanos() > inactivityNanos);
+    for (String key : buckets.keySet()) {
+      purgeBucket(key, nowNanos);
+    }
     return before - buckets.size();
   }
 
@@ -78,15 +84,38 @@ public class TokenBucketRateLimiter {
     return buckets.size();
   }
 
+  private void purgeBucket(String key, long nowNanos) {
+    for (int attempt = 0; attempt < MAX_PURGE_ATTEMPTS; attempt++) {
+      Bucket bucket = buckets.get(key);
+      if (bucket == null) {
+        return;
+      }
+      BucketState observed = bucket.state.get();
+      if (!isInactive(observed, nowNanos)) {
+        return;
+      }
+      if (!bucket.state.get().equals(observed)) {
+        continue;
+      }
+      buckets.remove(key, bucket);
+      return;
+    }
+  }
+
+  private boolean isInactive(BucketState state, long nowNanos) {
+    return nowNanos - state.lastRefillNanos() > inactivityNanos;
+  }
+
   private Optional<Duration> tryConsume(Bucket bucket, long nowNanos) {
     while (true) {
       BucketState current = bucket.state.get();
-      double tokens = refill(current, nowNanos);
+      long refillNanos = Math.max(nowNanos, current.lastRefillNanos());
+      double tokens = refill(current, refillNanos);
       if (tokens >= 1.0) {
-        if (bucket.state.compareAndSet(current, new BucketState(tokens - 1.0, nowNanos))) {
+        if (bucket.state.compareAndSet(current, new BucketState(tokens - 1.0, refillNanos))) {
           return Optional.empty();
         }
-      } else if (bucket.state.compareAndSet(current, new BucketState(tokens, nowNanos))) {
+      } else if (bucket.state.compareAndSet(current, new BucketState(tokens, refillNanos))) {
         return Optional.of(retryAfter(tokens));
       }
     }
@@ -114,10 +143,6 @@ public class TokenBucketRateLimiter {
 
     private Bucket(double tokens, long lastRefillNanos) {
       state = new AtomicReference<>(new BucketState(tokens, lastRefillNanos));
-    }
-
-    private long lastRefillNanos() {
-      return state.get().lastRefillNanos();
     }
   }
 
