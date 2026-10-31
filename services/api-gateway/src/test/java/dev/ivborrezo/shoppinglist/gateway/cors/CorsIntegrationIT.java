@@ -1,7 +1,7 @@
 package dev.ivborrezo.shoppinglist.gateway.cors;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -193,7 +193,7 @@ class CorsIntegrationIT {
                         : configuration.getAllowedOrigins().stream())
             .toList();
 
-    assertThat(origins).contains(ALLOWED_ORIGIN, SECOND_ALLOWED_ORIGIN).doesNotContain("*");
+    assertThat(origins).containsExactly(ALLOWED_ORIGIN, SECOND_ALLOWED_ORIGIN);
   }
 
   @Test
@@ -212,7 +212,7 @@ class CorsIntegrationIT {
         webTestClient
             .get()
             .uri("/lists")
-            .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
+            .header(HttpHeaders.ORIGIN, SECOND_ALLOWED_ORIGIN)
             .exchange()
             .expectStatus()
             .isOk()
@@ -220,6 +220,8 @@ class CorsIntegrationIT {
 
     assertThat(preflight.getResponseHeaders().getVary()).contains(HttpHeaders.ORIGIN);
     assertThat(simpleRequest.getResponseHeaders().getVary()).contains(HttpHeaders.ORIGIN);
+    assertThat(simpleRequest.getResponseHeaders().getAccessControlAllowOrigin())
+        .isEqualTo(SECOND_ALLOWED_ORIGIN);
   }
 
   private void assertAllowedCors(ExchangeResult result) {
@@ -258,7 +260,7 @@ class CorsIntegrationIT {
   }
 
   private void verifyNotForwarded(String path) {
-    DESTINATIONS.listService().verify(0, getRequestedFor(urlPathEqualTo(path)));
-    DESTINATIONS.productService().verify(0, getRequestedFor(urlPathEqualTo(path)));
+    DESTINATIONS.listService().verify(0, anyRequestedFor(urlPathEqualTo(path)));
+    DESTINATIONS.productService().verify(0, anyRequestedFor(urlPathEqualTo(path)));
   }
 }
