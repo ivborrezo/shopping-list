@@ -193,6 +193,33 @@ class RateLimitIntegrationIT {
   }
 
   @Test
+  void plainOptions_consumeTokens() {
+    String client = "plain-options-client";
+    for (int i = 0; i < LIMIT; i++) {
+      ExchangeResult result =
+          webTestClient
+              .options()
+              .uri("/dataviz")
+              .header(TEST_CLIENT_HEADER, client)
+              .exchange()
+              .returnResult();
+
+      assertThat(result.getStatus().value()).isNotEqualTo(429);
+    }
+
+    webTestClient
+        .get()
+        .uri("/dataviz")
+        .header(TEST_CLIENT_HEADER, client)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(429)
+        .expectBody()
+        .jsonPath("$.code")
+        .isEqualTo("RATE_LIMIT_EXCEEDED");
+  }
+
+  @Test
   void actuator_doesNotConsumeTokens() {
     String client = "actuator-client";
     for (int i = 0; i < LIMIT + 2; i++) {
