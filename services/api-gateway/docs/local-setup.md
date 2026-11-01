@@ -99,9 +99,10 @@ Extensión requerida: **Extension Pack for Java** (redhat) o
 }
 ```
 
-Este fichero se versiona (no contiene secrets). El gateway no necesita cargar
-variables de entorno para arrancar; si quieres arrancar también los servicios
-en el mismo workspace, cada uno tiene su propia configuración.
+Este fichero es local y no se versiona (`.vscode/` está en `.gitignore`). El
+gateway no necesita cargar variables de entorno para arrancar; si quieres
+arrancar también los servicios en el mismo workspace, cada uno tiene su propia
+configuración.
 
 ### Arranque
 
