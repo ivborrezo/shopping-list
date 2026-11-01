@@ -29,6 +29,10 @@ definirá su propio mecanismo de ejecución cuando se incorpore.
 - **AssertJ** para aserciones fluidas.
 - **Testcontainers** (PostgreSQL real vía Docker) para tests de
   integración — nunca H2 ni bases de datos en memoria.
+- **WireMock + WebTestClient** para tests de integración de servicios sin
+  persistencia propia: simulan los destinos HTTP en lugar de levantar una
+  base de datos. La regla de «nunca H2 ni bases de datos en memoria» sigue
+  vigente para los servicios con persistencia.
 - **Spring Boot Test + MockMvc** para tests de controllers, verificados
   contra el `api-contract.yaml` correspondiente (Design-First).
 

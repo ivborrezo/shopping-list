@@ -82,6 +82,7 @@ shopping-list/
 ├── .github/workflows/       # CI pipeline (api-gateway, product-service, list-service)
 ├── githooks/                # pre-commit + commit-msg
 ├── config/checkstyle/       # Google Java Style (compartido)
+├── scripts/                 # Verificación del despliegue compuesto
 ├── docs/
 │   ├── adr/                 # ADRs
 │   ├── architecture/        # C4 Level 2
