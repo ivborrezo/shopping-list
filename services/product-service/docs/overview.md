@@ -58,6 +58,9 @@ direccionable mantiene su `id` interno (BIGINT, PK) y un `public_id` UUID
 
 ## Dependencias
 
+- _Punto de entrada:_ los clientes externos acceden por el borde del sistema;
+  las llamadas internas (por ejemplo, desde `list-service`) siguen directas
+  por el DNS interno, sin pasar por el borde.
 - Servicios: ninguno en el MVP.
 - Infraestructura: PostgreSQL (`product-db`).
 
