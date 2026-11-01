@@ -75,7 +75,7 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 >
 > **Trade-off asumido:** a diferencia de un diagrama en texto
 > (Mermaid/PlantUML), los cambios sobre este `.svg` **no son legibles
-> como diff de Git** — un PR que actualice el diagrama mostrará un
+> como diff de Git** — un cambio que actualice el diagrama mostrará un
 > archivo binario/XML reemplazado, no un cambio de texto inspeccionable
 > línea a línea. Se mitiga parcialmente conservando el archivo fuente
 > editable (`c4-level2-containers.drawio.xml`) junto al `.svg` exportado,
@@ -93,7 +93,7 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 > aparte del `.svg` tiene una ventaja adicional ahora que el diagrama es
 > una imagen estática: esta tabla sigue siendo texto plano, por lo que
 > **sí es diffable en Git**, y permite revisar cambios en el contrato de
-> comunicaciones de un PR sin depender de abrir el archivo de imagen.
+> comunicaciones sin depender de abrir el archivo de imagen.
 
 | Origen | Destino | Tipo | Protocolo | Descripción |
 |---|---|---|---|---|
@@ -102,7 +102,7 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 | React App | Auth Service | Síncrono | OIDC/HTTPS | Inicia el flujo de login (redirección OIDC). |
 | API Gateway | product-service | Síncrono | REST/HTTPS | Enrutamiento de peticiones. |
 | API Gateway | list-service | Síncrono | REST/HTTPS | Enrutamiento de peticiones. |
-| API Gateway | Auth Service | Síncrono | OIDC/HTTPS | Validación de tokens de acceso. |
+| API Gateway | Auth Service | Síncrono | OIDC/HTTPS | Validación de tokens de acceso (cuando exista autenticación real). |
 | Config Service | product-service | Configuración | REST/HTTPS | Sirve configuración centralizada por entorno. |
 | Config Service | list-service | Configuración | REST/HTTPS | Sirve configuración centralizada por entorno. |
 | Config Service | API Gateway | Configuración | REST/HTTPS | Sirve configuración centralizada por entorno. |
@@ -120,7 +120,7 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 
 | Color | Significado |
 |---|---|
-| 🟢 Verde | **Implementado** — contenedor activo en el sistema actual (MVP: product-service, list-service, api-gateway y sus bases de datos) |
+| 🟢 Verde | **Implementado** — contenedor activo en el sistema actual (MVP: product-service y list-service con sus bases de datos, y api-gateway) |
 | 🟡 Amarillo | Roadmap — Frontend (React App) |
 | 🔵 Azul | Roadmap — Plataforma (Config Service) |
 | 🟣 Morado | Roadmap — Seguridad (Auth Service y su base de datos) |

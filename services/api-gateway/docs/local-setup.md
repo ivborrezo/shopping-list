@@ -45,7 +45,7 @@ describe en sus guías:
 # 1. Bases de datos
 docker compose up -d product-db list-db
 
-# 2. Cargar variables de entorno (product-service y list-service)
+# 2. En cada terminal, cargar variables de entorno
 set -a; source .env; set +a
 
 # 3. En terminales separadas, los dos servicios y el gateway
@@ -53,6 +53,9 @@ set -a; source .env; set +a
 ./services/list-service/mvnw -f services/list-service/pom.xml spring-boot:run
 ./services/api-gateway/mvnw -f services/api-gateway/pom.xml spring-boot:run
 ```
+
+Cada terminal que arranque un servicio de dominio debe cargar el `.env` antes
+de lanzar Maven. El gateway no lo necesita.
 
 El gateway arranca en `http://localhost:8080` y enruta hacia
 `http://localhost:8081` y `http://localhost:8082`. Este escenario es el modo

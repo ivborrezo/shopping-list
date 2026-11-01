@@ -30,10 +30,11 @@ Los contratos declaran el borde como servidor y describen las respuestas que
 el propio gateway puede generar, de forma que un cliente generado desde ellos
 entiende tanto un error de negocio como un rechazo del borde.
 
-La superficie de diagnóstico se reduce a `GET /actuator/health`, expuesto en
-todos los perfiles para el healthcheck de Compose. El endpoint de rutas de
-Actuator (`/actuator/gateway`) solo se publica en el perfil `local` y en modo
-lectura, para inspeccionar el enrutado durante el desarrollo.
+En el despliegue, la superficie de diagnóstico se reduce a
+`GET /actuator/health`, expuesto en todos los perfiles para el healthcheck de
+Compose. El endpoint de rutas de Actuator (`/actuator/gateway`) solo se
+publica en el perfil `local` y en modo lectura, para inspeccionar el enrutado
+durante el desarrollo.
 
 ## Topología y puertos
 
@@ -89,9 +90,10 @@ La política CORS se declara una vez en el borde y cubre todas las rutas: una
 whitelist exacta de orígenes de desarrollo del frontend, los métodos de la
 API, las cabeceras `Content-Type`, `Accept-Language` y `X-Correlation-Id`, y
 la exposición de `X-Correlation-Id` al navegador. No se permiten credenciales.
-La misma política se aplica a los errores generados por el propio gateway, no
-solo a las respuestas de los servicios. Los patrones de origen no cuentan como
-orígenes permitidos: la comparación es exacta.
+La misma política se aplica a los errores del borde que se serializan con el
+contrato de error; los rechazos de la capa HTTP que quedan fuera de ese
+contrato, como el `413` por tamaño, no incluyen cabeceras CORS. Los patrones
+de origen no cuentan como orígenes permitidos: la comparación es exacta.
 
 ### Rate limiting
 
