@@ -32,9 +32,10 @@ import org.springframework.util.CollectionUtils;
 /**
  * Test de integración de la política CORS del borde.
  *
- * <p>Cubre H-02: el preflight se responde en el borde, también para un path que ningún predicate
- * captura; las peticiones reales de un origen permitido reciben el eco de correlación expuesto y
- * ninguna credencial; un origen fuera de la whitelist se rechaza sin reenviar la petición.
+ * <p>Cubre la política: el preflight se responde en el borde, también para un path que ningún
+ * predicate captura; las peticiones reales de un origen permitido reciben el eco de correlación
+ * expuesta y ninguna credencial; un origen fuera de la whitelist se rechaza sin reenviar la
+ * petición.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient

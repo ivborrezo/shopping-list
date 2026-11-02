@@ -35,8 +35,8 @@ import org.yaml.snakeyaml.Yaml;
  * Test de integración de la cobertura del contrato y de sus metadatos públicos.
  *
  * <p>Lee los dos {@code api-contract.yaml} del repositorio, recorre las 13 plantillas y las 24
- * operaciones, y comprueba que cada una llega al servicio dueño. Además valida los metadatos de
- * AD-12: base URL pública, cabecera de correlación, respuestas 429/503 y catálogo de códigos.
+ * operaciones, y comprueba que cada una llega al servicio dueño. Además valida los metadatos del
+ * contrato: base URL pública, cabecera de correlación, respuestas 429/503 y catálogo de códigos.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient

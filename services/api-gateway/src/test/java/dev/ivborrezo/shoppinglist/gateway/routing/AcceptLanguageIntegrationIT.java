@@ -23,8 +23,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 /**
  * Test de integración de la propagación de {@code Accept-Language} por el gateway.
  *
- * <p>Cubre H-05 y RN-03: el borde no parsea q-values, no renormaliza y no añade una cabecera de
- * idioma cuando la petición no la trae.
+ * <p>Cubre la propagación de {@code Accept-Language}: el borde no parsea q-values, no renormaliza y
+ * no añade una cabecera de idioma cuando la petición no la trae.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient

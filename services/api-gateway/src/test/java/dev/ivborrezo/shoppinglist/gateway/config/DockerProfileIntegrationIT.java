@@ -16,8 +16,9 @@ import org.springframework.util.ClassUtils;
 /**
  * Test de integración del arranque con el perfil {@code docker}.
  *
- * <p>Cubre H-06 CA-04 y AD-09: el contexto levanta con configuración local, sin cliente de Config
- * Server en el classpath, y el endpoint de rutas no se expone fuera del perfil {@code local}.
+ * <p>Cubre el arranque integrado: el contexto levanta con configuración local, sin cliente de
+ * Config Server en el classpath, y el endpoint de rutas no se expone fuera del perfil {@code
+ * local}.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient

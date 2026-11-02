@@ -31,9 +31,10 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 /**
  * Test de integración del enrutado público del gateway.
  *
- * <p>Ejercita las rutas reales contra dos WireMock y cubre los criterios de aceptación de H-01:
- * lecturas y escrituras llegan al servicio correcto con el path íntegro, y un path no expuesto
- * responde 404 sin reenviarse. Incluye la guarda de que la tabla tiene exactamente dos rutas.
+ * <p>Ejercita las rutas reales contra dos WireMock y cubre los criterios del punto de entrada
+ * único: lecturas y escrituras llegan al servicio correcto con el path íntegro, y un path no
+ * expuesto responde 404 sin reenviarse. Incluye la guarda de que la tabla tiene exactamente dos
+ * rutas.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient

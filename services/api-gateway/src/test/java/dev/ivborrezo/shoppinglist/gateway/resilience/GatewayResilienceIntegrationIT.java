@@ -33,9 +33,9 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 /**
  * Test de integración de la resiliencia del transporte del borde.
  *
- * <p>Cubre E3-AD-08: timeout de respuesta y conexión rechazada producen 503 sin reintentos; las
- * cabeceras hop-by-hop no cruzan; los topes de cabecera y cuerpo rechazan sin reenviar, y {@code
- * Location} relativo se reenvía intacto.
+ * <p>Cubre la resiliencia del transporte: timeout de respuesta y conexión rechazada producen 503
+ * sin reintentos; las cabeceras hop-by-hop no cruzan; los topes de cabecera y cuerpo rechazan sin
+ * reenviar, y {@code Location} relativo se reenvía intacto.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient

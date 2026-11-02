@@ -33,9 +33,9 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 /**
  * Test de integración del contrato de error propio del borde.
  *
- * <p>Cubre H-07: el 404 de ruta no expuesta, el 503 por destino inalcanzable y el 500 interno
- * responden con {@code ProblemDetail} y eco de correlación; los errores del destino cruzan
- * intactos.
+ * <p>Cubre el contrato de error único: el 404 de ruta no expuesta, el 503 por destino inalcanzable
+ * y el 500 interno responden con {@code ProblemDetail} y eco de correlación; los errores del
+ * destino cruzan intactos.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient

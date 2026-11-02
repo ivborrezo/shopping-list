@@ -33,9 +33,9 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 /**
  * Test de integración de la correlación normalizada del borde.
  *
- * <p>Cubre H-04: el valor que recibe el servicio es el mismo que devuelve el eco, siempre con un
- * único valor, aunque el destino escriba el suyo. Aserta también el {@code correlationId} en el
- * {@code MDC} de la línea de acceso.
+ * <p>Cubre la correlación normalizada: el valor que recibe el servicio es el mismo que devuelve el
+ * eco, siempre con un único valor, aunque el destino escriba el suyo. Aserta también el {@code
+ * correlationId} en el {@code MDC} de la línea de acceso.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
