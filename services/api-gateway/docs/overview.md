@@ -32,7 +32,7 @@ entiende tanto un error de negocio como un rechazo del borde.
 
 En el despliegue, la superficie de diagnóstico se reduce a
 `GET /actuator/health`, expuesto en todos los perfiles para el healthcheck de
-Compose. El endpoint de rutas de Actuator (`/actuator/gateway`) solo se
+Compose. El endpoint de rutas de Actuator (`/actuator/gateway/routes`) solo se
 publica en el perfil `local` y en modo lectura, para inspeccionar el enrutado
 durante el desarrollo.
 

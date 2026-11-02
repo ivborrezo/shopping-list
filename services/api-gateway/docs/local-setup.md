@@ -29,7 +29,7 @@ a sus contenedores.
 | `docker` | Imagen de contenedor en Compose | `product-service:8081` y `list-service:8082` por DNS interno |
 
 El perfil `local` publica también el endpoint de rutas de Actuator
-(`/actuator/gateway`) en modo lectura. Ambos perfiles exponen
+(`/actuator/gateway/routes`) en modo lectura. Ambos perfiles exponen
 `/actuator/health`; ninguno depende de un servidor de configuración
 centralizado.
 
