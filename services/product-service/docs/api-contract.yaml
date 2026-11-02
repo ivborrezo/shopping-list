@@ -11,10 +11,24 @@ info:
     Nota de vigencia: este documento es la fuente de verdad del contrato del
     servicio, redactado y mantenido a mano (Design-First). El código se
     implementa contra él; el contrato no se genera a partir del código.
+
+    Alcance del borde: el contrato se sirve a través del API Gateway en la
+    base URL pública. Un path no descrito en este documento responde 404
+    generado por el borde, sin reenviar la petición a ningún servicio; ese
+    caso no pertenece al enum de `code` (`ROUTE_NOT_FOUND` no forma parte del
+    contrato de negocio). La cabecera `X-Correlation-Id` se ecoa en todas las
+    respuestas; si la petición no la envía, el borde genera el identificador.
+    Tras un 503, las operaciones no idempotentes (`POST`, `PATCH`, `DELETE`)
+    no deben reintentarse a ciegas: el cliente comprueba el estado del
+    recurso antes de repetir la operación. El borde limita el cuerpo de las
+    peticiones a 1 MB y responde 413 cuando se supera; los cuerpos enviados
+    sin `Content-Length` no se limitan en esta fase. Los rechazos del borde
+    ajenos al contrato de error (403 de CORS y 431/413 de la capa HTTP) no
+    incluyen cabeceras CORS.
   version: 1.0.0
 servers:
-  - url: http://localhost:8081
-    description: Entorno local (Docker Compose)
+  - url: http://localhost:8080
+    description: Base URL pública (API Gateway)
 
 tags:
   - name: categories
@@ -26,6 +40,8 @@ tags:
 
 paths:
   /categories:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [categories]
       summary: Listar categorías del catálogo
@@ -40,6 +56,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CategoryPage'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
     post:
       tags: [categories]
       summary: Crear una categoría del catálogo con sus traducciones
@@ -65,12 +86,21 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '409':
           description: Ya existe una categoría con ese code.
+          headers:
+            X-CorrelationId:
+              $ref: '#/components/headers/XCorrelationId'
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
   /categories/{id}:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [categories]
       summary: Obtener una categoría por id
@@ -93,8 +123,14 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
   /base-products:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [base-products]
       summary: Listar productos base
@@ -127,6 +163,11 @@ paths:
                 $ref: '#/components/schemas/BaseProductPage'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
     post:
       tags: [base-products]
       summary: Crear un producto base
@@ -156,12 +197,21 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '409':
           description: Ya existe un producto base con ese code.
+          headers:
+            X-CorrelationId:
+              $ref: '#/components/headers/XCorrelationId'
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
   /base-products/{id}:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [base-products]
       summary: Obtener un producto base por id
@@ -184,6 +234,11 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
     patch:
       tags: [base-products]
       summary: Editar un producto base
@@ -217,10 +272,18 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           description: Ya existe otro producto base con ese code.
+          headers:
+            X-CorrelationId:
+              $ref: '#/components/headers/XCorrelationId'
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
     delete:
       tags: [base-products]
       summary: Eliminar un producto base
@@ -242,8 +305,14 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
   /user-products:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [user-products]
       summary: Listar productos de un propietario
@@ -277,6 +346,11 @@ paths:
                 $ref: '#/components/schemas/UserProductPage'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
     post:
       tags: [user-products]
       summary: Crear un producto de usuario
@@ -308,8 +382,14 @@ paths:
                 $ref: '#/components/schemas/UserProduct'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
   /user-products/{id}:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [user-products]
       summary: Obtener un producto de usuario por id
@@ -331,6 +411,11 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
     patch:
       tags: [user-products]
       summary: Editar un producto de usuario
@@ -361,10 +446,18 @@ paths:
           $ref: '#/components/responses/NotFound'
         '403':
           description: El ownerId del body no coincide con el propietario del producto.
+          headers:
+            X-CorrelationId:
+              $ref: '#/components/headers/XCorrelationId'
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
     delete:
       tags: [user-products]
       summary: Eliminar un producto de usuario
@@ -392,14 +485,23 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '403':
           description: El ownerId del query param no coincide con el propietario del producto.
+          headers:
+            X-CorrelationId:
+              $ref: '#/components/headers/XCorrelationId'
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
   /user-products/{id}/favorite:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     post:
       tags: [user-products]
       summary: Marcar o desmarcar un producto como favorito
@@ -439,8 +541,14 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
   /user-products/favorites:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [user-products]
       summary: Listar los favoritos de un propietario
@@ -469,8 +577,14 @@ paths:
                 $ref: '#/components/schemas/ProductReferencePage'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
   /user-products/recents:
+    parameters:
+      - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [user-products]
       summary: Listar los productos más recientes de un propietario
@@ -499,6 +613,10 @@ paths:
                   $ref: '#/components/schemas/ProductReference'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
 components:
   parameters:
@@ -529,9 +647,23 @@ components:
         maximum: 100
         default: 20
 
+    XCorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: >
+        Identificador de correlación de la petición. Si no se envía, el borde
+        genera uno; el valor recibido o generado se ecoa en la respuesta.
+      schema:
+        type: string
+        format: uuid
+
   responses:
     NotFound:
       description: El recurso solicitado no existe.
+      headers:
+        X-CorrelationId:
+          $ref: '#/components/headers/XCorrelationId'
       content:
         application/problem+json:
           schema:
@@ -545,10 +677,44 @@ components:
         VALIDATION_FAILED sin errors. Los errores de negocio 400 (categoría
         inexistente, locale no soportado, etc.) usan el shape ProblemDetail sin
         errors.
+      headers:
+        X-CorrelationId:
+          $ref: '#/components/headers/XCorrelationId'
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ValidationProblemDetail'
+
+    RateLimited:
+      description: >
+        Se ha superado el límite de peticiones del borde.
+      headers:
+        X-CorrelationId:
+          $ref: '#/components/headers/XCorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
+    ServiceUnavailable:
+      description: >
+        Un servicio de destino no está disponible para completar la petición.
+      headers:
+        X-CorrelationId:
+          $ref: '#/components/headers/XCorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
+  headers:
+    XCorrelationId:
+      description: >
+        Identificador de correlación de la petición, ecoado por el servicio y
+        por el borde.
+      schema:
+        type: string
+        format: uuid
 
   schemas:
     Category:
@@ -949,7 +1115,7 @@ components:
           description: URI del recurso de la petición que produjo el error.
         code:
           type: string
-          enum: [CATEGORY_NOT_FOUND, INVALID_CATEGORY, BASE_PRODUCT_NOT_FOUND, USER_PRODUCT_NOT_FOUND, PRODUCT_NOT_FOUND, DUPLICATE_PRODUCT_CODE, DUPLICATE_CATEGORY_CODE, UNSUPPORTED_LOCALE, NAME_REQUIRED, DEFAULT_UNIT_REQUIRED, CALORIES_PER_REQUIRED, OWNER_MISMATCH, INVALID_PRODUCT_TYPE, INVALID_BASE_PRODUCT, VALIDATION_FAILED]
+          enum: [CATEGORY_NOT_FOUND, INVALID_CATEGORY, BASE_PRODUCT_NOT_FOUND, USER_PRODUCT_NOT_FOUND, PRODUCT_NOT_FOUND, DUPLICATE_PRODUCT_CODE, DUPLICATE_CATEGORY_CODE, UNSUPPORTED_LOCALE, NAME_REQUIRED, DEFAULT_UNIT_REQUIRED, CALORIES_PER_REQUIRED, OWNER_MISMATCH, INVALID_PRODUCT_TYPE, INVALID_BASE_PRODUCT, RATE_LIMIT_EXCEEDED, SERVICE_UNAVAILABLE, VALIDATION_FAILED]
           description: Identificador machine-readable del error; el contrato entre el backend y el frontend.
 
     FieldError:

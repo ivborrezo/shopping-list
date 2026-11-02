@@ -81,6 +81,32 @@ compartición (listas colaborativas, relaciones sociales)
 Trigger: se diseña el enforcement de compartición (autenticación real y
 modelo de compartición).
 
+### Rate limiting en memoria por instancia
+
+El rate limiting del borde usa un token bucket en memoria, con un cubo por IP
+de socket y por proceso. El cupo no se comparte entre instancias ni sobrevive
+a un reinicio: con más de una réplica el cupo efectivo se multiplica, y detrás
+de un proxy la IP del socket deja de identificar al cliente real. La
+limitación está aceptada en
+[ADR-017](./docs/adr/ADR-017-api-gateway-propio-frente-a-gateway-gestionado.md).
+
+Trigger: el despliegue pasa a tener más de una réplica del borde o coloca un
+proxy delante; entonces se sustituye por un store compartido y una resolución
+de IP de confianza.
+
+### Ventana residual en la purga de cubos de rate limiting
+
+La purga periódica de cubos inactivos revalida el estado del cubo antes de
+eliminarlo. Entre esa revalidación y la eliminación, una petición concurrente
+puede refrescar el cubo justo después y la purga lo borra igualmente; la
+siguiente petición lo recrea con la capacidad completa y concede hasta un
+cubo completo de tokens extra. El impacto está acotado a un evento por
+cubo inactivo durante al menos dos ventanas. No se cierra con `compute` porque
+el consumo actualiza el estado con CAS fuera del lock del mapa.
+
+Trigger: se revisa el limitador al introducir un store compartido o si se
+observa una ráfaga superior al cupo atribuible a la purga.
+
 ## Decisiones opcionales
 
 Decisiones tomadas que admiten una alternativa razonable en el futuro, sin

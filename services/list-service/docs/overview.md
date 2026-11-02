@@ -49,6 +49,9 @@ es la fuente de detalle (tablas, constraints, relaciones y diagrama ER).
 
 ## Dependencias
 
+- _Punto de entrada:_ los clientes externos acceden por el borde del sistema;
+  la llamada a `product-service` sigue directa por el DNS interno, sin pasar
+  por el borde.
 - _Infraestructura:_ PostgreSQL (base de datos `list-db`), bajo el patrón
   database-per-service ([ADR-002](../../../docs/adr/ADR-002-database-per-service-pattern.md)).
 - _Servicios:_ `product-service`, consultado por REST en el alta de ítems para

@@ -75,7 +75,7 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 >
 > **Trade-off asumido:** a diferencia de un diagrama en texto
 > (Mermaid/PlantUML), los cambios sobre este `.svg` **no son legibles
-> como diff de Git** — un PR que actualice el diagrama mostrará un
+> como diff de Git** — un cambio que actualice el diagrama mostrará un
 > archivo binario/XML reemplazado, no un cambio de texto inspeccionable
 > línea a línea. Se mitiga parcialmente conservando el archivo fuente
 > editable (`c4-level2-containers.drawio.xml`) junto al `.svg` exportado,
@@ -93,7 +93,7 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 > aparte del `.svg` tiene una ventaja adicional ahora que el diagrama es
 > una imagen estática: esta tabla sigue siendo texto plano, por lo que
 > **sí es diffable en Git**, y permite revisar cambios en el contrato de
-> comunicaciones de un PR sin depender de abrir el archivo de imagen.
+> comunicaciones sin depender de abrir el archivo de imagen.
 
 | Origen | Destino | Tipo | Protocolo | Descripción |
 |---|---|---|---|---|
@@ -102,7 +102,7 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 | React App | Auth Service | Síncrono | OIDC/HTTPS | Inicia el flujo de login (redirección OIDC). |
 | API Gateway | product-service | Síncrono | REST/HTTPS | Enrutamiento de peticiones. |
 | API Gateway | list-service | Síncrono | REST/HTTPS | Enrutamiento de peticiones. |
-| API Gateway | Auth Service | Síncrono | OIDC/HTTPS | Validación de tokens de acceso. |
+| API Gateway | Auth Service | Síncrono | OIDC/HTTPS | Validación de tokens de acceso (cuando exista autenticación real). |
 | Config Service | product-service | Configuración | REST/HTTPS | Sirve configuración centralizada por entorno. |
 | Config Service | list-service | Configuración | REST/HTTPS | Sirve configuración centralizada por entorno. |
 | Config Service | API Gateway | Configuración | REST/HTTPS | Sirve configuración centralizada por entorno. |
@@ -120,9 +120,9 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 
 | Color | Significado |
 |---|---|
-| 🟢 Verde | **Implementado** — contenedor activo en el sistema actual (MVP: product-service, list-service y sus bases de datos) |
+| 🟢 Verde | **Implementado** — contenedor activo en el sistema actual (MVP: product-service y list-service con sus bases de datos, y api-gateway) |
 | 🟡 Amarillo | Roadmap — Frontend (React App) |
-| 🔵 Azul | Roadmap — Plataforma (API Gateway, Config Service) |
+| 🔵 Azul | Roadmap — Plataforma (Config Service) |
 | 🟣 Morado | Roadmap — Seguridad (Auth Service y su base de datos) |
 | 🟠 Naranja | Roadmap — Mensajería y notificaciones (Message Broker, Notification Service) |
 | ⚫ Gris (borde discontinuo) | Sistema externo, fuera del límite del sistema ShoppingList |
@@ -133,6 +133,21 @@ Las líneas discontinuas en el diagrama indican relaciones de
 list-service consultando producto por referencia) en contraste con las
 líneas continuas, que indican el **flujo principal de la petición o del
 evento**.
+
+### Mapa de puertos expuestos
+
+| Contenedor | Puerto interno | Publicación en el host | Acceso |
+|---|---|---|---|
+| API Gateway | `8080` | `8080` | Clientes externos, único puerto HTTP publicado |
+| product-service | `8081` | Ninguna | Solo red interna de Compose |
+| list-service | `8082` | Ninguna | Solo red interna de Compose |
+| product-db | `5432` | `127.0.0.1:5434` | Loopback, para depuración |
+| list-db | `5432` | `127.0.0.1:5435` | Loopback, para depuración |
+
+El gateway es el único punto de entrada HTTP del sistema desplegado. Los
+servicios de dominio se resuelven por su nombre DNS dentro de la red de
+Compose y las bases de datos se enlazan explícitamente a loopback para
+permitir la depuración desde el host sin exponerlas en la red.
 
 ---
 
@@ -146,11 +161,15 @@ detalle no se distingue entre la futura SPA y su evolución hacia PWA
 comparten el mismo contenedor lógico.
 
 ### API Gateway
-Una vez implementado (fase de plataforma), se convertirá en el único punto de
-entrada del Frontend hacia el backend, asumiendo responsabilidades hoy
-inexistentes como rate limiting y CORS centralizado. Aplica el patrón
-**API Gateway**, y es el punto natural donde se integrará la validación
-de tokens de Auth Service cuando exista autenticación real.
+Implementado. Es el único punto de entrada del Frontend hacia el backend:
+enruta las peticiones a `product-service` y `list-service` y concentra las
+políticas transversales del borde —normalización de `X-Correlation-Id`,
+contrato de error propio, CORS, rate limiting por IP de socket, tope de
+cuerpo y timeouts—. Los servicios de dominio quedan en la red interna y no
+publican su puerto HTTP. Aplica el patrón **API Gateway** y es el punto donde
+se integrará la validación de tokens de Auth Service cuando exista
+autenticación real; esa validación es una capacidad futura, no una política
+del estado actual.
 
 ### Config Service
 Aplica el patrón **Externalized Configuration**. Sus relaciones con el

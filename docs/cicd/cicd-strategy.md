@@ -19,7 +19,8 @@ reabre ADR-009.
 
 ## 2. Trigger policy
 
-El workflow de cada servicio se dispara con:
+El workflow de cada servicio parte de los paths base que fija ADR-009
+(Decisión 4) y añade los compartidos que su pipeline consume:
 
 ```yaml
 on:
@@ -28,12 +29,16 @@ on:
       - <servicio>/**
       - config/checkstyle/**
       - docs/cicd/**
+      - services/*/docs/api-contract.yaml
+      - scripts/**
       - .github/workflows/<servicio>.yml
   workflow_dispatch:
 ```
 
-Cuatro motivos (el del propio servicio y tres paths no-service; justificación detallada
-en ADR-009, Decisión 4):
+El bloque muestra el conjunto completo; cada workflow declara los paths base
+y los compartidos que realmente usa.
+
+Paths base:
 
 - `<servicio>/**` — el servicio afectado.
 - `config/checkstyle/**` — ruleset compartido; un cambio puede romper
@@ -42,6 +47,14 @@ en ADR-009, Decisión 4):
   puede afectar a cómo se ejecuta el workflow de cualquier servicio.
 - `.github/workflows/<servicio>.yml` — self-validation: un cambio del
   propio workflow debe re-ejecutarse para validar la modificación.
+
+Paths compartidos que añade el pipeline que los consume:
+
+- `services/*/docs/api-contract.yaml` — contratos de los servicios de
+  destino; un cambio en ellos puede alterar la cobertura o la validación
+  del pipeline que los consume.
+- `scripts/**` — scripts operativos del repositorio; su verificación de
+  sintaxis forma parte del workflow que los usa.
 
 `workflow_dispatch` permite reproducir un run concreto desde la web
 (sin push), útil para depurar un fallo puntual disparando el workflow
@@ -105,6 +118,9 @@ steps:
 
 Justificación del orden:
 
+- **Verificación de sintaxis de scripts antes que las toolchains**: cuando
+  el workflow comprueba un script operativo con `bash -n`, ese step va el
+  primero: es el más barato de todos y no ejecuta el script.
 - **Spotless antes que Checkstyle** (igual que en local): el formatter
   normaliza, el linter valida lo que queda. Si Spotless falla, ni
   gastamos un ciclo en Checkstyle.
@@ -288,6 +304,11 @@ Los mismos tests de integración que se ejecutan en local corren
 idénticos en CI, sin profile de test específico, sin overrides del
 datasource en el workflow.
 
+Los servicios sin persistencia propia no usan Testcontainers: su suite de
+integración simula los destinos HTTP con WireMock y ejerce las peticiones con
+WebTestClient. La resolución Docker/Testcontainers descrita aplica a los
+servicios con base de datos.
+
 ## 8. Hook policy
 
 Resumen ejecutivo de la estrategia de hooks (trade-offs y justificación
@@ -389,6 +410,7 @@ corre con Surefire en la fase `test` y `*IT` con Failsafe en la fase
 |---|---|---|---|---|
 | `product-service` | Java | `product-service.yml` ✅ | Testcontainers Postgres + docker build | Dispatch Java (Maven/Spotless/Checkstyle) |
 | `list-service` | Java | `list-service.yml` ✅ | Testcontainers Postgres + docker build | Dispatch Java (mismo patrón) |
+| `api-gateway` | Java | `api-gateway.yml` ✅ | WireMock + docker build (sin BD en el borde) | Dispatch Java (mismo patrón) |
 | `notification-service` | JS/Node.js | (fase de mensajería y notificaciones) | Sin BD propia hoy (ADR-008); re-evaluable | Dispatch JS (npm/ESLint/Prettier) |
 | `frontend` (React) | JS | (fase de frontend) | Sin contenedor | Dispatch JS (npm/ESLint/Prettier) |
 
@@ -408,8 +430,8 @@ Cómo se añaden nuevos servicios:
 Lo que **no** cubre esta estrategia, coherente con ADR-009:
 
 - **CD (continuos deployment):** no hay target de despliegue todavía.
-  `product-service` y `list-service` sí están integrados en el
-  `docker-compose.yml` raíz para el entorno local, pero no existe un
+  `api-gateway`, `product-service` y `list-service` sí están integrados en
+  el `docker-compose.yml` raíz para el entorno local, pero no existe un
   entorno desplegado (AWS Fargate llegaría en la fase de despliegue o posterior).
   Definir ahora si el deploy es continuo/gated/manual es especular
   sobre infraestructura inexistente. Revisitar cuando exista target de

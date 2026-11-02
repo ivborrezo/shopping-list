@@ -12,7 +12,7 @@
 |---|---|---|
 | **Fase 0** | Completada | Estructura del monorepo, README inicial y documentación macro del sistema (arquitectura C4, ADRs, eventos, convenciones). |
 | **Fase 1** | Completada | MVP Core completo: `product-service` (categories, base-products, user-products, favoritos y recientes) y `list-service` (listas, ítems, integración de solo lectura con `product-service` y publicación de eventos). Overviews: [product-service](./services/product-service/docs/overview.md), [list-service](./services/list-service/docs/overview.md). |
-| **Fase 2** | Sin empezar | Plataforma: `api-gateway` (Spring Cloud Gateway: enrutamiento, rate limiting, CORS, propagación de `Accept-Language`) y `config-service` (Spring Cloud Config Server) como última parte de la fase. |
+| **Fase 2** | En progreso | Plataforma: `api-gateway` implementado (Spring Cloud Gateway: enrutamiento, correlación, contrato de error, CORS y rate limiting) y `config-service` pendiente como última parte de la fase. |
 | **Fase 3** | Sin empezar | Seguridad: `auth-service` como Identity Provider (Keycloak + OAuth2/OIDC). Sustituye el placeholder `ownerId` de las fases anteriores. |
 | **Fase 4** | Sin empezar | Frontend: `frontend/` en la raíz del repositorio (React, i18n de UI con react-i18next, PWA), construido contra el API Gateway y la seguridad ya existentes. |
 | **Fase 5** | Sin empezar | Despliegue: puesta en producción de la arquitectura sobre infraestructura dentro del Free Tier. Alcance concreto abierto hasta que llegue la fase. |
@@ -46,8 +46,8 @@ implementadas vive en [TECH_DEBT.md](./TECH_DEBT.md).
 
 Los siguientes servicios se referencian aquí, en el README y en los
 diagramas de arquitectura, pero **no se crean sus directorios hasta que
-llegue su fase correspondiente** (YAGNI): `api-gateway`,
-`config-service`, `auth-service`, `notification-service` y `frontend`.
+llegue su fase correspondiente** (YAGNI): `config-service`, `auth-service`,
+`notification-service` y `frontend`.
 
 Crear el directorio de un servicio antes de su fase añadiría estructura
 sin implementación que validar ni desplegar; cada servicio se incorpora

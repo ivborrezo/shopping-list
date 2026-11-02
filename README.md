@@ -10,6 +10,7 @@ Java · Spring Boot · PostgreSQL · Docker
 
 [![CI](https://github.com/ivborrezo/shopping-list/actions/workflows/product-service.yml/badge.svg)](https://github.com/ivborrezo/shopping-list/actions/workflows/product-service.yml)
 [![CI](https://github.com/ivborrezo/shopping-list/actions/workflows/list-service.yml/badge.svg)](https://github.com/ivborrezo/shopping-list/actions/workflows/list-service.yml)
+[![CI](https://github.com/ivborrezo/shopping-list/actions/workflows/api-gateway.yml/badge.svg)](https://github.com/ivborrezo/shopping-list/actions/workflows/api-gateway.yml)
 
 ---
 
@@ -41,10 +42,14 @@ colaborativa. El sistema está diseñado siguiendo principios
 independiente con su propia base de datos, y toda la infraestructura
 local está definida como código mediante Docker Compose.
 
-> **Estado actual:** MVP Core completado. `product-service` y
-> `list-service` operativos — [overview de `product-service`](./services/product-service/docs/overview.md),
-> [overview de `list-service`](./services/list-service/docs/overview.md). Para
-> el siguiente hito (la plataforma), ver el [ROADMAP](./ROADMAP.md).
+> **Estado actual:** la plataforma incorpora el borde. `api-gateway` es el
+> punto único de entrada y aplica correlación, contrato de error, CORS y
+> rate limiting; `product-service` y `list-service` operan detrás, en la red
+> interna — [overview de `api-gateway`](./services/api-gateway/docs/overview.md),
+> [overview de `product-service`](./services/product-service/docs/overview.md),
+> [overview de `list-service`](./services/list-service/docs/overview.md).
+> Queda la configuración centralizada para cerrar la plataforma; el detalle
+> vive en el [ROADMAP](./ROADMAP.md).
 
 ---
 
@@ -60,10 +65,11 @@ documentadas en
 
 | Servicio | Contenedor | Puerto local |
 |---|---|---|
-| `product-service` | `shopping-list-product-service` | `8081` |
-| `list-service` | `shopping-list-list-service` | `8082` |
-| `product-db` | `shopping-list-product-db` (PostgreSQL) | `5434` |
-| `list-db` | `shopping-list-list-db` (PostgreSQL) | `5435` |
+| `api-gateway` | `shopping-list-api-gateway` | `8080` (único publicado) |
+| `product-service` | `shopping-list-product-service` | `8081` (solo interno) |
+| `list-service` | `shopping-list-list-service` | `8082` (solo interno) |
+| `product-db` | `shopping-list-product-db` (PostgreSQL) | `127.0.0.1:5434` |
+| `list-db` | `shopping-list-list-db` (PostgreSQL) | `127.0.0.1:5435` |
 
 ---
 
@@ -73,9 +79,10 @@ documentadas en
 shopping-list/
 ├── docker-compose.yml
 ├── .env.example
-├── .github/workflows/       # CI pipeline (product-service, list-service)
+├── .github/workflows/       # CI pipeline (api-gateway, product-service, list-service)
 ├── githooks/                # pre-commit + commit-msg
 ├── config/checkstyle/       # Google Java Style (compartido)
+├── scripts/                 # Verificación del despliegue compuesto
 ├── docs/
 │   ├── adr/                 # ADRs
 │   ├── architecture/        # C4 Level 2
@@ -84,6 +91,12 @@ shopping-list/
 │   ├── events/
 │   └── logging.md           # Detalle de logging
 ├── services/
+│   ├── api-gateway/           # Spring Cloud Gateway (WebFlux)
+│   │   ├── Dockerfile (multi-stage)
+│   │   ├── src/
+│   │   └── docs/
+│   │       ├── local-setup.md
+│   │       └── overview.md
 │   ├── product-service/       # Spring Boot + PostgreSQL
 │   │   ├── Dockerfile (multi-stage)
 │   │   ├── src/
@@ -106,9 +119,10 @@ shopping-list/
 │           └── img/             # Diagrama ER (draw.io + SVG)
 ```
 
-`product-service` y `list-service` ya son operacionalmente
-independientes: cada uno con build Maven vía wrapper, `Dockerfile`
-multi-stage, tests con Testcontainers y pipeline de CI propio.
+El borde y los dos servicios de dominio ya son operacionalmente
+independientes: build Maven vía wrapper, `Dockerfile` multi-stage y pipeline
+de CI propio. Los servicios usan Testcontainers para sus tests de integración;
+el gateway simula los destinos con WireMock.
 
 ---
 
@@ -171,6 +185,7 @@ código.
 
 | Servicio | Ficha de estado |
 |---|---|
+| `api-gateway` | [overview](./services/api-gateway/docs/overview.md) |
 | `product-service` | [overview](./services/product-service/docs/overview.md) |
 | `list-service` | [overview](./services/list-service/docs/overview.md) |
 
@@ -179,6 +194,7 @@ código.
 | Documento | Descripción |
 |---|---|
 | [Contribuir a ShoppingList](./CONTRIBUTING.md) | Índice de guías de contribución: setup completo, commits, ramas, estilo de código, testing, logging y entorno local |
+| [Setup local de `api-gateway`](./services/api-gateway/docs/local-setup.md) | Prerrequisitos, perfiles, escenarios de ejecución (CLI, VSCode, Docker Compose), verificación y troubleshooting |
 | [Setup local de `product-service`](./services/product-service/docs/local-setup.md) | Prerrequisitos, variables de entorno, escenarios de ejecución (CLI, VSCode, Docker Compose), tests y troubleshooting |
 | [Esquema de BD de `product-service`](./services/product-service/docs/database-schema.md) | Tablas `category`, `category_translation`, `base_product`, `base_product_translation`, `user_product`, `user_favorite_product` y `user_recent_product` con migraciones Flyway |
 | [Setup local de `list-service`](./services/list-service/docs/local-setup.md) | Prerrequisitos, variables de entorno, escenarios de ejecución (CLI, VSCode, Docker Compose), tests y troubleshooting |
@@ -213,6 +229,7 @@ Architecture Decision Records (ADR) en [`docs/adr/`](./docs/adr/).
 | [ADR-014 — Estrategia de manejo de errores](./docs/adr/ADR-014-estrategia-de-manejo-de-errores.md) | RFC 9457 `ProblemDetail` con extensión `code` y content-type `application/problem+json`, mensajes en inglés sin i18n en el backend, catálogo `ErrorCode` (con `VALIDATION_FAILED` reservado), `BusinessException` con un único `GlobalExceptionHandler`, validación con `errors` por campo y fallback 500 con `INTERNAL_ERROR` | ✅ Aceptado |
 | [ADR-015 — Estrategia de nulabilidad con JSpecify](./docs/adr/ADR-015-estrategia-de-nulabilidad-con-jspecify.md) | JSpecify como set único de anotaciones, `@NullMarked` por paquete (non-null por defecto), `@Nullable` en la superficie nulable; alcance solo `main` y sin enforcement de build (evolución opcional) | ✅ Aceptado |
 | [ADR-016 — Estrategia de identificadores públicos](./docs/adr/ADR-016-estrategia-de-identificadores-publicos.md) | Dual-key: `id` interno + `public_id` UUID único/inmutable expuesto como `id` en HTTP; generación v7 en aplicación (`uuid-creator`); referencias cross-service por `(productType, publicId)`; FKs internas siguen en Long | ✅ Aceptado |
+| [ADR-017 — API Gateway propio frente a gateway gestionado](./docs/adr/ADR-017-api-gateway-propio-frente-a-gateway-gestionado.md) | API Gateway como componente propio del sistema, con punto único de entrada y ocultación de topología, correlación, CORS y contrato de error en el borde; implementado con Spring Cloud Gateway autoalojado en lugar de un gateway gestionado del proveedor cloud | ✅ Aceptado |
 
 Los ADRs se redactan a medida que se toman decisiones de arquitectura
 en cada fase; la tabla refleja el estado actual de las mismas.

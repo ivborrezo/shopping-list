@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: ${PRODUCT_DB_USER:-product_user}
       POSTGRES_PASSWORD: ${PRODUCT_DB_PASSWORD:-product_pass}
     ports:
-      - "${PRODUCT_DB_PORT_OUT:-5434}:5432"
+      - "127.0.0.1:5434:5432"
     volumes:
       - product-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -25,13 +25,17 @@ services:
   product-service:
     build: ./services/product-service
     container_name: shopping-list-product-service
-    ports:
-      - "8081:8081"
     env_file:
       - .env
     depends_on:
       product-db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - shopping-list-net
 
@@ -45,7 +49,7 @@ services:
       POSTGRES_USER: ${LIST_DB_USER:-list_user}
       POSTGRES_PASSWORD: ${LIST_DB_PASSWORD:-list_pass}
     ports:
-      - "${LIST_DB_PORT_OUT:-5435}:5432"
+      - "127.0.0.1:5435:5432"
     volumes:
       - list-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -60,13 +64,37 @@ services:
   list-service:
     build: ./services/list-service
     container_name: shopping-list-list-service
-    ports:
-      - "8082:8082"
     env_file:
       - .env
     depends_on:
       list-db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - shopping-list-net
+
+  # ── api-gateway ──────────────────────────────────────────────────
+  api-gateway:
+    build: ./services/api-gateway
+    container_name: shopping-list-api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      product-service:
+        condition: service_healthy
+      list-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - shopping-list-net
 
