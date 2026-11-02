@@ -15,7 +15,7 @@ instalación y arranque del repositorio se describe en el
   - `product-db` → `127.0.0.1:5434`
   - `list-db` → `127.0.0.1:5435`
 - El puerto interno del contenedor es siempre `5432`. El binding
-  `127.0.0.1` es una decisión operativa (H-06 CA-03): permite depurar desde
+  `127.0.0.1` es una decisión operativa: permite depurar desde
   el host sin exponer las bases de datos en la red.
 - El formato de publicación está fijado en `docker-compose.yml`; no se
   configura con `PRODUCT_DB_PORT_OUT`/`LIST_DB_PORT_OUT`. Esas variables
@@ -24,9 +24,10 @@ instalación y arranque del repositorio se describe en el
 
 ## Nomenclatura
 
-- Contenedores con prefijo `shopping-list-`: bases de datos
-  (`shopping-list-product-db`, `shopping-list-list-db`) y servicios
-  (`shopping-list-product-service`, `shopping-list-list-service`).
+- Contenedores con prefijo `shopping-list-`: gateway
+  (`shopping-list-api-gateway`), servicios
+  (`shopping-list-product-service`, `shopping-list-list-service`) y bases de
+  datos (`shopping-list-product-db`, `shopping-list-list-db`).
 - Red Docker: `shopping-list-net`.
 
 ## Variables de entorno

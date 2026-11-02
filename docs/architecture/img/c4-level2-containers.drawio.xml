@@ -20,7 +20,7 @@
             <mxPoint x="630" y="270" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="hdk9HLj4xizK9lG66X7h-20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1565C0;strokeColor=#0D47A1;strokeWidth=2;fontColor=#FFFFFF;fontSize=11;align=center;" value="&lt;b&gt;🛡️ API Gateway&lt;/b&gt;&lt;br&gt;&lt;b&gt;[Spring Cloud Gateway]&lt;/b&gt;&lt;br&gt;&lt;div&gt;Enrutamiento, rate limiting, CORS.&lt;/div&gt;Punto de entrada único al sistema." vertex="1">
+        <mxCell id="hdk9HLj4xizK9lG66X7h-20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1565C0;strokeColor=#0D47A1;strokeWidth=2;fontColor=#FFFFFF;fontSize=11;align=center;" value="&lt;b&gt;🛡️ API Gateway&lt;/b&gt;&lt;br&gt;&lt;b&gt;[Spring Cloud Gateway]&lt;/b&gt;&lt;br&gt;Enrutamiento, correlación, CORS,&lt;br&gt;rate limiting y errores. Puerto 8080." vertex="1">
           <mxGeometry height="100" width="240" x="280" y="480" as="geometry" />
         </mxCell>
         <mxCell id="hdk9HLj4xizK9lG66X7h-22" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1565C0;strokeColor=#0D47A1;strokeWidth=2;fontColor=#FFFFFF;fontSize=11;align=center;" value="&lt;b&gt;⚙️ Config Service&lt;/b&gt;&lt;br/&gt;&lt;b&gt;[Spring Cloud Config Server]&lt;/b&gt;&lt;br/&gt;Configuración centralizada&lt;br/&gt;por entorno (dev/prod)." vertex="1">

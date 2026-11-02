@@ -68,6 +68,7 @@ docker compose down -v
 
 Cada microservicio documenta su propio entorno de desarrollo aislado:
 
+- [Setup local de api-gateway](../../services/api-gateway/docs/local-setup.md)
 - [Setup local de product-service](../../services/product-service/docs/local-setup.md)
 - [Setup local de list-service](../../services/list-service/docs/local-setup.md)
 

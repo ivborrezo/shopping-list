@@ -10,6 +10,7 @@ Java · Spring Boot · PostgreSQL · Docker
 
 [![CI](https://github.com/ivborrezo/shopping-list/actions/workflows/product-service.yml/badge.svg)](https://github.com/ivborrezo/shopping-list/actions/workflows/product-service.yml)
 [![CI](https://github.com/ivborrezo/shopping-list/actions/workflows/list-service.yml/badge.svg)](https://github.com/ivborrezo/shopping-list/actions/workflows/list-service.yml)
+[![CI](https://github.com/ivborrezo/shopping-list/actions/workflows/api-gateway.yml/badge.svg)](https://github.com/ivborrezo/shopping-list/actions/workflows/api-gateway.yml)
 
 ---
 
@@ -41,10 +42,14 @@ colaborativa. El sistema está diseñado siguiendo principios
 independiente con su propia base de datos, y toda la infraestructura
 local está definida como código mediante Docker Compose.
 
-> **Estado actual:** MVP Core completado. `product-service` y
-> `list-service` operativos — [overview de `product-service`](./services/product-service/docs/overview.md),
-> [overview de `list-service`](./services/list-service/docs/overview.md). Para
-> el siguiente hito (la plataforma), ver el [ROADMAP](./ROADMAP.md).
+> **Estado actual:** la plataforma incorpora el borde. `api-gateway` es el
+> punto único de entrada y aplica correlación, contrato de error, CORS y
+> rate limiting; `product-service` y `list-service` operan detrás, en la red
+> interna — [overview de `api-gateway`](./services/api-gateway/docs/overview.md),
+> [overview de `product-service`](./services/product-service/docs/overview.md),
+> [overview de `list-service`](./services/list-service/docs/overview.md).
+> Queda la configuración centralizada para cerrar la plataforma; el detalle
+> vive en el [ROADMAP](./ROADMAP.md).
 
 ---
 
@@ -74,9 +79,10 @@ documentadas en
 shopping-list/
 ├── docker-compose.yml
 ├── .env.example
-├── .github/workflows/       # CI pipeline (product-service, list-service)
+├── .github/workflows/       # CI pipeline (api-gateway, product-service, list-service)
 ├── githooks/                # pre-commit + commit-msg
 ├── config/checkstyle/       # Google Java Style (compartido)
+├── scripts/                 # Verificación del despliegue compuesto
 ├── docs/
 │   ├── adr/                 # ADRs
 │   ├── architecture/        # C4 Level 2
@@ -85,6 +91,12 @@ shopping-list/
 │   ├── events/
 │   └── logging.md           # Detalle de logging
 ├── services/
+│   ├── api-gateway/           # Spring Cloud Gateway (WebFlux)
+│   │   ├── Dockerfile (multi-stage)
+│   │   ├── src/
+│   │   └── docs/
+│   │       ├── local-setup.md
+│   │       └── overview.md
 │   ├── product-service/       # Spring Boot + PostgreSQL
 │   │   ├── Dockerfile (multi-stage)
 │   │   ├── src/
@@ -107,9 +119,10 @@ shopping-list/
 │           └── img/             # Diagrama ER (draw.io + SVG)
 ```
 
-`product-service` y `list-service` ya son operacionalmente
-independientes: cada uno con build Maven vía wrapper, `Dockerfile`
-multi-stage, tests con Testcontainers y pipeline de CI propio.
+El borde y los dos servicios de dominio ya son operacionalmente
+independientes: build Maven vía wrapper, `Dockerfile` multi-stage y pipeline
+de CI propio. Los servicios usan Testcontainers para sus tests de integración;
+el gateway simula los destinos con WireMock.
 
 ---
 
@@ -172,6 +185,7 @@ código.
 
 | Servicio | Ficha de estado |
 |---|---|
+| `api-gateway` | [overview](./services/api-gateway/docs/overview.md) |
 | `product-service` | [overview](./services/product-service/docs/overview.md) |
 | `list-service` | [overview](./services/list-service/docs/overview.md) |
 
@@ -180,6 +194,7 @@ código.
 | Documento | Descripción |
 |---|---|
 | [Contribuir a ShoppingList](./CONTRIBUTING.md) | Índice de guías de contribución: setup completo, commits, ramas, estilo de código, testing, logging y entorno local |
+| [Setup local de `api-gateway`](./services/api-gateway/docs/local-setup.md) | Prerrequisitos, perfiles, escenarios de ejecución (CLI, VSCode, Docker Compose), verificación y troubleshooting |
 | [Setup local de `product-service`](./services/product-service/docs/local-setup.md) | Prerrequisitos, variables de entorno, escenarios de ejecución (CLI, VSCode, Docker Compose), tests y troubleshooting |
 | [Esquema de BD de `product-service`](./services/product-service/docs/database-schema.md) | Tablas `category`, `category_translation`, `base_product`, `base_product_translation`, `user_product`, `user_favorite_product` y `user_recent_product` con migraciones Flyway |
 | [Setup local de `list-service`](./services/list-service/docs/local-setup.md) | Prerrequisitos, variables de entorno, escenarios de ejecución (CLI, VSCode, Docker Compose), tests y troubleshooting |
