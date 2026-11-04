@@ -42,14 +42,15 @@ colaborativa. El sistema está diseñado siguiendo principios
 independiente con su propia base de datos, y toda la infraestructura
 local está definida como código mediante Docker Compose.
 
-> **Estado actual:** la plataforma incorpora el borde. `api-gateway` es el
-> punto único de entrada y aplica correlación, contrato de error, CORS y
-> rate limiting; `product-service` y `list-service` operan detrás, en la red
-> interna — [overview de `api-gateway`](./services/api-gateway/docs/overview.md),
+> **Estado actual:** la plataforma incorpora el borde y la configuración
+> externalizada nativa por entorno. `api-gateway` es el punto único de
+> entrada y aplica correlación, contrato de error, CORS y rate limiting;
+> `product-service` y `list-service` operan detrás, en la red interna —
+> [overview de `api-gateway`](./services/api-gateway/docs/overview.md),
 > [overview de `product-service`](./services/product-service/docs/overview.md),
 > [overview de `list-service`](./services/list-service/docs/overview.md).
-> Queda la configuración centralizada para cerrar la plataforma; el detalle
-> vive en el [ROADMAP](./ROADMAP.md).
+> El estado por fases y las decisiones pendientes viven en el
+> [ROADMAP](./ROADMAP.md).
 
 ---
 
@@ -230,6 +231,7 @@ Architecture Decision Records (ADR) en [`docs/adr/`](./docs/adr/).
 | [ADR-015 — Estrategia de nulabilidad con JSpecify](./docs/adr/ADR-015-estrategia-de-nulabilidad-con-jspecify.md) | JSpecify como set único de anotaciones, `@NullMarked` por paquete (non-null por defecto), `@Nullable` en la superficie nulable; alcance solo `main` y sin enforcement de build (evolución opcional) | ✅ Aceptado |
 | [ADR-016 — Estrategia de identificadores públicos](./docs/adr/ADR-016-estrategia-de-identificadores-publicos.md) | Dual-key: `id` interno + `public_id` UUID único/inmutable expuesto como `id` en HTTP; generación v7 en aplicación (`uuid-creator`); referencias cross-service por `(productType, publicId)`; FKs internas siguen en Long | ✅ Aceptado |
 | [ADR-017 — API Gateway propio frente a gateway gestionado](./docs/adr/ADR-017-api-gateway-propio-frente-a-gateway-gestionado.md) | API Gateway como componente propio del sistema, con punto único de entrada y ocultación de topología, correlación, CORS y contrato de error en el borde; implementado con Spring Cloud Gateway autoalojado en lugar de un gateway gestionado del proveedor cloud | ✅ Aceptado |
+| [ADR-018 — Configuración externalizada nativa y descarte de Config Server](./docs/adr/ADR-018-configuracion-externalizada-nativa-y-descarte-de-config-server.md) | Configuración por entorno mediante perfiles de Spring (`local`, `docker`) y variables de entorno nativas (Docker Compose / AWS ECS) en lugar de Spring Cloud Config Server; detalle de inyección en ECS diferido a la fase de despliegue | ✅ Aceptado |
 
 Los ADRs se redactan a medida que se toman decisiones de arquitectura
 en cada fase; la tabla refleja el estado actual de las mismas.

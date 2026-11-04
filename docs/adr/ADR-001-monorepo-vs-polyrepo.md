@@ -126,3 +126,16 @@ de aislamiento de permisos que la justifique.
   (versionado de contratos, PRs vinculados, etc.). No se toma esta
   decisión ahora porque hacerlo de forma anticipada sería sobre-
   ingeniería sobre un problema que el proyecto no tiene todavía.
+
+## Resolución posterior
+
+Esta sección registra una actualización posterior a la aceptación del ADR sin
+modificar el texto original.
+
+El servicio `Config Service`, mencionado en el contexto inicial dentro de la
+enumeración de piezas previstas del sistema, se descartó en
+[ADR-018](ADR-018-configuracion-externalizada-nativa-y-descarte-de-config-server.md)
+en favor de la configuración externalizada nativa de cada entorno (perfiles
+de Spring y variables de entorno en desarrollo local, Docker Compose y la
+plataforma de despliegue). La decisión de monorepo y sus consecuencias se
+mantienen intactas.
