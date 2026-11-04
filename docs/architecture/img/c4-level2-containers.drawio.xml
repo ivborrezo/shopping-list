@@ -23,9 +23,6 @@
         <mxCell id="hdk9HLj4xizK9lG66X7h-20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2E7D32;strokeColor=#1B5E20;strokeWidth=2;fontColor=#FFFFFF;fontSize=11;align=center;" value="&lt;b&gt;🛡️ API Gateway&lt;/b&gt;&lt;br&gt;&lt;b&gt;[Spring Cloud Gateway]&lt;/b&gt;&lt;br&gt;Enrutamiento, correlación, CORS,&lt;br&gt;rate limiting y errores. Puerto 8080." vertex="1">
           <mxGeometry height="100" width="240" x="280" y="480" as="geometry" />
         </mxCell>
-        <mxCell id="hdk9HLj4xizK9lG66X7h-22" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1565C0;strokeColor=#0D47A1;strokeWidth=2;fontColor=#FFFFFF;fontSize=11;align=center;" value="&lt;b&gt;⚙️ Config Service&lt;/b&gt;&lt;br/&gt;&lt;b&gt;[Spring Cloud Config Server]&lt;/b&gt;&lt;br/&gt;Configuración centralizada&lt;br/&gt;por entorno (dev/prod)." vertex="1">
-          <mxGeometry height="100" width="240" x="-80" y="480" as="geometry" />
-        </mxCell>
         <mxCell id="hdk9HLj4xizK9lG66X7h-23" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6A1B9A;strokeColor=#4A148C;strokeWidth=2;fontColor=#FFFFFF;fontSize=11;align=center;" value="&lt;b&gt;🔑 Auth Service&lt;/b&gt;&lt;br&gt;&lt;b&gt;[Keycloak self-hosted]&lt;/b&gt;&lt;br&gt;OAuth2 / OpenID Connect.&lt;br&gt;&lt;div&gt;Gestión de identidad y roles.&lt;/div&gt;&lt;div&gt;&amp;nbsp;i18n nativo (es, en, eu).&lt;/div&gt;" vertex="1">
           <mxGeometry height="100" width="240" x="640" y="480" as="geometry" />
         </mxCell>
@@ -170,47 +167,6 @@
             </Array>
             <mxPoint x="580" y="450" as="sourcePoint" />
             <mxPoint x="930" y="450" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="hdk9HLj4xizK9lG66X7h-48" edge="1" parent="1" source="hdk9HLj4xizK9lG66X7h-22" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=light-dark(#475569,#63A8F6);strokeWidth=2;fontColor=#475569;fontSize=10;fontStyle=1;endArrow=block;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="hdk9HLj4xizK9lG66X7h-20" value="&lt;div&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(99, 168, 246));&quot;&gt;sirve confiuguración&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(99, 168, 246));&quot;&gt;(REST/HTTPS)&lt;/span&gt;&lt;/div&gt;">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="220" y="530" />
-              <mxPoint x="220" y="530" />
-            </Array>
-            <mxPoint x="220" y="400" as="sourcePoint" />
-            <mxPoint x="570" y="400" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="hdk9HLj4xizK9lG66X7h-49" edge="1" parent="1" source="hdk9HLj4xizK9lG66X7h-22" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=light-dark(#475569,#63A8F6);strokeWidth=2;fontColor=#475569;fontSize=10;fontStyle=1;endArrow=block;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" target="hdk9HLj4xizK9lG66X7h-26" value="&lt;div&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(99, 168, 246));&quot;&gt;sirve confiuguración&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(99, 168, 246));&quot;&gt;(REST/HTTPS)&lt;/span&gt;&lt;/div&gt;">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points" />
-            <mxPoint x="230" y="580" as="sourcePoint" />
-            <mxPoint x="350" y="580" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="hdk9HLj4xizK9lG66X7h-50" edge="1" parent="1" source="hdk9HLj4xizK9lG66X7h-22" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=light-dark(#475569,#63A8F6);strokeWidth=2;fontColor=#475569;fontSize=10;fontStyle=1;endArrow=block;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" target="hdk9HLj4xizK9lG66X7h-27" value="&lt;div&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(99, 168, 246));&quot;&gt;sirve confiuguración&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(99, 168, 246));&quot;&gt;(REST/HTTPS)&lt;/span&gt;&lt;/div&gt;">
-          <mxGeometry relative="1" x="-0.4815" as="geometry">
-            <mxPoint as="offset" />
-            <Array as="points">
-              <mxPoint x="100" y="620" />
-              <mxPoint x="300" y="620" />
-              <mxPoint x="300" y="800" />
-              <mxPoint x="340" y="800" />
-            </Array>
-            <mxPoint x="80" y="620" as="sourcePoint" />
-            <mxPoint x="200" y="620" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="hdk9HLj4xizK9lG66X7h-51" edge="1" parent="1" source="hdk9HLj4xizK9lG66X7h-22" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=light-dark(#475569,#EDA9FF);strokeWidth=2;fontColor=#475569;fontSize=10;fontStyle=1;endArrow=block;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" target="hdk9HLj4xizK9lG66X7h-23" value="&lt;div&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(237, 169, 255));&quot;&gt;sirve confiuguración&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(237, 169, 255));&quot;&gt;(REST/HTTPS)&lt;/span&gt;&lt;/div&gt;">
-          <mxGeometry relative="1" x="-0.3902" y="20" as="geometry">
-            <mxPoint as="offset" />
-            <Array as="points">
-              <mxPoint x="40" y="400" />
-              <mxPoint x="700" y="400" />
-            </Array>
-            <mxPoint x="100" y="380" as="sourcePoint" />
-            <mxPoint x="100" y="680" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="hdk9HLj4xizK9lG66X7h-52" edge="1" parent="1" source="hdk9HLj4xizK9lG66X7h-27" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2E7D32;strokeWidth=2;fontColor=#2E7D32;fontSize=10;fontStyle=1;endArrow=block;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="hdk9HLj4xizK9lG66X7h-26" value="&lt;div&gt;consulta producto&lt;/div&gt;&lt;div&gt;referenciado&lt;/div&gt;&lt;div&gt;(REST/HTTPS)&lt;/div&gt;">
