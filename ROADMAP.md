@@ -12,7 +12,7 @@
 |---|---|---|
 | **Fase 0** | Completada | Estructura del monorepo, README inicial y documentación macro del sistema (arquitectura C4, ADRs, eventos, convenciones). |
 | **Fase 1** | Completada | MVP Core completo: `product-service` (categories, base-products, user-products, favoritos y recientes) y `list-service` (listas, ítems, integración de solo lectura con `product-service` y publicación de eventos). Overviews: [product-service](./services/product-service/docs/overview.md), [list-service](./services/list-service/docs/overview.md). |
-| **Fase 2** | En progreso | Plataforma: `api-gateway` implementado (Spring Cloud Gateway: enrutamiento, correlación, contrato de error, CORS y rate limiting) y `config-service` pendiente como última parte de la fase. |
+| **Fase 2** | Completada | Plataforma: `api-gateway` implementado (Spring Cloud Gateway: enrutamiento, correlación, contrato de error, CORS y rate limiting) y configuración externalizada nativa por entorno ([ADR-018](./docs/adr/ADR-018-configuracion-externalizada-nativa-y-descarte-de-config-server.md)). |
 | **Fase 3** | Sin empezar | Seguridad: `auth-service` como Identity Provider (Keycloak + OAuth2/OIDC). Sustituye el placeholder `ownerId` de las fases anteriores. |
 | **Fase 4** | Sin empezar | Frontend: `frontend/` en la raíz del repositorio (React, i18n de UI con react-i18next, PWA), construido contra el API Gateway y la seguridad ya existentes. |
 | **Fase 5** | Sin empezar | Despliegue: puesta en producción de la arquitectura sobre infraestructura dentro del Free Tier. Alcance concreto abierto hasta que llegue la fase. |
@@ -41,12 +41,13 @@ implementadas vive en [TECH_DEBT.md](./TECH_DEBT.md).
 | `ADR-XXF3` | Keycloak como Identity Provider. Superará al ADR-006, que queda como registro histórico del placeholder `ownerId` ([ADR-006](./docs/adr/ADR-006-identificacion-propietario-sin-autenticacion.md)). |
 | `ADR-XXFX` | Gestión de transacciones distribuidas con Saga. Resolverá la deuda técnica aceptada explícitamente en [ADR-002](./docs/adr/ADR-002-database-per-service-pattern.md). |
 | `ADR-XXXX-configuracion-cloud-map-ecs` | Configuración de Service Discovery en producción con AWS Cloud Map + ECS. Desarrolla el principio de DNS interno ya fijado en [ADR-003](./docs/adr/ADR-003-service-discovery-nativo-y-descarte-de-eureka.md). |
+| `ADR-XXXX-gestion-configuracion-y-secretos-ecs` | Gestión e inyección de configuración y secretos en producción con AWS ECS (SSM Parameter Store / Secrets Manager). Desarrolla el principio de configuración externalizada nativa ya fijado en [ADR-018](./docs/adr/ADR-018-configuracion-externalizada-nativa-y-descarte-de-config-server.md). |
 
 ## Servicios futuros (sin crear directorios aún)
 
 Los siguientes servicios se referencian aquí, en el README y en los
 diagramas de arquitectura, pero **no se crean sus directorios hasta que
-llegue su fase correspondiente** (YAGNI): `config-service`, `auth-service`,
+llegue su fase correspondiente** (YAGNI): `auth-service`,
 `notification-service` y `frontend`.
 
 Crear el directorio de un servicio antes de su fase añadiría estructura

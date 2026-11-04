@@ -42,14 +42,15 @@ colaborativa. El sistema está diseñado siguiendo principios
 independiente con su propia base de datos, y toda la infraestructura
 local está definida como código mediante Docker Compose.
 
-> **Estado actual:** la plataforma incorpora el borde. `api-gateway` es el
-> punto único de entrada y aplica correlación, contrato de error, CORS y
-> rate limiting; `product-service` y `list-service` operan detrás, en la red
-> interna — [overview de `api-gateway`](./services/api-gateway/docs/overview.md),
+> **Estado actual:** la plataforma incorpora el borde y la configuración
+> externalizada nativa por entorno. `api-gateway` es el punto único de
+> entrada y aplica correlación, contrato de error, CORS y rate limiting;
+> `product-service` y `list-service` operan detrás, en la red interna —
+> [overview de `api-gateway`](./services/api-gateway/docs/overview.md),
 > [overview de `product-service`](./services/product-service/docs/overview.md),
 > [overview de `list-service`](./services/list-service/docs/overview.md).
-> Queda la configuración centralizada para cerrar la plataforma; el detalle
-> vive en el [ROADMAP](./ROADMAP.md).
+> El estado por fases y las decisiones pendientes viven en el
+> [ROADMAP](./ROADMAP.md).
 
 ---
 

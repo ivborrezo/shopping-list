@@ -129,9 +129,10 @@ un fallo de conexión o un timeout se traducen a `503 SERVICE_UNAVAILABLE`.
 
 El perfil `local` es el activo por defecto al arrancar con el wrapper; la
 imagen de contenedor fija el perfil `docker`. Ambos perfiles resuelven la
-configuración de forma local, sin depender de un servidor de configuración
-centralizado. La capacidad y la ventana del rate limiting viven en el fichero
-de configuración del borde y sus overrides por perfil; no se duplican aquí.
+configuración de forma nativa por entorno, sin un servidor de configuración
+centralizado ([ADR-018](../../../docs/adr/ADR-018-configuracion-externalizada-nativa-y-descarte-de-config-server.md)).
+La capacidad y la ventana del rate limiting viven en el fichero de
+configuración del borde y sus overrides por perfil; no se duplican aquí.
 
 ## Cómo ejecutarlo
 
@@ -170,8 +171,6 @@ aislada se arranca con el wrapper Maven y el perfil `local`.
   Se abordan cuando el despliegue tenga más de una réplica o un proxy delante.
 - **Puerto de management separado y cota de cuerpos sin `Content-Length`.**
   Decisiones de despliegue, no carencias de lo implementado.
-- **Configuración centralizada.** Corresponde al servidor de configuración, no
-  al borde.
 
 ## Reglas de uso
 

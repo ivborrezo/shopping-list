@@ -103,11 +103,6 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 | API Gateway | product-service | Síncrono | REST/HTTPS | Enrutamiento de peticiones. |
 | API Gateway | list-service | Síncrono | REST/HTTPS | Enrutamiento de peticiones. |
 | API Gateway | Auth Service | Síncrono | OIDC/HTTPS | Validación de tokens de acceso (cuando exista autenticación real). |
-| Config Service | product-service | Configuración | REST/HTTPS | Sirve configuración centralizada por entorno. |
-| Config Service | list-service | Configuración | REST/HTTPS | Sirve configuración centralizada por entorno. |
-| Config Service | API Gateway | Configuración | REST/HTTPS | Sirve configuración centralizada por entorno. |
-| Config Service | Auth Service | Configuración | REST/HTTPS | Sirve configuración centralizada por entorno. |
-| Config Service | Notification Service | Configuración | REST/HTTPS | Sirve configuración centralizada por entorno. |
 | Auth Service | auth-db | Síncrono | JDBC/SQL | Lectura/escritura de usuarios, credenciales, roles y realms. |
 | Auth Service | OAuth Provider | Síncrono | OIDC/HTTPS | Delega la autenticación en un proveedor externo (ej. Google). |
 | product-service | product-db | Síncrono | JDBC/SQL | Lectura/escritura del catálogo de productos y categorías. |
@@ -122,17 +117,15 @@ Por coherencia con el nivel de detalle de C4 Nivel 2, este documento
 |---|---|
 | 🟢 Verde | **Implementado** — contenedor activo en el sistema actual (MVP: product-service y list-service con sus bases de datos, y api-gateway) |
 | 🟡 Amarillo | Roadmap — Frontend (React App) |
-| 🔵 Azul | Roadmap — Plataforma (Config Service) |
 | 🟣 Morado | Roadmap — Seguridad (Auth Service y su base de datos) |
 | 🟠 Naranja | Roadmap — Mensajería y notificaciones (Message Broker, Notification Service) |
 | ⚫ Gris (borde discontinuo) | Sistema externo, fuera del límite del sistema ShoppingList |
 | ⬛ Pizarra | Actor humano |
 
 Las líneas discontinuas en el diagrama indican relaciones de
-**soporte/configuración** (ej. Config Service sirviendo configuración,
-list-service consultando producto por referencia) en contraste con las
-líneas continuas, que indican el **flujo principal de la petición o del
-evento**.
+**soporte o comunicación asíncrona** (ej. la publicación y el consumo de
+eventos a través del Message Broker) en contraste con las líneas
+continuas, que indican el **flujo síncrono principal de la petición**.
 
 ### Mapa de puertos expuestos
 
@@ -170,13 +163,6 @@ publican su puerto HTTP. Aplica el patrón **API Gateway** y es el punto donde
 se integrará la validación de tokens de Auth Service cuando exista
 autenticación real; esa validación es una capacidad futura, no una política
 del estado actual.
-
-### Config Service
-Aplica el patrón **Externalized Configuration**. Sus relaciones con el
-resto de servicios se representan con línea discontinua porque no forma
-parte del flujo de negocio: es infraestructura de arranque/configuración
-consultada por cada servicio, no un colaborador en el procesamiento de
-una petición de usuario.
 
 ### Auth Service (Keycloak)
 Aplica el patrón **Identity Provider externalizado**. Aunque se muestra
