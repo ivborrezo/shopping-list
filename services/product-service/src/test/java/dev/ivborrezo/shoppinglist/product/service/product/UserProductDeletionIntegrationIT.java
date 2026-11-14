@@ -8,6 +8,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -42,7 +43,7 @@ class UserProductDeletionIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
   private final MockMvc mockMvc;
 

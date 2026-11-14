@@ -48,7 +48,7 @@ class UserProductPatchIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
   private static final UUID OTHER_OWNER_ID = TestUsers.USER_2;
 
