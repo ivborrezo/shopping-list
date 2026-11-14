@@ -180,6 +180,14 @@ riesgo de punto único: el borde puede crecer en instancias sin
 coordinación entre ellas, al precio del cupo efectivo multiplicado que
 declara la Decisión 3.
 
+> **Nota:** con la autenticación en el borde
+> ([ADR-019](ADR-019-oauth2-oidc-y-keycloak-como-proveedor-de-identidad.md)),
+> el estado efímero en memoria por instancia incluye también el almacén
+> acotado de sesiones OAuth2/OIDC del canal BFF de seguridad, sujeto a un
+> TTL de inactividad y a un límite máximo de sesiones. No introduce estado
+> de negocio ni agregación de respuestas: la regla de alcance de esta
+> sección se mantiene intacta.
+
 ### Criterio de reevaluación
 
 La decisión entre borde propio y gateway gestionado se reevalúa en la
@@ -238,10 +246,10 @@ situación que este ADR evita.
   el `ownerId` como placeholder de propiedad en ausencia de identidad
   real; el borde queda preparado para incorporar la identidad cuando se
   defina.
-- **`ADR-XXF3` — Keycloak como Identity Provider** — la decisión de
-  identidad de la fase de seguridad, que superará el placeholder de
-  ADR-006; en el borde se integrarán la sesión del navegador y el token
-  del cliente móvil.
+- **`ADR-019` — OAuth2/OIDC y Keycloak como proveedor de identidad** — la
+  decisión de identidad que supera el placeholder de ADR-006; el borde
+  integra la sesión del navegador y el token del cliente API como dos
+  canales de seguridad separados.
 - **[`docs/logging.md`](../logging.md)** — la convención de
   `correlationId` y su propagación por cabecera; el borde es el punto
   donde la petición nace y donde se valida o genera el identificador.
