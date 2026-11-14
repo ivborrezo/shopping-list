@@ -3,3 +3,9 @@ spring:
     url: jdbc:postgresql://product-db:5432/${PRODUCT_DB_NAME:product_service_db}
     username: ${PRODUCT_DB_USER:product_user}
     password: ${PRODUCT_DB_PASSWORD:product_pass}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8083/realms/shopping-list}
+          jwk-set-uri: ${OIDC_JWK_SET_URI:http://auth-service:8080/realms/shopping-list/protocol/openid-connect/certs}

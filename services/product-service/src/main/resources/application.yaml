@@ -10,3 +10,8 @@ spring:
 
 server:
   port: 8081
+
+security:
+  jwt:
+    principal-claim: ${SECURITY_JWT_PRINCIPAL_CLAIM:sub}
+    roles-claim: ${SECURITY_JWT_ROLES_CLAIM:roles}
