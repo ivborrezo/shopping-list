@@ -135,5 +135,5 @@ físico, con validación en aplicación.
 - El snapshot protege la presentación histórica aunque cambie el catálogo;
   la publicación de `product.deleted` y el soft mark quedan diferidos.
 - La activación de identidad real se documentará en
-  `ADR-XXF3-keycloak-como-identity-provider`, y el detalle de favoritos y
-  recientes en ADR-013.
+  [ADR-019](ADR-019-oauth2-oidc-y-keycloak-como-proveedor-de-identidad.md),
+  y el detalle de favoritos y recientes en ADR-013.

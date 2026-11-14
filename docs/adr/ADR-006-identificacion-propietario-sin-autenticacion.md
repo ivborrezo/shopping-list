@@ -2,7 +2,7 @@
 
 ## Estado
 
-Aceptado.
+Superseded by [ADR-019](ADR-019-oauth2-oidc-y-keycloak-como-proveedor-de-identidad.md).
 
 ## Contexto
 
@@ -83,12 +83,14 @@ el body de las peticiones de creación (`POST /user-products`, `POST
   correspondencia significativa que preservar, y forzarla sería más
   complejo y menos honesto que empezar de cero.
 - Este ADR queda **superado** en el momento en que se implemente
-  `ADR-XXF3-keycloak-como-identity-provider`, que debe referenciar este
-  documento como `Supersedes`. A partir de ese momento, el `ownerId` de
+  `ADR-019-oauth2-oidc-y-keycloak-como-proveedor-de-identidad`, que debe
+  referenciar este documento como `Supersedes`. A partir de ese momento, el `ownerId` de
   cada recurso se deriva del token de autenticación (JWT/OIDC), no de
   un campo de entrada del body.
-- Cuando se redacte `ADR-XXF3-keycloak-como-identity-provider`, este
-  documento cambia su estado a `Superseded by ADR-XXF3-keycloak-como-identity-provider`,
+- Cuando se redacte
+  `ADR-019-oauth2-oidc-y-keycloak-como-proveedor-de-identidad`, este
+  documento cambia su estado a
+  `Superseded by ADR-019-oauth2-oidc-y-keycloak-como-proveedor-de-identidad`,
   y no se elimina — queda en `docs/adr/` como registro histórico de por
   qué el sistema funcionó así mientras no existió autenticación.
 - Revisar también al introducir la autenticación real, junto con esta decisión, el uso de `Long`
@@ -117,3 +119,9 @@ lectura se cierra con la autenticación real y la autorización por membresía.
 
 El detalle por operación vive en
 [`services/list-service/docs/api-contract.yaml`](../../services/list-service/docs/api-contract.yaml).
+
+> **Nota:** con la aceptación de
+> [ADR-019](ADR-019-oauth2-oidc-y-keycloak-como-proveedor-de-identidad.md),
+> el placeholder de propiedad que describe este ADR queda superado. El
+> propietario se deriva del token verificado y `ownerId` desaparece de los
+> cuerpos de petición y de los parámetros de query.
