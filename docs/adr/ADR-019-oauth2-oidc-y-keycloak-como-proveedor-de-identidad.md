@@ -78,6 +78,15 @@ puede resolver y validar. Las llamadas de *backchannel* entre contenedores
 interno exigiendo editar `/etc/hosts`, y se descarta desactivar la
 validación del claim `iss`.
 
+Los servicios de dominio no derivan la ubicación de las claves del
+descubrimiento OIDC sobre el `issuer` canónico: obtienen el JWKS de la URL
+interna de `auth-service` y mantienen la validación del claim `iss` contra
+el `issuer` canónico externo/local. Ambas URLs —la canónica del emisor y la
+interna del JWKS— se externalizan
+([ADR-018](ADR-018-configuracion-externalizada-nativa-y-descarte-de-config-server.md)),
+de modo que el descubrimiento no consulta `localhost` desde dentro de los
+contenedores, donde ese nombre no resuelve.
+
 En producción cloud se usará un proveedor OIDC gestionado con capa
 gratuita, como AWS Cognito o Auth0/Okta, sin recompilar los servicios y sin
 mantener el contenedor de Keycloak ni su base de datos. La elección
@@ -170,10 +179,17 @@ El contrato de errores de seguridad se estandariza sobre RFC 9457
 - Las denegaciones por rol insuficiente o por CSRF inválido responden
   `403 Forbidden` con `code: ACCESS_DENIED`.
 - Las violaciones de propiedad de recursos de dominio responden
-  `403 Forbidden` con `code: OWNER_MISMATCH`.
+  `403 Forbidden` con `code: OWNER_MISMATCH`. El código cubre las
+  violaciones directas: el recurso direccionado en la ruta (`ShoppingList`,
+  ítem o `UserProduct`, también en `POST /user-products/{id}/favorite`)
+  pertenece a otro usuario.
 - Cuando `list-service` detecta que un `UserProduct` referenciado al añadir
   un ítem pertenece a otro usuario o no existe, responde `400 Bad Request`
-  con `code: INVALID_PRODUCT_REFERENCE`.
+  con `code: INVALID_PRODUCT_REFERENCE`. Ahí la referencia es indirecta —no
+  el recurso direccionado— y el error de entrada se mantiene a propósito:
+  distinguir la referencia ajena de la inexistente revelaría la existencia
+  de identificadores ajenos y abriría la enumeración del catálogo de otros
+  usuarios.
 - No se exponen códigos internos de validación de tokens
   (`EXPIRED_TOKEN`, `INVALID_SIGNATURE`, etc.): el cliente solo necesita
   saber que la petición no está autenticada.
