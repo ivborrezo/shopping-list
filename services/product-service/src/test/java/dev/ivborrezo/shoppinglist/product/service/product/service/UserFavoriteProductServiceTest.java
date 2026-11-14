@@ -48,6 +48,9 @@ class UserFavoriteProductServiceTest {
 
   private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
 
+  private static final UUID OTHER_OWNER_ID =
+      UUID.fromString("dddddddd-eeee-4fff-8aaa-bbbbbbbbbbbb");
+
   private static final UUID BASE_PRODUCT_PUBLIC_ID =
       UUID.fromString("11111111-2222-4333-8444-555555555555");
 
@@ -119,6 +122,53 @@ class UserFavoriteProductServiceTest {
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_NOT_FOUND));
   }
 
+  /** Lanza {@code 404} cuando el producto de usuario existe pero está inactivo. */
+  @Test
+  void toggle_whenUserProductIsInactive_throwsNotFound() {
+    UserProduct product = userProduct(OWNER_ID, false);
+    when(userProductRepository.findByPublicId(USER_PRODUCT_PUBLIC_ID))
+        .thenReturn(Optional.of(product));
+
+    assertThatThrownBy(
+            () -> userFavoriteProductService.toggle(OWNER_ID, USER_PRODUCT_PUBLIC_ID, "USER"))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_NOT_FOUND));
+  }
+
+  /**
+   * Lanza {@code 403} cuando el producto de usuario activo pertenece a otro usuario, sin tocar los
+   * favoritos ni los recientes.
+   */
+  @Test
+  void toggle_whenUserProductBelongsToAnotherUser_throwsOwnerMismatch() {
+    UserProduct product = userProduct(OTHER_OWNER_ID, true);
+    when(userProductRepository.findByPublicId(USER_PRODUCT_PUBLIC_ID))
+        .thenReturn(Optional.of(product));
+
+    assertThatThrownBy(
+            () -> userFavoriteProductService.toggle(OWNER_ID, USER_PRODUCT_PUBLIC_ID, "USER"))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OWNER_MISMATCH));
+    verifyNoInteractions(userFavoriteProductRepository, userRecentProductService);
+  }
+
+  /** Lanza {@code 404} cuando el producto base existe pero está inactivo. */
+  @Test
+  void toggle_whenBaseProductIsInactive_throwsNotFound() {
+    BaseProduct base = activeBaseProduct();
+    base.setIsActive(false);
+    when(baseProductRepository.findByPublicId(BASE_PRODUCT_PUBLIC_ID))
+        .thenReturn(Optional.of(base));
+
+    assertThatThrownBy(
+            () -> userFavoriteProductService.toggle(OWNER_ID, BASE_PRODUCT_PUBLIC_ID, "BASE"))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_NOT_FOUND));
+  }
+
   /**
    * Marca el producto como favorito cuando aún no lo estaba: persiste la relación con el
    * identificador público y el tipo, actualiza los recientes y devuelve {@code favorited=true}.
@@ -126,7 +176,7 @@ class UserFavoriteProductServiceTest {
   @Test
   void toggle_whenNotAlreadyFavorite_createsFavoriteUpdatesRecentAndReturnsTrue() {
     when(baseProductRepository.findByPublicId(BASE_PRODUCT_PUBLIC_ID))
-        .thenReturn(Optional.of(new BaseProduct()));
+        .thenReturn(Optional.of(activeBaseProduct()));
     when(userFavoriteProductRepository.existsByUserIdAndProductTypeAndProductPublicId(
             OWNER_ID, ProductType.BASE, BASE_PRODUCT_PUBLIC_ID))
         .thenReturn(false);
@@ -150,7 +200,7 @@ class UserFavoriteProductServiceTest {
   @Test
   void toggle_whenAlreadyFavorite_deletesFavoriteAndReturnsFalse() {
     when(baseProductRepository.findByPublicId(BASE_PRODUCT_PUBLIC_ID))
-        .thenReturn(Optional.of(new BaseProduct()));
+        .thenReturn(Optional.of(activeBaseProduct()));
     when(userFavoriteProductRepository.existsByUserIdAndProductTypeAndProductPublicId(
             OWNER_ID, ProductType.BASE, BASE_PRODUCT_PUBLIC_ID))
         .thenReturn(true);
@@ -163,6 +213,19 @@ class UserFavoriteProductServiceTest {
         .deleteByUserIdAndProductTypeAndProductPublicId(
             OWNER_ID, ProductType.BASE, BASE_PRODUCT_PUBLIC_ID);
     verify(userRecentProductService, never()).markUsed(any(), any(), any());
+  }
+
+  private BaseProduct activeBaseProduct() {
+    BaseProduct base = new BaseProduct();
+    base.setIsActive(true);
+    return base;
+  }
+
+  private UserProduct userProduct(UUID ownerId, boolean active) {
+    UserProduct product = new UserProduct();
+    product.setOwnerId(ownerId);
+    product.setIsActive(active);
+    return product;
   }
 
   /**

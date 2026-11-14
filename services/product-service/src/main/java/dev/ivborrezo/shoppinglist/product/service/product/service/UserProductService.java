@@ -95,20 +95,28 @@ public class UserProductService {
   }
 
   /**
-   * Busca un producto de usuario por su identificador público.
+   * Busca un producto de usuario por su identificador público y comprueba que pertenece al usuario.
+   *
+   * <p>Si el producto no existe o está inactivo responde {@code 404 USER_PRODUCT_NOT_FOUND}; si
+   * existe, está activo y pertenece a otro usuario responde {@code 403 OWNER_MISMATCH}.
    *
    * @param publicId identificador público del producto a recuperar
+   * @param userId identificador del usuario autenticado que solicita el producto
    * @return DTO del producto encontrado
    * @throws BusinessException con ErrorCode.USER_PRODUCT_NOT_FOUND si el producto no existe o está
    *     inactivo
+   * @throws BusinessException con ErrorCode.OWNER_MISMATCH si el producto pertenece a otro usuario
    */
-  public UserProductResponse findById(UUID publicId) {
+  public UserProductResponse findById(UUID publicId, UUID userId) {
     UserProduct product =
         userProductRepository
             .findByPublicId(publicId)
             .orElseThrow(() -> new BusinessException(ErrorCode.USER_PRODUCT_NOT_FOUND));
-    if (!product.getIsActive()) {
+    if (!Boolean.TRUE.equals(product.getIsActive())) {
       throw new BusinessException(ErrorCode.USER_PRODUCT_NOT_FOUND);
+    }
+    if (!product.getOwnerId().equals(userId)) {
+      throw new BusinessException(ErrorCode.OWNER_MISMATCH);
     }
     return UserProductResponse.from(
         product,
@@ -219,8 +227,10 @@ public class UserProductService {
    * producto base en el locale de la petición y el resto de campos ausentes se copian del snapshot;
    * los valores del body prevalecen sobre los copiados. Sin {@code basedOnBaseId}, {@code name},
    * {@code defaultUnit} y {@code caloriesPer} son obligatorios. {@code basedOnBaseId} se persiste
-   * como trazabilidad inmutable del producto de origen.
+   * como trazabilidad inmutable del producto de origen y el propietario se asigna desde el usuario
+   * autenticado.
    *
+   * @param userId identificador del usuario autenticado que crea el producto
    * @param request petición con los datos del producto de usuario
    * @param locale idioma en el que se resuelven el nombre y la descripción del producto base
    * @return DTO del producto de usuario recién creado
@@ -234,7 +244,7 @@ public class UserProductService {
    *     sin producto base
    */
   @Transactional
-  public UserProductResponse create(CreateUserProductRequest request, Locale locale) {
+  public UserProductResponse create(UUID userId, CreateUserProductRequest request, Locale locale) {
     @Nullable UUID basedOnBasePublicId = request.basedOnBaseId();
     @Nullable BaseProduct base = null;
     if (basedOnBasePublicId != null) {
@@ -307,7 +317,7 @@ public class UserProductService {
         base != null ? Objects.requireNonNull(base.getId()) : null;
 
     UserProduct product = new UserProduct();
-    product.setOwnerId(request.ownerId());
+    product.setOwnerId(userId);
     product.setName(name);
     product.setDescription(description);
     product.setCategoryId(categoryId);
@@ -331,26 +341,26 @@ public class UserProductService {
    *
    * <p>Busca el producto por su identificador sin filtrar por estado, por lo que un propietario
    * puede editar también productos inactivos (por ejemplo para reactivarlos con {@code
-   * isActive=true}). El {@code ownerId} del body se usa únicamente como verificación de propiedad y
-   * no modifica el almacenado. {@code basedOnBaseId} es una traza inmutable que se ignora en
-   * silencio si se envía.
+   * isActive=true}). La propiedad se verifica contra el usuario autenticado, que no modifica el
+   * propietario almacenado. {@code basedOnBaseId} es una traza inmutable que se ignora en silencio
+   * si se envía.
    *
    * @param publicId identificador público del producto de usuario a editar
+   * @param userId identificador del usuario autenticado que solicita la edición
    * @param request petición con los campos a modificar; solo los no nulos se aplican
    * @return DTO del producto de usuario tras aplicar los cambios
    * @throws BusinessException con ErrorCode.USER_PRODUCT_NOT_FOUND si el producto no existe
-   * @throws BusinessException con ErrorCode.OWNER_MISMATCH si el {@code ownerId} del request no
-   *     coincide con el propietario almacenado
+   * @throws BusinessException con ErrorCode.OWNER_MISMATCH si el producto pertenece a otro usuario
    * @throws BusinessException con ErrorCode.INVALID_CATEGORY si la categoría indicada no existe
    */
   @Transactional
-  public UserProductResponse update(UUID publicId, UpdateUserProductRequest request) {
+  public UserProductResponse update(UUID publicId, UUID userId, UpdateUserProductRequest request) {
     UserProduct product =
         userProductRepository
             .findByPublicId(publicId)
             .orElseThrow(() -> new BusinessException(ErrorCode.USER_PRODUCT_NOT_FOUND));
 
-    if (!product.getOwnerId().equals(request.ownerId())) {
+    if (!product.getOwnerId().equals(userId)) {
       throw new BusinessException(ErrorCode.OWNER_MISMATCH);
     }
 
@@ -415,24 +425,23 @@ public class UserProductService {
   }
 
   /**
-   * Elimina físicamente un producto de usuario tras verificar la propiedad del {@code ownerId}.
+   * Elimina físicamente un producto de usuario tras verificar que pertenece al usuario autenticado.
    *
    * <p>Busca el producto por su identificador público sin filtrar por estado, por lo que un
    * propietario puede borrar también productos inactivos.
    *
    * @param publicId identificador público del producto de usuario a eliminar
-   * @param ownerId identificador del propietario que solicita el borrado
+   * @param userId identificador del usuario autenticado que solicita el borrado
    * @throws BusinessException con ErrorCode.USER_PRODUCT_NOT_FOUND si el producto no existe
-   * @throws BusinessException con ErrorCode.OWNER_MISMATCH si el {@code ownerId} no coincide con el
-   *     propietario almacenado
+   * @throws BusinessException con ErrorCode.OWNER_MISMATCH si el producto pertenece a otro usuario
    */
   @Transactional
-  public void delete(UUID publicId, UUID ownerId) {
+  public void delete(UUID publicId, UUID userId) {
     UserProduct product =
         userProductRepository
             .findByPublicId(publicId)
             .orElseThrow(() -> new BusinessException(ErrorCode.USER_PRODUCT_NOT_FOUND));
-    if (!product.getOwnerId().equals(ownerId)) {
+    if (!product.getOwnerId().equals(userId)) {
       throw new BusinessException(ErrorCode.OWNER_MISMATCH);
     }
     userProductRepository.delete(product);

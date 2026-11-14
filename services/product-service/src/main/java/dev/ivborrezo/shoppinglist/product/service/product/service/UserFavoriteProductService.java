@@ -6,6 +6,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
+import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserFavoriteProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
@@ -61,25 +62,27 @@ public class UserFavoriteProductService {
   }
 
   /**
-   * Marca o desmarca el producto indicado como favorito del propietario.
+   * Marca o desmarca el producto indicado como favorito del usuario autenticado.
    *
    * <p>Si el producto ya estaba entre los favoritos del usuario, se elimina la relación y se
    * devuelve {@code favorited=false}; si no, se crea la relación, se registra la interacción en los
-   * recientes del usuario y se devuelve {@code favorited=true}.
+   * recientes del usuario y se devuelve {@code favorited=true}. El producto debe existir y estar
+   * activo y, cuando es de usuario, pertenecer al usuario autenticado.
    *
-   * @param ownerId identificador del propietario del favorito
+   * @param userId identificador del usuario autenticado propietario del favorito
    * @param productPublicId identificador público del producto a marcar, base o de usuario según
    *     {@code productType}
    * @param productTypeValue tipo de producto ({@code BASE} o {@code USER})
    * @return DTO con el estado del favorito tras la operación
    * @throws BusinessException con ErrorCode.INVALID_PRODUCT_TYPE si el tipo de producto no es
    *     válido
-   * @throws BusinessException con ErrorCode.PRODUCT_NOT_FOUND si el producto no existe según su
-   *     tipo
+   * @throws BusinessException con ErrorCode.PRODUCT_NOT_FOUND si el producto no existe o está
+   *     inactivo según su tipo
+   * @throws BusinessException con ErrorCode.OWNER_MISMATCH si el producto de usuario pertenece a
+   *     otro usuario
    */
   @Transactional
-  public FavoriteToggleResponse toggle(
-      UUID ownerId, UUID productPublicId, String productTypeValue) {
+  public FavoriteToggleResponse toggle(UUID userId, UUID productPublicId, String productTypeValue) {
     ProductType productType;
     try {
       productType = ProductType.valueOf(productTypeValue);
@@ -87,43 +90,59 @@ public class UserFavoriteProductService {
       throw new BusinessException(ErrorCode.INVALID_PRODUCT_TYPE);
     }
 
-    validateProductExists(productType, productPublicId);
+    validateProductAccessible(productType, productPublicId, userId);
 
     if (userFavoriteProductRepository.existsByUserIdAndProductTypeAndProductPublicId(
-        ownerId, productType, productPublicId)) {
+        userId, productType, productPublicId)) {
       userFavoriteProductRepository.deleteByUserIdAndProductTypeAndProductPublicId(
-          ownerId, productType, productPublicId);
+          userId, productType, productPublicId);
       return new FavoriteToggleResponse(false);
     }
 
     UserFavoriteProduct favorite = new UserFavoriteProduct();
-    favorite.setUserId(ownerId);
+    favorite.setUserId(userId);
     favorite.setProductPublicId(productPublicId);
     favorite.setProductType(productType);
     favorite.setCreatedAt(Instant.now());
     userFavoriteProductRepository.save(favorite);
-    userRecentProductService.markUsed(ownerId, productPublicId, productType);
+    userRecentProductService.markUsed(userId, productPublicId, productType);
     return new FavoriteToggleResponse(true);
   }
 
   /**
-   * Comprueba que el producto referenciado existe según su tipo.
+   * Comprueba que el producto referenciado existe, está activo y pertenece al usuario cuando es de
+   * tipo {@code USER}.
    *
    * @param productType tipo del producto ({@code BASE} o {@code USER})
    * @param productPublicId identificador público del producto
-   * @throws BusinessException con ErrorCode.PRODUCT_NOT_FOUND si el producto no existe según su
-   *     tipo
+   * @param userId identificador del usuario autenticado
+   * @throws BusinessException con ErrorCode.PRODUCT_NOT_FOUND si el producto no existe o está
+   *     inactivo según su tipo
+   * @throws BusinessException con ErrorCode.OWNER_MISMATCH si el producto de usuario pertenece a
+   *     otro usuario
    */
-  private void validateProductExists(ProductType productType, UUID productPublicId) {
+  private void validateProductAccessible(
+      ProductType productType, UUID productPublicId, UUID userId) {
     if (productType == ProductType.BASE) {
-      baseProductRepository
-          .findByPublicId(productPublicId)
-          .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+      BaseProduct base =
+          baseProductRepository
+              .findByPublicId(productPublicId)
+              .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+      if (!Boolean.TRUE.equals(base.getIsActive())) {
+        throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+      }
       return;
     }
-    userProductRepository
-        .findByPublicId(productPublicId)
-        .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+    UserProduct userProduct =
+        userProductRepository
+            .findByPublicId(productPublicId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+    if (!Boolean.TRUE.equals(userProduct.getIsActive())) {
+      throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+    }
+    if (!userProduct.getOwnerId().equals(userId)) {
+      throw new BusinessException(ErrorCode.OWNER_MISMATCH);
+    }
   }
 
   /**
