@@ -345,8 +345,7 @@ paths:
       summary: Listar los productos del usuario autenticado
       description: >
         Lista los productos activos del usuario autenticado. El propietario se
-        obtiene del token `Bearer` JWT y no se admite `ownerId` como parámetro
-        de entrada.
+        obtiene del token `Bearer` JWT.
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
@@ -377,11 +376,11 @@ paths:
       summary: Crear un producto de usuario
       description: >
         Crea un producto de usuario asignándole como propietario el identificador
-        del usuario autenticado en el token `Bearer` JWT; no se admite
-        `ownerId` en el body. Si se especifica `basedOnBaseId`, el servicio
-        copia los valores del producto base origen (snapshot en el locale del
-        `Accept-Language` de la petición), permitiendo sobreescribir los campos
-        en el body. `basedOnBaseId` queda como trazabilidad histórica inmutable.
+        del usuario autenticado en el token `Bearer` JWT. Si se especifica
+        `basedOnBaseId`, el servicio copia los valores del producto base origen
+        (snapshot en el locale del `Accept-Language` de la petición), permitiendo
+        sobreescribir los campos en el body. `basedOnBaseId` queda como
+        trazabilidad histórica inmutable.
       parameters:
         - $ref: '#/components/parameters/AcceptLanguage'
       requestBody:
