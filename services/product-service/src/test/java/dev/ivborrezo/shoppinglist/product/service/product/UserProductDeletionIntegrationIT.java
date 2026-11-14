@@ -2,6 +2,7 @@ package dev.ivborrezo.shoppinglist.product.service.product;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
@@ -75,7 +76,8 @@ class UserProductDeletionIntegrationIT {
 
     mockMvc
         .perform(delete("/user-products/" + product.getPublicId()).with(TestAuth.user2()))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
   }
 
   /** Permite al propietario borrar un producto inactivo propio. */

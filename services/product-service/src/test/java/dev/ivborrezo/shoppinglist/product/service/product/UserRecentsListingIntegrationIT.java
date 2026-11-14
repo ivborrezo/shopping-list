@@ -92,6 +92,28 @@ class UserRecentsListingIntegrationIT {
   }
 
   /**
+   * Excluye del listado los recientes de otros usuarios, aunque el usuario autenticado tenga los
+   * suyos.
+   *
+   * @throws Exception si la petición MockMvc falla
+   */
+  @Test
+  void listRecents_withOtherUserRecents_returnsOnlyAuthenticatedUserRecents() throws Exception {
+    UUID otherProductId = baseProductPublicId(2L);
+    markFavoriteAsUser(TestUsers.USER_2, otherProductId);
+
+    UUID ownProductId = baseProductPublicId(1L);
+    markFavorite(ownProductId);
+
+    List<ProductReference> recents = getRecents(null);
+
+    assertThat(recents)
+        .extracting(ProductReference::productId)
+        .containsExactly(ownProductId)
+        .doesNotContain(otherProductId);
+  }
+
+  /**
    * Re-marcar un producto ya reciente (tras desmarcarlo del favorito) actualiza su última
    * interacción y lo desplaza al inicio del listado sin eliminar su fila de reciente.
    */
@@ -141,10 +163,22 @@ class UserRecentsListingIntegrationIT {
    * @throws Exception si la petición MockMvc falla
    */
   private void markFavorite(UUID productId) throws Exception {
+    markFavoriteAsUser(TestUsers.USER_1, productId);
+  }
+
+  /**
+   * Marca como favorito el producto base indicado para el usuario indicado, registrando la
+   * interacción en los recientes de ese usuario.
+   *
+   * @param userId identificador del usuario que marca el producto
+   * @param productId identificador público del producto base a marcar
+   * @throws Exception si la petición MockMvc falla
+   */
+  private void markFavoriteAsUser(UUID userId, UUID productId) throws Exception {
     mockMvc
         .perform(
             post("/user-products/{id}/favorite", productId)
-                .with(TestAuth.user1())
+                .with(TestAuth.user(userId))
                 .param("productType", "BASE"))
         .andExpect(status().isOk());
   }

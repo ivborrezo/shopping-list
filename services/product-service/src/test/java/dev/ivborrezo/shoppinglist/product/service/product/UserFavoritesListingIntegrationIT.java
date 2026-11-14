@@ -129,6 +129,31 @@ class UserFavoritesListingIntegrationIT {
   }
 
   /**
+   * Excluye del listado los favoritos de otros usuarios, aunque el usuario autenticado tenga los
+   * suyos.
+   *
+   * @throws Exception si la petición MockMvc falla
+   */
+  @Test
+  void listFavorites_withOtherUserFavorites_returnsOnlyAuthenticatedUserFavorites()
+      throws Exception {
+    UserProduct otherProduct = buildUserProduct(TestUsers.USER_2, "Producto ajeno");
+    entityManager.persist(otherProduct);
+    entityManager.flush();
+    markFavoriteAsUser(TestUsers.USER_2, otherProduct.getPublicId(), "USER");
+
+    UUID ownBaseProductId = baseProductPublicId(1L);
+    markFavorite(ownBaseProductId, "BASE", null);
+
+    PagedResponse<ProductReference> page = getFavorites("", null);
+
+    assertThat(page.content())
+        .extracting(ProductReference::productId)
+        .containsExactly(ownBaseProductId)
+        .doesNotContain(otherProduct.getPublicId());
+  }
+
+  /**
    * Ejecuta {@code GET /user-products/favorites} con los query params indicados y deserializa la
    * página resultante.
    *
@@ -174,6 +199,24 @@ class UserFavoritesListingIntegrationIT {
   }
 
   /**
+   * Marca como favorito el producto indicado para el usuario indicado vía el endpoint de toggle.
+   *
+   * @param userId identificador del usuario propietario del favorito
+   * @param productId identificador público del producto a marcar
+   * @param productType tipo de producto ({@code BASE} o {@code USER})
+   * @throws Exception si la petición MockMvc falla
+   */
+  private void markFavoriteAsUser(UUID userId, UUID productId, String productType)
+      throws Exception {
+    mockMvc
+        .perform(
+            post("/user-products/{id}/favorite", productId)
+                .with(TestAuth.user(userId))
+                .param("productType", productType))
+        .andExpect(status().isOk());
+  }
+
+  /**
    * Resuelve el identificador público del producto base con el identificador interno indicado.
    *
    * @param id identificador interno del producto base del seed
@@ -189,9 +232,20 @@ class UserFavoritesListingIntegrationIT {
    * @return entidad {@link UserProduct} con los valores indicados
    */
   private UserProduct buildUserProduct() {
+    return buildUserProduct(OWNER_ID, "Mi producto");
+  }
+
+  /**
+   * Construye un producto de usuario activo con los campos mínimos para los tests.
+   *
+   * @param ownerId propietario del producto
+   * @param name nombre del producto
+   * @return entidad {@link UserProduct} con los valores indicados
+   */
+  private UserProduct buildUserProduct(UUID ownerId, String name) {
     UserProduct product = new UserProduct();
-    product.setOwnerId(OWNER_ID);
-    product.setName("Mi producto");
+    product.setOwnerId(ownerId);
+    product.setName(name);
     product.setDefaultUnit(UnitEnum.UNIT);
     product.setCaloriesPer(CaloriesPerEnum.G);
     product.setShareWithListMembers(false);

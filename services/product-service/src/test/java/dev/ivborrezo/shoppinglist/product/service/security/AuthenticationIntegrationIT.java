@@ -111,9 +111,7 @@ class AuthenticationIntegrationIT {
   /** No redirige a la página de login ante credenciales ausentes. */
   @Test
   void requestWithoutCredentials_doesNotRedirect() throws Exception {
-    ResultActions result = mockMvc.perform(get("/categories")).andExpect(status().isUnauthorized());
-
-    result.andExpect(status().is4xxClientError());
+    mockMvc.perform(get("/categories")).andExpect(status().isUnauthorized());
   }
 
   /** Permite el acceso sin credenciales al endpoint de salud. */
