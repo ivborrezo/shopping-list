@@ -38,6 +38,9 @@ tags:
   - name: user-products
     description: "Productos de usuario: catálogo personal creado por cada usuario."
 
+security:
+  - bearerAuth: []
+
 paths:
   /categories:
     parameters:
@@ -56,6 +59,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CategoryPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/RateLimited'
         '503':
@@ -64,6 +69,9 @@ paths:
     post:
       tags: [categories]
       summary: Crear una categoría del catálogo con sus traducciones
+      description: >
+        Operación administrativa: requiere un usuario autenticado con rol
+        `ADMIN` en el token `Bearer` JWT (ADR-019).
       requestBody:
         required: true
         content:
@@ -84,6 +92,10 @@ paths:
                 $ref: '#/components/schemas/Category'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           description: Ya existe una categoría con ese code.
           headers:
@@ -121,6 +133,8 @@ paths:
                 $ref: '#/components/schemas/Category'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -135,9 +149,9 @@ paths:
       tags: [base-products]
       summary: Listar productos base
       description: >
-        Listado público del catálogo de productos base. Devuelve nombre y
-        descripción localizados según `Accept-Language` con el fallback de
-        ADR-011.
+        Listado del catálogo de productos base disponible para cualquier usuario
+        autenticado (`USER` o `ADMIN`). Devuelve nombre y descripción
+        localizados según `Accept-Language` con el fallback de ADR-011.
       parameters:
         - $ref: '#/components/parameters/AcceptLanguage'
         - $ref: '#/components/parameters/Page'
@@ -163,6 +177,8 @@ paths:
                 $ref: '#/components/schemas/BaseProductPage'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/RateLimited'
         '503':
@@ -172,9 +188,8 @@ paths:
       tags: [base-products]
       summary: Crear un producto base
       description: >
-        Operación administrativa. Mismo criterio placeholder que ADR-006 para
-        propietario: placeholder hasta que exista autenticación real
-        (ADR-XXF3-keycloak-como-identity-provider pendiente).
+        Operación administrativa: requiere un usuario autenticado con rol
+        `ADMIN` en el token `Bearer` JWT (ADR-019).
       requestBody:
         required: true
         content:
@@ -195,6 +210,10 @@ paths:
                 $ref: '#/components/schemas/BaseProduct'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           description: Ya existe un producto base con ese code.
           headers:
@@ -232,6 +251,8 @@ paths:
                 $ref: '#/components/schemas/BaseProduct'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -243,9 +264,8 @@ paths:
       tags: [base-products]
       summary: Editar un producto base
       description: >
-        Operación administrativa. Mismo criterio placeholder que ADR-006 para
-        propietario: placeholder hasta que exista autenticación real
-        (ADR-XXF3-keycloak-como-identity-provider pendiente).
+        Operación administrativa: requiere un usuario autenticado con rol
+        `ADMIN` en el token `Bearer` JWT (ADR-019).
       parameters:
         - name: id
           in: path
@@ -268,6 +288,10 @@ paths:
                 $ref: '#/components/schemas/BaseProduct'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
@@ -288,9 +312,8 @@ paths:
       tags: [base-products]
       summary: Eliminar un producto base
       description: >
-        Operación administrativa. Mismo criterio placeholder que ADR-006 para
-        propietario: placeholder hasta que exista autenticación real
-        (ADR-XXF3-keycloak-como-identity-provider pendiente).
+        Operación administrativa: requiere un usuario autenticado con rol
+        `ADMIN` en el token `Bearer` JWT (ADR-019).
       parameters:
         - name: id
           in: path
@@ -303,6 +326,10 @@ paths:
           description: Producto base eliminado.
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -315,20 +342,12 @@ paths:
       - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [user-products]
-      summary: Listar productos de un propietario
+      summary: Listar los productos del usuario autenticado
       description: >
-        Placeholder de ADR-006: se listan los productos del `ownerId` indicado
-        sin enforcement de identidad real hasta que exista autenticación real.
+        Lista los productos activos del usuario autenticado. El propietario se
+        obtiene del token `Bearer` JWT y no se admite `ownerId` como parámetro
+        de entrada.
       parameters:
-        - name: ownerId
-          in: query
-          required: true
-          description: >
-            UUID del propietario. Placeholder sin autenticación real (ver
-            ADR-006-identificacion-propietario-sin-autenticacion).
-          schema:
-            type: string
-            format: uuid
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
         - name: categoryId
@@ -339,13 +358,15 @@ paths:
             nullable: true
       responses:
         '200':
-          description: Página de productos de usuario del propietario.
+          description: Página de productos de usuario del propietario autenticado.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProductPage'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/RateLimited'
         '503':
@@ -355,11 +376,12 @@ paths:
       tags: [user-products]
       summary: Crear un producto de usuario
       description: >
-        Crea un producto de usuario. Si se especifica `basedOnBaseId`, el
-        servicio copia los valores del producto base origen (snapshot en el
-        locale del `Accept-Language` de la petición), permitiendo sobreescribir
-        los campos en el body. `basedOnBaseId` queda como trazabilidad histórica
-        inmutable.
+        Crea un producto de usuario asignándole como propietario el identificador
+        del usuario autenticado en el token `Bearer` JWT; no se admite
+        `ownerId` en el body. Si se especifica `basedOnBaseId`, el servicio
+        copia los valores del producto base origen (snapshot en el locale del
+        `Accept-Language` de la petición), permitiendo sobreescribir los campos
+        en el body. `basedOnBaseId` queda como trazabilidad histórica inmutable.
       parameters:
         - $ref: '#/components/parameters/AcceptLanguage'
       requestBody:
@@ -382,6 +404,8 @@ paths:
                 $ref: '#/components/schemas/UserProduct'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/RateLimited'
         '503':
@@ -393,6 +417,10 @@ paths:
     get:
       tags: [user-products]
       summary: Obtener un producto de usuario por id
+      description: >
+        Recupera un producto de usuario propio. Si el producto no existe o está
+        inactivo responde `404 USER_PRODUCT_NOT_FOUND`; si pertenece a otro
+        usuario responde `403 OWNER_MISMATCH`.
       parameters:
         - name: id
           in: path
@@ -409,6 +437,10 @@ paths:
                 $ref: '#/components/schemas/UserProduct'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -419,7 +451,11 @@ paths:
     patch:
       tags: [user-products]
       summary: Editar un producto de usuario
-      description: Solo el propietario puede editarlo; enforcement real pendiente de ADR-006.
+      description: >
+        Solo el propietario autenticado puede editarlo. Si el producto no existe
+        responde `404 USER_PRODUCT_NOT_FOUND`; si pertenece a otro usuario
+        responde `403 OWNER_MISMATCH`. El propietario puede editar también sus
+        productos inactivos, por ejemplo para reactivarlos.
       parameters:
         - name: id
           in: path
@@ -442,17 +478,12 @@ paths:
                 $ref: '#/components/schemas/UserProduct'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-        '403':
-          description: El ownerId del body no coincide con el propietario del producto.
-          headers:
-            X-CorrelationId:
-              $ref: '#/components/headers/XCorrelationId'
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetail'
         '429':
           $ref: '#/components/responses/RateLimited'
         '503':
@@ -461,20 +492,15 @@ paths:
     delete:
       tags: [user-products]
       summary: Eliminar un producto de usuario
-      description: Solo el propietario puede eliminarlo; enforcement real pendiente de ADR-006.
+      description: >
+        Solo el propietario autenticado puede eliminarlo. Si el producto no
+        existe responde `404 USER_PRODUCT_NOT_FOUND`; si pertenece a otro
+        usuario responde `403 OWNER_MISMATCH`. El propietario puede eliminar
+        también sus productos inactivos.
       parameters:
         - name: id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
-        - name: ownerId
-          in: query
-          required: true
-          description: >
-            UUID del propietario. Placeholder sin autenticación real (ver
-            ADR-006-identificacion-propietario-sin-autenticacion).
           schema:
             type: string
             format: uuid
@@ -483,15 +509,10 @@ paths:
           description: Producto de usuario eliminado.
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '403':
-          description: El ownerId del query param no coincide con el propietario del producto.
-          headers:
-            X-CorrelationId:
-              $ref: '#/components/headers/XCorrelationId'
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetail'
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -506,22 +527,17 @@ paths:
       tags: [user-products]
       summary: Marcar o desmarcar un producto como favorito
       description: >
-        Toggle: si el producto ya está entre los favoritos del propietario se
-        desmarca (respuesta `favorited: false`); si no, se marca y se actualiza
-        su reciente (respuesta `favorited: true`).
+        Toggle para el usuario autenticado: si el producto ya está entre sus
+        favoritos se desmarca (respuesta `favorited: false`); si no, se marca y
+        se actualiza su reciente (respuesta `favorited: true`). Con
+        `productType=USER` el producto debe existir, estar activo y pertenecer
+        al usuario autenticado (`404 PRODUCT_NOT_FOUND` y `403 OWNER_MISMATCH`
+        respectivamente); con `productType=BASE` el producto base debe existir y
+        estar activo (`404 PRODUCT_NOT_FOUND`).
       parameters:
         - name: id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
-        - name: ownerId
-          in: query
-          required: true
-          description: >
-            UUID del propietario. Placeholder sin autenticación real (ver
-            ADR-006-identificacion-propietario-sin-autenticacion).
           schema:
             type: string
             format: uuid
@@ -539,6 +555,10 @@ paths:
                 $ref: '#/components/schemas/FavoriteToggleResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -551,32 +571,26 @@ paths:
       - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [user-products]
-      summary: Listar los favoritos de un propietario
+      summary: Listar los favoritos del usuario autenticado
       description: >
-        Listado paginado de favoritos con el nombre del producto resuelto según
-        su tipo (base localizado, usuario monolingüe).
+        Listado paginado de los favoritos del usuario autenticado, con el nombre
+        del producto resuelto según su tipo (base localizado, usuario
+        monolingüe). El propietario se obtiene del token `Bearer` JWT.
       parameters:
-        - name: ownerId
-          in: query
-          required: true
-          description: >
-            UUID del propietario. Placeholder sin autenticación real (ver
-            ADR-006-identificacion-propietario-sin-autenticacion).
-          schema:
-            type: string
-            format: uuid
         - $ref: '#/components/parameters/AcceptLanguage'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
         '200':
-          description: Página de referencias a los productos favoritos del propietario.
+          description: Página de referencias a los productos favoritos del usuario autenticado.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProductReferencePage'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/RateLimited'
         '503':
@@ -587,24 +601,16 @@ paths:
       - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [user-products]
-      summary: Listar los productos más recientes de un propietario
+      summary: Listar los productos más recientes del usuario autenticado
       description: >
-        Top 10 productos recientes por `last_used_at` descendente, con el
-        nombre resuelto según su tipo.
+        Top 10 productos recientes por `last_used_at` descendente del usuario
+        autenticado, con el nombre resuelto según su tipo. El propietario se
+        obtiene del token `Bearer` JWT.
       parameters:
-        - name: ownerId
-          in: query
-          required: true
-          description: >
-            UUID del propietario. Placeholder sin autenticación real (ver
-            ADR-006-identificacion-propietario-sin-autenticacion).
-          schema:
-            type: string
-            format: uuid
         - $ref: '#/components/parameters/AcceptLanguage'
       responses:
         '200':
-          description: Lista de referencias a los productos más recientes del propietario.
+          description: Lista de referencias a los productos más recientes del usuario autenticado.
           content:
             application/json:
               schema:
@@ -613,12 +619,24 @@ paths:
                   $ref: '#/components/schemas/ProductReference'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/RateLimited'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Token JWT de acceso emitido por el proveedor OIDC. El servicio valida
+        firma, expiración, emisor y el claim de identificador de usuario
+        (UUID) antes de atender la petición.
+
   parameters:
     AcceptLanguage:
       name: Accept-Language
@@ -659,6 +677,33 @@ components:
         format: uuid
 
   responses:
+    Unauthorized:
+      description: >
+        Credenciales ausentes o inválidas: no se ha enviado la cabecera
+        `Authorization: Bearer`, el token está expirado o malformado, su firma
+        no es válida, el emisor no está reconocido o el claim de identificador
+        de usuario no es un UUID válido.
+      headers:
+        X-CorrelationId:
+          $ref: '#/components/headers/XCorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Forbidden:
+      description: >
+        El usuario autenticado no tiene permiso para ejecutar la operación: le
+        falta el rol `ADMIN` exigido por las mutaciones del catálogo global, o
+        intenta operar sobre un recurso de otro propietario (`code:
+        OWNER_MISMATCH`).
+      headers:
+        X-CorrelationId:
+          $ref: '#/components/headers/XCorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
     NotFound:
       description: El recurso solicitado no existe.
       headers:
@@ -815,6 +860,10 @@ components:
         ownerId:
           type: string
           format: uuid
+          readOnly: true
+          description: >
+            Identificador del propietario, asignado por el servicio desde el
+            token `Bearer` JWT y expuesto únicamente como atributo de lectura.
         name:
           type: string
         description:
@@ -967,14 +1016,7 @@ components:
 
     CreateUserProductRequest:
       type: object
-      required: [ownerId]
       properties:
-        ownerId:
-          type: string
-          format: uuid
-          description: >
-            Placeholder hasta que exista autenticación real (ver
-            ADR-006-identificacion-propietario-sin-autenticacion).
         name:
           type: string
           description: >
@@ -1020,15 +1062,7 @@ components:
 
     UpdateUserProductRequest:
       type: object
-      required: [ownerId]
       properties:
-        ownerId:
-          type: string
-          format: uuid
-          description: >
-            Placeholder de ADR-006; se valida solo el formato. Chequeo de
-            propiedad: si no coincide con el propietario almacenado, se
-            responde 403.
         name:
           type: string
         description:
@@ -1115,7 +1149,7 @@ components:
           description: URI del recurso de la petición que produjo el error.
         code:
           type: string
-          enum: [CATEGORY_NOT_FOUND, INVALID_CATEGORY, BASE_PRODUCT_NOT_FOUND, USER_PRODUCT_NOT_FOUND, PRODUCT_NOT_FOUND, DUPLICATE_PRODUCT_CODE, DUPLICATE_CATEGORY_CODE, UNSUPPORTED_LOCALE, NAME_REQUIRED, DEFAULT_UNIT_REQUIRED, CALORIES_PER_REQUIRED, OWNER_MISMATCH, INVALID_PRODUCT_TYPE, INVALID_BASE_PRODUCT, RATE_LIMIT_EXCEEDED, SERVICE_UNAVAILABLE, VALIDATION_FAILED]
+          enum: [CATEGORY_NOT_FOUND, INVALID_CATEGORY, BASE_PRODUCT_NOT_FOUND, USER_PRODUCT_NOT_FOUND, PRODUCT_NOT_FOUND, DUPLICATE_PRODUCT_CODE, DUPLICATE_CATEGORY_CODE, UNSUPPORTED_LOCALE, NAME_REQUIRED, DEFAULT_UNIT_REQUIRED, CALORIES_PER_REQUIRED, OWNER_MISMATCH, INVALID_PRODUCT_TYPE, INVALID_BASE_PRODUCT, UNAUTHENTICATED, ACCESS_DENIED, RATE_LIMIT_EXCEEDED, SERVICE_UNAVAILABLE, VALIDATION_FAILED]
           description: Identificador machine-readable del error; el contrato entre el backend y el frontend.
 
     FieldError:
