@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -76,6 +77,7 @@ class CategoryCreationIntegrationIT {
         mockMvc
             .perform(
                 post("/categories")
+                    .with(TestAuth.admin())
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("Accept-Language", "eu")
                     .content(body))
@@ -105,7 +107,11 @@ class CategoryCreationIntegrationIT {
         """;
 
     mockMvc
-        .perform(post("/categories").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/categories")
+                .with(TestAuth.admin())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest());
   }
 
@@ -130,7 +136,11 @@ class CategoryCreationIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(post("/categories").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/categories")
+                    .with(TestAuth.admin())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -165,7 +175,11 @@ class CategoryCreationIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(post("/categories").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/categories")
+                    .with(TestAuth.admin())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isConflict())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -194,7 +208,11 @@ class CategoryCreationIntegrationIT {
         """;
 
     mockMvc
-        .perform(post("/categories").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/categories")
+                .with(TestAuth.admin())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest());
   }
 

@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -44,7 +46,7 @@ class UserRecentsListingIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
   private final MockMvc mockMvc;
 
@@ -120,7 +122,7 @@ class UserRecentsListingIntegrationIT {
    * @throws Exception si la petición MockMvc o la deserialización fallan
    */
   private List<ProductReference> getRecents(String acceptLanguage) throws Exception {
-    var request = get("/user-products/recents").param("ownerId", OWNER_ID.toString());
+    var request = get("/user-products/recents").with(TestAuth.user1());
     if (acceptLanguage != null) {
       request = request.header("Accept-Language", acceptLanguage);
     }
@@ -142,7 +144,7 @@ class UserRecentsListingIntegrationIT {
     mockMvc
         .perform(
             post("/user-products/{id}/favorite", productId)
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user1())
                 .param("productType", "BASE"))
         .andExpect(status().isOk());
   }

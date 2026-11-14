@@ -2,12 +2,15 @@ package dev.ivborrezo.shoppinglist.product.service.product;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -44,7 +47,9 @@ class UserProductGetByIdIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_A = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeee1");
+  private static final UUID OWNER_A = TestUsers.USER_1;
+
+  private static final UUID OWNER_B = TestUsers.USER_2;
 
   private final MockMvc mockMvc;
 
@@ -67,7 +72,7 @@ class UserProductGetByIdIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(get("/user-products/" + product.getPublicId()))
+            .perform(get("/user-products/" + product.getPublicId()).with(TestAuth.user1()))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -87,7 +92,9 @@ class UserProductGetByIdIntegrationIT {
   /** Devuelve 404 cuando el identificador de producto no existe. */
   @Test
   void getById_missing_returns404() throws Exception {
-    mockMvc.perform(get("/user-products/" + UUID.randomUUID())).andExpect(status().isNotFound());
+    mockMvc
+        .perform(get("/user-products/" + UUID.randomUUID()).with(TestAuth.user1()))
+        .andExpect(status().isNotFound());
   }
 
   /** Devuelve 404 cuando el producto existe pero está inactivo. */
@@ -97,8 +104,24 @@ class UserProductGetByIdIntegrationIT {
     persist(product);
 
     mockMvc
-        .perform(get("/user-products/" + product.getPublicId()))
+        .perform(get("/user-products/" + product.getPublicId()).with(TestAuth.user1()))
         .andExpect(status().isNotFound());
+  }
+
+  /**
+   * Devuelve 403 con {@code OWNER_MISMATCH} cuando el producto activo pertenece a otro usuario.
+   *
+   * @throws Exception si la petición MockMvc falla
+   */
+  @Test
+  void getById_otherOwner_returns403() throws Exception {
+    UserProduct product = buildProduct(OWNER_B, "Producto ajeno", 1L, true);
+    persist(product);
+
+    mockMvc
+        .perform(get("/user-products/" + product.getPublicId()).with(TestAuth.user1()))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
   }
 
   /**

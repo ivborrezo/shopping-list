@@ -12,6 +12,8 @@ import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -50,7 +52,7 @@ class UserFavoritesListingIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
   private final MockMvc mockMvc;
 
@@ -84,7 +86,7 @@ class UserFavoritesListingIntegrationIT {
     entityManager.flush();
     markFavorite(product.getPublicId(), "USER", null);
 
-    PagedResponse<ProductReference> page = getFavorites("ownerId=" + OWNER_ID, "es");
+    PagedResponse<ProductReference> page = getFavorites("", "es");
 
     assertThat(page.content()).hasSize(2);
     assertThat(page.totalElements()).isEqualTo(2);
@@ -106,7 +108,7 @@ class UserFavoritesListingIntegrationIT {
     markFavorite(baseProductPublicId(2L), "BASE", null);
     markFavorite(baseProductPublicId(3L), "BASE", null);
 
-    PagedResponse<ProductReference> page = getFavorites("ownerId=" + OWNER_ID + "&size=2", null);
+    PagedResponse<ProductReference> page = getFavorites("size=2", null);
 
     assertThat(page.content()).hasSize(2);
     assertThat(page.totalElements()).isEqualTo(3);
@@ -120,7 +122,7 @@ class UserFavoritesListingIntegrationIT {
   /** Devuelve una página vacía cuando el usuario no tiene ningún favorito. */
   @Test
   void listFavorites_empty_returnsEmptyPage() throws Exception {
-    PagedResponse<ProductReference> page = getFavorites("ownerId=" + OWNER_ID, null);
+    PagedResponse<ProductReference> page = getFavorites("", null);
 
     assertThat(page.content()).isEmpty();
     assertThat(page.totalElements()).isZero();
@@ -138,7 +140,9 @@ class UserFavoritesListingIntegrationIT {
    */
   private PagedResponse<ProductReference> getFavorites(String queryString, String acceptLanguage)
       throws Exception {
-    var request = get("/user-products/favorites?" + queryString);
+    var request =
+        get("/user-products/favorites" + (queryString.isEmpty() ? "" : "?" + queryString))
+            .with(TestAuth.user1());
     if (acceptLanguage != null) {
       request = request.header("Accept-Language", acceptLanguage);
     }
@@ -161,7 +165,7 @@ class UserFavoritesListingIntegrationIT {
       throws Exception {
     var request =
         post("/user-products/{id}/favorite", productId)
-            .param("ownerId", OWNER_ID.toString())
+            .with(TestAuth.user1())
             .param("productType", productType);
     if (acceptLanguage != null) {
       request = request.header("Accept-Language", acceptLanguage);

@@ -2,13 +2,17 @@ package dev.ivborrezo.shoppinglist.product.service.product;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
+import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -46,7 +50,7 @@ class UserFavoriteToggleIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
   private final MockMvc mockMvc;
 
@@ -76,7 +80,7 @@ class UserFavoriteToggleIntegrationIT {
         mockMvc
             .perform(
                 post("/user-products/{id}/favorite", baseProductPublicId(1L))
-                    .param("ownerId", OWNER_ID.toString())
+                    .with(TestAuth.user1())
                     .param("productType", "BASE"))
             .andExpect(status().isOk())
             .andReturn();
@@ -97,7 +101,7 @@ class UserFavoriteToggleIntegrationIT {
     mockMvc
         .perform(
             post("/user-products/{id}/favorite", productId)
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user1())
                 .param("productType", "BASE"))
         .andExpect(status().isOk());
 
@@ -105,7 +109,7 @@ class UserFavoriteToggleIntegrationIT {
         mockMvc
             .perform(
                 post("/user-products/{id}/favorite", productId)
-                    .param("ownerId", OWNER_ID.toString())
+                    .with(TestAuth.user1())
                     .param("productType", "BASE"))
             .andExpect(status().isOk())
             .andReturn();
@@ -130,7 +134,7 @@ class UserFavoriteToggleIntegrationIT {
         mockMvc
             .perform(
                 post("/user-products/{id}/favorite", product.getPublicId())
-                    .param("ownerId", OWNER_ID.toString())
+                    .with(TestAuth.user1())
                     .param("productType", "USER"))
             .andExpect(status().isOk())
             .andReturn();
@@ -144,7 +148,7 @@ class UserFavoriteToggleIntegrationIT {
         mockMvc
             .perform(
                 post("/user-products/{id}/favorite", product.getPublicId())
-                    .param("ownerId", OWNER_ID.toString())
+                    .with(TestAuth.user1())
                     .param("productType", "USER"))
             .andExpect(status().isOk())
             .andReturn();
@@ -161,7 +165,7 @@ class UserFavoriteToggleIntegrationIT {
     mockMvc
         .perform(
             post("/user-products/{id}/favorite", UUID.randomUUID())
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user1())
                 .param("productType", "BASE"))
         .andExpect(status().isNotFound());
   }
@@ -174,9 +178,69 @@ class UserFavoriteToggleIntegrationIT {
     mockMvc
         .perform(
             post("/user-products/{id}/favorite", baseProductPublicId(1L))
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user1())
                 .param("productType", "CATALOG"))
         .andExpect(status().isBadRequest());
+  }
+
+  /**
+   * Rechaza con {@code 403} el toggle de un producto de usuario que pertenece a otro usuario.
+   *
+   * @throws Exception si la petición MockMvc falla
+   */
+  @Test
+  void toggleUserFavorite_otherOwner_returns403() throws Exception {
+    UserProduct product = buildUserProduct(TestUsers.USER_2, true);
+    entityManager.persist(product);
+    entityManager.flush();
+
+    mockMvc
+        .perform(
+            post("/user-products/{id}/favorite", product.getPublicId())
+                .with(TestAuth.user1())
+                .param("productType", "USER"))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
+  }
+
+  /**
+   * Rechaza con {@code 404} el toggle de un producto de usuario inactivo.
+   *
+   * @throws Exception si la petición MockMvc falla
+   */
+  @Test
+  void toggleUserFavorite_inactiveProduct_returns404() throws Exception {
+    UserProduct product = buildUserProduct(OWNER_ID, false);
+    entityManager.persist(product);
+    entityManager.flush();
+
+    mockMvc
+        .perform(
+            post("/user-products/{id}/favorite", product.getPublicId())
+                .with(TestAuth.user1())
+                .param("productType", "USER"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
+  }
+
+  /**
+   * Rechaza con {@code 404} el toggle de un producto base inactivo.
+   *
+   * @throws Exception si la petición MockMvc falla
+   */
+  @Test
+  void toggleBaseFavorite_inactiveProduct_returns404() throws Exception {
+    BaseProduct base = baseProductRepository.findById(1L).orElseThrow();
+    base.setIsActive(false);
+    baseProductRepository.saveAndFlush(base);
+
+    mockMvc
+        .perform(
+            post("/user-products/{id}/favorite", base.getPublicId())
+                .with(TestAuth.user1())
+                .param("productType", "BASE"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
   }
 
   /**
@@ -185,14 +249,18 @@ class UserFavoriteToggleIntegrationIT {
    * @return entidad {@link UserProduct} con los valores indicados
    */
   private UserProduct buildUserProduct() {
+    return buildUserProduct(OWNER_ID, true);
+  }
+
+  private UserProduct buildUserProduct(UUID ownerId, boolean active) {
     UserProduct product = new UserProduct();
-    product.setOwnerId(OWNER_ID);
+    product.setOwnerId(ownerId);
     product.setName("Mi producto");
     product.setDefaultUnit(UnitEnum.UNIT);
     product.setCaloriesPer(CaloriesPerEnum.G);
     product.setShareWithListMembers(false);
     product.setShareWithFriends(false);
-    product.setIsActive(true);
+    product.setIsActive(active);
     return product;
   }
 

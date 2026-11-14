@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -26,9 +27,9 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 /**
  * Test de integración del endpoint {@code DELETE /user-products/{id}}.
  *
- * <p>Verifica el borrado físico de un producto de usuario con propietario coincidente, el rechazo
- * con propietario no coincidente, la exigencia del query param {@code ownerId} y el {@code 404}
- * para productos inexistentes.
+ * <p>Verifica el borrado físico de un producto de usuario propio, el rechazo cuando pertenece a
+ * otro usuario, el borrado de productos inactivos por su propietario y el {@code 404} para
+ * productos inexistentes.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -42,9 +43,6 @@ class UserProductDeletionIntegrationIT {
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
   private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
-
-  private static final UUID OTHER_OWNER_ID =
-      UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeef");
 
   private final MockMvc mockMvc;
 
@@ -62,46 +60,40 @@ class UserProductDeletionIntegrationIT {
     persist(product);
 
     mockMvc
-        .perform(
-            delete("/user-products/" + product.getPublicId()).param("ownerId", OWNER_ID.toString()))
+        .perform(delete("/user-products/" + product.getPublicId()).with(TestAuth.user1()))
         .andExpect(status().isNoContent());
 
     assertThat(entityManager.find(UserProduct.class, product.getId())).isNull();
   }
 
-  /**
-   * Rechaza con 403 el borrado cuando el {@code ownerId} del query param no coincide con el del
-   * producto.
-   */
+  /** Rechaza con 403 el borrado cuando el producto pertenece a otro usuario. */
   @Test
   void deleteUserProduct_withMismatchedOwner_returns403() throws Exception {
     UserProduct product = buildProduct(OWNER_ID);
     persist(product);
 
     mockMvc
-        .perform(
-            delete("/user-products/" + product.getPublicId())
-                .param("ownerId", OTHER_OWNER_ID.toString()))
+        .perform(delete("/user-products/" + product.getPublicId()).with(TestAuth.user2()))
         .andExpect(status().isForbidden());
   }
 
-  /** Devuelve 400 cuando falta el query param {@code ownerId}. */
+  /** Permite al propietario borrar un producto inactivo propio. */
   @Test
-  void deleteUserProduct_withoutOwnerId_returns400() throws Exception {
+  void deleteUserProduct_inactiveProductByOwner_returns204() throws Exception {
     UserProduct product = buildProduct(OWNER_ID);
+    product.setIsActive(false);
     persist(product);
 
     mockMvc
-        .perform(delete("/user-products/" + product.getPublicId()))
-        .andExpect(status().isBadRequest());
+        .perform(delete("/user-products/" + product.getPublicId()).with(TestAuth.user1()))
+        .andExpect(status().isNoContent());
   }
 
   /** Devuelve 404 cuando el identificador de producto de usuario no existe. */
   @Test
   void deleteUserProduct_nonexistentId_returns404() throws Exception {
     mockMvc
-        .perform(
-            delete("/user-products/" + UUID.randomUUID()).param("ownerId", OWNER_ID.toString()))
+        .perform(delete("/user-products/" + UUID.randomUUID()).with(TestAuth.user1()))
         .andExpect(status().isNotFound());
   }
 
