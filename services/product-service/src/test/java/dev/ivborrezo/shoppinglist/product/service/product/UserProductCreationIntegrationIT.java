@@ -10,6 +10,8 @@ import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,7 +47,7 @@ class UserProductCreationIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
   private final MockMvc mockMvc;
 
@@ -74,17 +76,19 @@ class UserProductCreationIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Leche entera",
           "defaultUnit": "L",
           "caloriesPer": "ML"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     MvcResult result =
         mockMvc
-            .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/user-products")
+                    .with(TestAuth.user1())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isCreated())
             .andExpect(header().exists("Location"))
             .andReturn();
@@ -110,16 +114,16 @@ class UserProductCreationIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "basedOnBaseId": "%s"
         }
         """
-            .formatted(OWNER_ID, baseOnePublicId);
+            .formatted(baseOnePublicId);
 
     MvcResult result =
         mockMvc
             .perform(
                 post("/user-products")
+                    .with(TestAuth.user1())
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("Accept-Language", "es")
                     .content(body))
@@ -146,16 +150,19 @@ class UserProductCreationIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "basedOnBaseId": "%s",
           "name": "Mi marca de leche"
         }
         """
-            .formatted(OWNER_ID, baseProductPublicId(1L));
+            .formatted(baseProductPublicId(1L));
 
     MvcResult result =
         mockMvc
-            .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/user-products")
+                    .with(TestAuth.user1())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isCreated())
             .andReturn();
 
@@ -175,33 +182,53 @@ class UserProductCreationIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "basedOnBaseId": "%s"
         }
         """
-            .formatted(OWNER_ID, UUID.randomUUID());
+            .formatted(UUID.randomUUID());
 
     mockMvc
-        .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/user-products")
+                .with(TestAuth.user1())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest());
   }
 
-  /** Rechaza con 400 un {@code ownerId} que no es un UUID válido. */
+  /**
+   * Ignora el {@code ownerId} que intente enviarse en el body y asigna el usuario autenticado.
+   *
+   * @throws Exception si la petición MockMvc o la deserialización fallan
+   */
   @Test
-  void createUserProduct_withMalformedOwnerId_returns400() throws Exception {
+  void createUserProduct_withOwnerIdInBody_usesAuthenticatedUser() throws Exception {
     String body =
         """
         {
-          "ownerId": "no-es-un-uuid",
-          "name": "X",
+          "ownerId": "%s",
+          "name": "Leche entera",
           "defaultUnit": "UNIT",
           "caloriesPer": "G"
         }
-        """;
+        """
+            .formatted(TestUsers.USER_2);
 
-    mockMvc
-        .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
-        .andExpect(status().isBadRequest());
+    MvcResult result =
+        mockMvc
+            .perform(
+                post("/user-products")
+                    .with(TestAuth.user1())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
+            .andExpect(status().isCreated())
+            .andReturn();
+
+    UserProductResponse created =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), UserProductResponse.class);
+
+    assertThat(created.ownerId()).isEqualTo(TestUsers.USER_1);
   }
 
   /** Rechaza con 400 un {@code defaultUnit} que no corresponde a ninguna {@link UnitEnum}. */
@@ -210,16 +237,18 @@ class UserProductCreationIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Producto con unidad inválida",
           "defaultUnit": "XYZ",
           "caloriesPer": "G"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     mockMvc
-        .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/user-products")
+                .with(TestAuth.user1())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest());
   }
 
@@ -231,15 +260,17 @@ class UserProductCreationIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "defaultUnit": "UNIT",
           "caloriesPer": "G"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     mockMvc
-        .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/user-products")
+                .with(TestAuth.user1())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest());
   }
 
@@ -252,15 +283,17 @@ class UserProductCreationIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Leche entera",
           "caloriesPer": "G"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     mockMvc
-        .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/user-products")
+                .with(TestAuth.user1())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest());
   }
 
@@ -273,15 +306,17 @@ class UserProductCreationIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Leche entera",
           "defaultUnit": "UNIT"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     mockMvc
-        .perform(post("/user-products").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/user-products")
+                .with(TestAuth.user1())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest());
   }
 

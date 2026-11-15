@@ -47,6 +47,9 @@ class UserProductServiceTest {
 
   private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
 
+  private static final UUID OTHER_OWNER_ID =
+      UUID.fromString("dddddddd-eeee-4fff-8aaa-bbbbbbbbbbbb");
+
   private static final UUID PRODUCT_PUBLIC_ID =
       UUID.fromString("bbbbbbbb-cccc-4ddd-8eee-ffffffffffff");
 
@@ -145,7 +148,7 @@ class UserProductServiceTest {
     when(userProductRepository.findByPublicId(PRODUCT_PUBLIC_ID)).thenReturn(Optional.of(product));
     when(categoryRepository.findById(1L)).thenReturn(Optional.of(category(1L, CATEGORY_PUBLIC_ID)));
 
-    UserProductResponse dto = userProductService.findById(PRODUCT_PUBLIC_ID);
+    UserProductResponse dto = userProductService.findById(PRODUCT_PUBLIC_ID, OWNER_ID);
 
     assertThat(dto.id()).isEqualTo(PRODUCT_PUBLIC_ID);
     assertThat(dto.categoryId()).isEqualTo(CATEGORY_PUBLIC_ID);
@@ -164,7 +167,7 @@ class UserProductServiceTest {
     UUID basePublicId = UUID.randomUUID();
     when(baseProductRepository.findById(5L)).thenReturn(Optional.of(baseProduct(5L, basePublicId)));
 
-    UserProductResponse dto = userProductService.findById(PRODUCT_PUBLIC_ID);
+    UserProductResponse dto = userProductService.findById(PRODUCT_PUBLIC_ID, OWNER_ID);
 
     assertThat(dto.basedOnBaseId()).isEqualTo(basePublicId);
   }
@@ -174,7 +177,7 @@ class UserProductServiceTest {
   void findById_missing_throwsNotFound() {
     when(userProductRepository.findByPublicId(any())).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> userProductService.findById(PRODUCT_PUBLIC_ID))
+    assertThatThrownBy(() -> userProductService.findById(PRODUCT_PUBLIC_ID, OWNER_ID))
         .isInstanceOfSatisfying(
             BusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.USER_PRODUCT_NOT_FOUND));
@@ -187,10 +190,37 @@ class UserProductServiceTest {
     product.setPublicId(PRODUCT_PUBLIC_ID);
     when(userProductRepository.findByPublicId(PRODUCT_PUBLIC_ID)).thenReturn(Optional.of(product));
 
-    assertThatThrownBy(() -> userProductService.findById(PRODUCT_PUBLIC_ID))
+    assertThatThrownBy(() -> userProductService.findById(PRODUCT_PUBLIC_ID, OWNER_ID))
         .isInstanceOfSatisfying(
             BusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.USER_PRODUCT_NOT_FOUND));
+  }
+
+  /** Lanza {@code 403} cuando el producto activo pertenece a otro usuario. */
+  @Test
+  void findById_otherOwner_throwsOwnerMismatch() {
+    UserProduct product = buildProduct(OTHER_OWNER_ID, "Leche entera", 1L, true);
+    product.setPublicId(PRODUCT_PUBLIC_ID);
+    when(userProductRepository.findByPublicId(PRODUCT_PUBLIC_ID)).thenReturn(Optional.of(product));
+
+    assertThatThrownBy(() -> userProductService.findById(PRODUCT_PUBLIC_ID, OWNER_ID))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OWNER_MISMATCH));
+  }
+
+  /** Asigna al producto creado el propietario recibido del usuario autenticado. */
+  @Test
+  void create_assignsOwnerIdFromAuthenticatedUser() {
+    CreateUserProductRequest request =
+        new CreateUserProductRequest(
+            "Leche entera", null, null, null, UnitEnum.UNIT, 150, CaloriesPerEnum.G, null, null);
+    UserProduct saved = buildProduct(OWNER_ID, "Leche entera", null, true);
+    when(userProductRepository.save(any())).thenReturn(saved);
+
+    UserProductResponse response = userProductService.create(OWNER_ID, request, Locale.ENGLISH);
+
+    assertThat(response.ownerId()).isEqualTo(OWNER_ID);
   }
 
   /**
@@ -201,9 +231,9 @@ class UserProductServiceTest {
   void create_withoutBasedOnBaseIdAndWithoutDefaultUnit_throwsDefaultUnitRequired() {
     CreateUserProductRequest request =
         new CreateUserProductRequest(
-            OWNER_ID, "Leche entera", null, null, null, null, 150, CaloriesPerEnum.G, null, null);
+            "Leche entera", null, null, null, null, 150, CaloriesPerEnum.G, null, null);
 
-    assertThatThrownBy(() -> userProductService.create(request, Locale.ENGLISH))
+    assertThatThrownBy(() -> userProductService.create(OWNER_ID, request, Locale.ENGLISH))
         .isInstanceOfSatisfying(
             BusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.DEFAULT_UNIT_REQUIRED));
@@ -217,9 +247,9 @@ class UserProductServiceTest {
   void create_withoutBasedOnBaseIdAndWithoutCaloriesPer_throwsCaloriesPerRequired() {
     CreateUserProductRequest request =
         new CreateUserProductRequest(
-            OWNER_ID, "Leche entera", null, null, null, UnitEnum.UNIT, 150, null, null, null);
+            "Leche entera", null, null, null, UnitEnum.UNIT, 150, null, null, null);
 
-    assertThatThrownBy(() -> userProductService.create(request, Locale.ENGLISH))
+    assertThatThrownBy(() -> userProductService.create(OWNER_ID, request, Locale.ENGLISH))
         .isInstanceOfSatisfying(
             BusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.CALORIES_PER_REQUIRED));
@@ -241,13 +271,12 @@ class UserProductServiceTest {
     when(categoryRepository.findById(5L)).thenReturn(Optional.of(category(5L, CATEGORY_PUBLIC_ID)));
 
     CreateUserProductRequest request =
-        new CreateUserProductRequest(
-            OWNER_ID, null, null, null, basePublicId, null, null, null, null, null);
+        new CreateUserProductRequest(null, null, null, basePublicId, null, null, null, null, null);
     UserProduct saved = buildProduct(OWNER_ID, "Leche entera", 5L, true);
     saved.setBasedOnBaseId(10L);
     when(userProductRepository.save(any())).thenReturn(saved);
 
-    UserProductResponse response = userProductService.create(request, Locale.ENGLISH);
+    UserProductResponse response = userProductService.create(OWNER_ID, request, Locale.ENGLISH);
 
     assertThat(response.name()).isEqualTo("Leche entera");
     assertThat(response.categoryId()).isEqualTo(CATEGORY_PUBLIC_ID);
@@ -261,10 +290,9 @@ class UserProductServiceTest {
     when(baseProductRepository.findByPublicId(basePublicId)).thenReturn(Optional.empty());
 
     CreateUserProductRequest request =
-        new CreateUserProductRequest(
-            OWNER_ID, null, null, null, basePublicId, null, null, null, null, null);
+        new CreateUserProductRequest(null, null, null, basePublicId, null, null, null, null, null);
 
-    assertThatThrownBy(() -> userProductService.create(request, Locale.ENGLISH))
+    assertThatThrownBy(() -> userProductService.create(OWNER_ID, request, Locale.ENGLISH))
         .isInstanceOfSatisfying(
             BusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_BASE_PRODUCT));
@@ -281,7 +309,6 @@ class UserProductServiceTest {
 
     CreateUserProductRequest request =
         new CreateUserProductRequest(
-            OWNER_ID,
             "Leche entera",
             null,
             CATEGORY_PUBLIC_ID,
@@ -294,7 +321,7 @@ class UserProductServiceTest {
     UserProduct saved = buildProduct(OWNER_ID, "Leche entera", 3L, true);
     when(userProductRepository.save(any())).thenReturn(saved);
 
-    UserProductResponse response = userProductService.create(request, Locale.ENGLISH);
+    UserProductResponse response = userProductService.create(OWNER_ID, request, Locale.ENGLISH);
 
     assertThat(response.categoryId()).isEqualTo(CATEGORY_PUBLIC_ID);
     assertThat(response.basedOnBaseId()).isNull();

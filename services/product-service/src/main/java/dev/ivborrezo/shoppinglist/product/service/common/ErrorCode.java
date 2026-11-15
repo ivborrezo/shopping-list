@@ -23,6 +23,8 @@ public enum ErrorCode {
   DEFAULT_UNIT_REQUIRED(400, "Default unit is required"),
   CALORIES_PER_REQUIRED(400, "Calories per is required"),
   OWNER_MISMATCH(403, "Owner mismatch"),
+  UNAUTHENTICATED(401, "Unauthenticated"),
+  ACCESS_DENIED(403, "Access denied"),
   INVALID_PRODUCT_TYPE(400, "Invalid product type"),
   INVALID_BASE_PRODUCT(400, "Invalid base product"),
   VALIDATION_FAILED(400, "Validation failed");

@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -68,7 +69,10 @@ class CategoryGetByIdIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(get("/categories/" + categoryId).header("Accept-Language", "eu"))
+            .perform(
+                get("/categories/" + categoryId)
+                    .with(TestAuth.user1())
+                    .header("Accept-Language", "eu"))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -85,6 +89,8 @@ class CategoryGetByIdIntegrationIT {
   /** Devuelve 404 cuando el identificador de categoría no existe. */
   @Test
   void getCategoryById_withNonExistentId_returns404() throws Exception {
-    mockMvc.perform(get("/categories/" + UUID.randomUUID())).andExpect(status().isNotFound());
+    mockMvc
+        .perform(get("/categories/" + UUID.randomUUID()).with(TestAuth.user1()))
+        .andExpect(status().isNotFound());
   }
 }

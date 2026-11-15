@@ -1,6 +1,7 @@
 package dev.ivborrezo.shoppinglist.product.service.product.controller;
 
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
+import dev.ivborrezo.shoppinglist.product.service.common.security.CurrentUserId;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.CreateUserProductRequest;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.FavoriteToggleResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
@@ -59,57 +60,63 @@ public class UserProductController {
   }
 
   /**
-   * Lista los productos activos de un propietario paginados, con filtro opcional por categoría.
+   * Lista los productos activos del usuario autenticado paginados, con filtro opcional por
+   * categoría.
    *
-   * @param ownerId identificador del propietario de los productos
+   * @param userId identificador del usuario autenticado, resuelto desde el JWT
    * @param categoryId identificador de categoría para filtrar; opcional
    * @param pageable parámetros de paginación inyectados por Spring a partir de {@code page} y
    *     {@code size}
-   * @return página de DTOs con los productos activos del propietario indicado
+   * @return página de DTOs con los productos activos del usuario autenticado
    */
   @GetMapping
   public PagedResponse<UserProductResponse> list(
-      @RequestParam UUID ownerId,
+      @CurrentUserId UUID userId,
       @RequestParam(required = false) @Nullable UUID categoryId,
       @PageableDefault Pageable pageable) {
     if (categoryId != null) {
-      return userProductService.findByOwner(ownerId, pageable, categoryId);
+      return userProductService.findByOwner(userId, pageable, categoryId);
     }
-    return userProductService.findByOwner(ownerId, pageable);
+    return userProductService.findByOwner(userId, pageable);
   }
 
   /**
-   * Recupera un producto de usuario por su identificador.
+   * Recupera un producto de usuario propio por su identificador.
    *
    * @param id identificador del producto a recuperar
+   * @param userId identificador del usuario autenticado, resuelto desde el JWT
    * @return DTO del producto encontrado
    */
   @GetMapping("/{id}")
-  public UserProductResponse getById(@PathVariable UUID id) {
-    return userProductService.findById(id);
+  public UserProductResponse getById(@PathVariable UUID id, @CurrentUserId UUID userId) {
+    return userProductService.findById(id, userId);
   }
 
   /**
-   * Edita parcialmente un producto de usuario por su identificador, aplicando solo los campos no
-   * nulos del body.
+   * Edita parcialmente un producto de usuario propio por su identificador, aplicando solo los
+   * campos no nulos del body.
    *
-   * <p>El {@code ownerId} del body actúa como verificación de propiedad: si no coincide con el
-   * propietario almacenado, la edición se rechaza con {@code 403}. El contenido de los productos de
+   * <p>La propiedad se verifica contra el usuario autenticado: si el producto pertenece a otro
+   * usuario, la edición se rechaza con {@code 403 OWNER_MISMATCH}. El contenido de los productos de
    * usuario es monolingüe, por lo que el endpoint no resuelve textos localizados.
    *
    * @param id identificador del producto a editar
+   * @param userId identificador del usuario autenticado, resuelto desde el JWT
    * @param request petición con los campos a modificar, validada con Bean Validation
    * @return DTO del producto de usuario tras aplicar los cambios
    */
   @PatchMapping("/{id}")
   public UserProductResponse update(
-      @PathVariable UUID id, @Valid @RequestBody UpdateUserProductRequest request) {
-    return userProductService.update(id, request);
+      @PathVariable UUID id,
+      @CurrentUserId UUID userId,
+      @Valid @RequestBody UpdateUserProductRequest request) {
+    return userProductService.update(id, userId, request);
   }
 
   /**
    * Crea un producto de usuario y devuelve el recurso creado con su cabecera {@code Location}.
    *
+   * @param userId identificador del usuario autenticado que se asigna como propietario
    * @param request petición con los datos del producto de usuario, validada con Bean Validation
    * @param locale idioma de la petición en el que se resuelven los campos copiados del producto
    *     base
@@ -117,68 +124,73 @@ public class UserProductController {
    */
   @PostMapping
   public ResponseEntity<UserProductResponse> create(
-      @Valid @RequestBody CreateUserProductRequest request, Locale locale) {
-    UserProductResponse created = userProductService.create(request, locale);
+      @CurrentUserId UUID userId,
+      @Valid @RequestBody CreateUserProductRequest request,
+      Locale locale) {
+    UserProductResponse created = userProductService.create(userId, request, locale);
     URI location = URI.create("/user-products/" + created.id());
     return ResponseEntity.created(location).body(created);
   }
 
   /**
-   * Elimina un producto de usuario tras verificar que el {@code ownerId} del query param coincide
-   * con el propietario almacenado.
+   * Elimina un producto de usuario propio tras verificar la propiedad frente al usuario
+   * autenticado.
    *
    * @param id identificador del producto de usuario a eliminar
-   * @param ownerId identificador del propietario que solicita el borrado; obligatorio
+   * @param userId identificador del usuario autenticado, resuelto desde el JWT
    * @return {@code 204 No Content} si el borrado fue exitoso
    */
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable UUID id, @RequestParam UUID ownerId) {
-    userProductService.delete(id, ownerId);
+  public ResponseEntity<Void> delete(@PathVariable UUID id, @CurrentUserId UUID userId) {
+    userProductService.delete(id, userId);
     return ResponseEntity.noContent().build();
   }
 
   /**
-   * Marca o desmarca como favorito el producto indicado para el propietario.
+   * Marca o desmarca como favorito el producto indicado para el usuario autenticado.
    *
    * <p>Si el producto ya estaba entre los favoritos del usuario, se desmarca y se responde {@code
    * favorited: false}; si no, se marca, se actualiza el reciente del usuario-producto y se responde
-   * {@code favorited: true}.
+   * {@code favorited: true}. Con {@code productType=USER} el producto debe pertenecer al usuario
+   * autenticado.
    *
    * @param id identificador del producto a marcar, base o de usuario según {@code productType}
-   * @param ownerId identificador del propietario del favorito
+   * @param userId identificador del usuario autenticado, resuelto desde el JWT
    * @param productType tipo de producto ({@code BASE} o {@code USER})
    * @return DTO con el estado del favorito tras la operación
    */
   @PostMapping("/{id}/favorite")
   public FavoriteToggleResponse toggleFavorite(
-      @PathVariable UUID id, @RequestParam UUID ownerId, @RequestParam String productType) {
-    return userFavoriteProductService.toggle(ownerId, id, productType);
+      @PathVariable UUID id, @CurrentUserId UUID userId, @RequestParam String productType) {
+    return userFavoriteProductService.toggle(userId, id, productType);
   }
 
   /**
-   * Lista los productos favoritos del propietario paginados, con el nombre del producto resuelto.
+   * Lista los productos favoritos del usuario autenticado paginados, con el nombre del producto
+   * resuelto.
    *
-   * @param ownerId identificador del propietario de los favoritos
+   * @param userId identificador del usuario autenticado, resuelto desde el JWT
    * @param pageable parámetros de paginación inyectados por Spring a partir de {@code page} y
    *     {@code size}
    * @param locale idioma resuelto desde la cabecera por Spring MVC
-   * @return página de DTOs con las referencias a los productos favoritos del propietario
+   * @return página de DTOs con las referencias a los productos favoritos del usuario autenticado
    */
   @GetMapping("/favorites")
   public PagedResponse<ProductReference> listFavorites(
-      @RequestParam UUID ownerId, @PageableDefault Pageable pageable, Locale locale) {
-    return userFavoriteProductService.findFavorites(ownerId, pageable, locale);
+      @CurrentUserId UUID userId, @PageableDefault Pageable pageable, Locale locale) {
+    return userFavoriteProductService.findFavorites(userId, pageable, locale);
   }
 
   /**
-   * Lista los diez productos más recientes del propietario, con el nombre del producto resuelto.
+   * Lista los diez productos más recientes del usuario autenticado, con el nombre del producto
+   * resuelto.
    *
-   * @param ownerId identificador del propietario
+   * @param userId identificador del usuario autenticado, resuelto desde el JWT
    * @param locale idioma resuelto desde la cabecera por Spring MVC
-   * @return lista con las referencias a los diez productos recientes del propietario
+   * @return lista con las referencias a los diez productos recientes del usuario autenticado
    */
   @GetMapping("/recents")
-  public List<ProductReference> listRecents(@RequestParam UUID ownerId, Locale locale) {
-    return userRecentProductService.findRecents(ownerId, locale);
+  public List<ProductReference> listRecents(@CurrentUserId UUID userId, Locale locale) {
+    return userRecentProductService.findRecents(userId, locale);
   }
 }

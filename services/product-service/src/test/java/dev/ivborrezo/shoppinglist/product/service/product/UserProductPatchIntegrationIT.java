@@ -9,6 +9,8 @@ import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -46,10 +48,9 @@ class UserProductPatchIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
-  private static final UUID OTHER_OWNER_ID =
-      UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeef");
+  private static final UUID OTHER_OWNER_ID = TestUsers.USER_2;
 
   private final MockMvc mockMvc;
 
@@ -79,17 +80,16 @@ class UserProductPatchIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Actualizado",
           "calories": 200
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     MvcResult result =
         mockMvc
             .perform(
                 patch("/user-products/" + product.getPublicId())
+                    .with(TestAuth.user1())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
             .andExpect(status().isOk())
@@ -118,15 +118,14 @@ class UserProductPatchIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Intruso"
         }
-        """
-            .formatted(OTHER_OWNER_ID);
+        """;
 
     mockMvc
         .perform(
             patch("/user-products/" + product.getPublicId())
+                .with(TestAuth.user2())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isForbidden());
@@ -142,17 +141,17 @@ class UserProductPatchIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "basedOnBaseId": "%s",
           "name": "Renombrado"
         }
         """
-            .formatted(OWNER_ID, baseProductPublicId(2L));
+            .formatted(baseProductPublicId(2L));
 
     MvcResult result =
         mockMvc
             .perform(
                 patch("/user-products/" + product.getPublicId())
+                    .with(TestAuth.user1())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
             .andExpect(status().isOk())
@@ -172,15 +171,14 @@ class UserProductPatchIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "X"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     mockMvc
         .perform(
             patch("/user-products/" + UUID.randomUUID())
+                .with(TestAuth.user1())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isNotFound());

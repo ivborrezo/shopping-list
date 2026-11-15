@@ -12,6 +12,7 @@ import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductRespons
 import dev.ivborrezo.shoppinglist.product.service.product.entity.BaseProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -122,7 +123,11 @@ class BaseProductPublicIdIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/base-products")
+                    .with(TestAuth.admin())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isCreated())
             .andReturn();
 
@@ -163,7 +168,11 @@ class BaseProductPublicIdIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/base-products")
+                    .with(TestAuth.admin())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();

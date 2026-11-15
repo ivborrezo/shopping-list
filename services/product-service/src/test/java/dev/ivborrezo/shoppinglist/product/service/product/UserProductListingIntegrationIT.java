@@ -10,6 +10,8 @@ import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.UserProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -33,8 +35,8 @@ import tools.jackson.databind.ObjectMapper;
  * Test de integración del endpoint {@code GET /user-products}.
  *
  * <p>Inserta los productos de usuario vía {@link TestEntityManager} dentro de la transacción del
- * test y verifica el listado paginado por propietario, el filtro por categoría y el {@code 400}
- * para un {@code ownerId} mal formado.
+ * test y verifica el listado paginado del usuario autenticado, el filtro por categoría y el {@code
+ * 400} para un {@code categoryId} mal formado.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -47,9 +49,9 @@ class UserProductListingIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_A = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeee1");
+  private static final UUID OWNER_A = TestUsers.USER_1;
 
-  private static final UUID OWNER_B = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeee2");
+  private static final UUID OWNER_B = TestUsers.USER_2;
 
   private final MockMvc mockMvc;
 
@@ -70,15 +72,15 @@ class UserProductListingIntegrationIT {
     this.categoryRepository = categoryRepository;
   }
 
-  /** Devuelve solo los productos activos del propietario indicado en {@code ownerId}. */
+  /** Devuelve solo los productos activos del usuario autenticado. */
   @Test
-  void list_byOwner_returnsOnlyThatOwnersProducts() throws Exception {
+  void list_authenticatedUser_returnsOnlyThatOwnersProducts() throws Exception {
     UserProduct milk = buildProduct(OWNER_A, "Leche entera", 1L, true);
     UserProduct cheese = buildProduct(OWNER_A, "Queso curado", 2L, true);
     UserProduct bread = buildProduct(OWNER_B, "Pan de molde", 1L, true);
     persist(milk, cheese, bread);
 
-    PagedResponse<UserProductResponse> page = getUserProducts("ownerId=" + OWNER_A);
+    PagedResponse<UserProductResponse> page = getUserProducts("");
 
     assertThat(page.content()).hasSize(2);
     assertThat(page.page()).isEqualTo(0);
@@ -94,17 +96,18 @@ class UserProductListingIntegrationIT {
     persist(milk, cheese);
 
     UUID dairyCategoryId = categoryRepository.findById(1L).orElseThrow().getPublicId();
-    PagedResponse<UserProductResponse> page =
-        getUserProducts("ownerId=" + OWNER_A + "&categoryId=" + dairyCategoryId);
+    PagedResponse<UserProductResponse> page = getUserProducts("categoryId=" + dairyCategoryId);
 
     assertThat(page.content()).hasSize(1);
     assertThat(page.content().get(0).categoryId()).isEqualTo(dairyCategoryId);
   }
 
-  /** Devuelve {@code 400} cuando {@code ownerId} no es un UUID válido. */
+  /** Devuelve {@code 400} cuando {@code categoryId} no es un UUID válido. */
   @Test
-  void list_withMalformedOwnerId_returns400() throws Exception {
-    mockMvc.perform(get("/user-products?ownerId=not-a-uuid")).andExpect(status().isBadRequest());
+  void list_withMalformedCategoryId_returns400() throws Exception {
+    mockMvc
+        .perform(get("/user-products?categoryId=not-a-uuid").with(TestAuth.user1()))
+        .andExpect(status().isBadRequest());
   }
 
   /**
@@ -116,11 +119,10 @@ class UserProductListingIntegrationIT {
    * @throws Exception si la petición MockMvc o la deserialización fallan
    */
   private PagedResponse<UserProductResponse> getUserProducts(String queryString) throws Exception {
-    MvcResult result =
-        mockMvc
-            .perform(get("/user-products?" + queryString))
-            .andExpect(status().isOk())
-            .andReturn();
+    var request =
+        get("/user-products" + (queryString.isEmpty() ? "" : "?" + queryString))
+            .with(TestAuth.user1());
+    MvcResult result = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
 
     return objectMapper.readValue(
         result.getResponse().getContentAsByteArray(),

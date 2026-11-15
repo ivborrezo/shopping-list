@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -137,7 +138,7 @@ class CategoryI18nIntegrationIT {
    * @throws Exception si la petición MockMvc o la deserialización fallan
    */
   private PagedResponse<CategoryResponse> getCategories(String acceptLanguage) throws Exception {
-    var request = get("/categories");
+    var request = get("/categories").with(TestAuth.user1());
     if (acceptLanguage != null) {
       request = request.header("Accept-Language", acceptLanguage);
     }

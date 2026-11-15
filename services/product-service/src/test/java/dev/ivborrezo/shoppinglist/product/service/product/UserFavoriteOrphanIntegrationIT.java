@@ -9,6 +9,8 @@ import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserFavoriteProduct;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserRecentProduct;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -48,7 +50,7 @@ class UserFavoriteOrphanIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
   private static final UUID UNRESOLVABLE_PRODUCT_PUBLIC_ID =
       UUID.fromString("99999999-9999-4999-8999-999999999999");
@@ -89,7 +91,7 @@ class UserFavoriteOrphanIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(get("/user-products/favorites").param("ownerId", OWNER_ID.toString()))
+            .perform(get("/user-products/favorites").with(TestAuth.user1()))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -118,7 +120,7 @@ class UserFavoriteOrphanIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(get("/user-products/recents").param("ownerId", OWNER_ID.toString()))
+            .perform(get("/user-products/recents").with(TestAuth.user1()))
             .andExpect(status().isOk())
             .andReturn();
 

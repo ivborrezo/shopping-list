@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRepository;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -153,7 +154,8 @@ class BaseProductListingIntegrationIT {
   private PagedResponse<BaseProductResponse> getBaseProducts(
       String queryString, String acceptLanguage) throws Exception {
     var query = queryString.startsWith("?") ? queryString.substring(1) : queryString;
-    var request = get("/base-products" + (query.isEmpty() ? "" : "?" + query));
+    var request =
+        get("/base-products" + (query.isEmpty() ? "" : "?" + query)).with(TestAuth.user1());
     if (acceptLanguage != null) {
       request = request.header("Accept-Language", acceptLanguage);
     }

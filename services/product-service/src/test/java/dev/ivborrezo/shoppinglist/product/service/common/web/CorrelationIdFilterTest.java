@@ -68,6 +68,7 @@ class CorrelationIdFilterTest {
 
   @Test
   void doFilter_whenChainThrows_clearsMdc() {
+    MDC.put("userId", "x");
     MockHttpServletRequest request = new MockHttpServletRequest();
     MockHttpServletResponse response = new MockHttpServletResponse();
     FilterChain chain =
@@ -79,6 +80,7 @@ class CorrelationIdFilterTest {
         .isInstanceOf(ServletException.class);
 
     assertThat(MDC.get(MDC_KEY)).isNull();
+    assertThat(MDC.get("userId")).isNull();
   }
 
   @Test

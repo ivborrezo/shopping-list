@@ -9,6 +9,7 @@ import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -71,7 +72,10 @@ class BaseProductGetByIdIntegrationIT {
     UUID productId = baseProductPublicId(1L);
     MvcResult result =
         mockMvc
-            .perform(get("/base-products/" + productId).header("Accept-Language", "eu"))
+            .perform(
+                get("/base-products/" + productId)
+                    .with(TestAuth.user1())
+                    .header("Accept-Language", "eu"))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -98,7 +102,10 @@ class BaseProductGetByIdIntegrationIT {
     UUID productId = baseProductPublicId(3L);
     MvcResult result =
         mockMvc
-            .perform(get("/base-products/" + productId).header("Accept-Language", "es"))
+            .perform(
+                get("/base-products/" + productId)
+                    .with(TestAuth.user1())
+                    .header("Accept-Language", "es"))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -121,7 +128,10 @@ class BaseProductGetByIdIntegrationIT {
   @Test
   void getBaseProductById_withNonExistentId_returns404() throws Exception {
     mockMvc
-        .perform(get("/base-products/" + UUID.randomUUID()).header("Accept-Language", "es"))
+        .perform(
+            get("/base-products/" + UUID.randomUUID())
+                .with(TestAuth.user1())
+                .header("Accept-Language", "es"))
         .andExpect(status().isNotFound());
   }
 

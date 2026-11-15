@@ -2,7 +2,6 @@ package dev.ivborrezo.shoppinglist.product.service.product.dto;
 
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -13,13 +12,13 @@ import org.jspecify.annotations.Nullable;
  * <p>Los campos se validan con Bean Validation en la capa de controller vía {@code @Valid}. {@code
  * name}, {@code defaultUnit} y {@code caloriesPer} son obligatorios salvo que se indique {@code
  * basedOnBaseId}, en cuyo caso se copian del producto base en el locale de la petición; la
- * comprobación de esa regla condicional se realiza en la capa de servicio. {@code basedOnBaseId}
- * queda en el producto creado como trazabilidad inmutable de su origen. {@code defaultUnit} y
- * {@code caloriesPer} se tipan con los enums de dominio ({@link UnitEnum}, {@link
+ * comprobación de esa regla condicional se realiza en la capa de servicio. El propietario se asigna
+ * siempre desde el usuario autenticado, por lo que no forma parte de la petición. {@code
+ * basedOnBaseId} queda en el producto creado como trazabilidad inmutable de su origen. {@code
+ * defaultUnit} y {@code caloriesPer} se tipan con los enums de dominio ({@link UnitEnum}, {@link
  * CaloriesPerEnum}), de modo que Jackson rechaza con 400 los valores inválidos.
  */
 public record CreateUserProductRequest(
-    @NotNull UUID ownerId,
     @Size(max = 128) @Nullable String name,
     @Nullable String description,
     @Nullable UUID categoryId,

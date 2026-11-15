@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,7 +49,7 @@ class BaseProductDeletionIntegrationIT {
   @Test
   void deleteBaseProduct_existingProduct_returns204() throws Exception {
     mockMvc
-        .perform(delete("/base-products/" + baseProductPublicId(5L)))
+        .perform(delete("/base-products/" + baseProductPublicId(5L)).with(TestAuth.admin()))
         .andExpect(status().isNoContent());
   }
 
@@ -56,15 +57,21 @@ class BaseProductDeletionIntegrationIT {
   @Test
   void deleteBaseProduct_alreadyDeletedProduct_returns404() throws Exception {
     UUID publicId = baseProductPublicId(5L);
-    mockMvc.perform(delete("/base-products/" + publicId)).andExpect(status().isNoContent());
+    mockMvc
+        .perform(delete("/base-products/" + publicId).with(TestAuth.admin()))
+        .andExpect(status().isNoContent());
 
-    mockMvc.perform(delete("/base-products/" + publicId)).andExpect(status().isNotFound());
+    mockMvc
+        .perform(delete("/base-products/" + publicId).with(TestAuth.admin()))
+        .andExpect(status().isNotFound());
   }
 
   /** Devuelve 404 cuando el identificador de producto base no existe. */
   @Test
   void deleteBaseProduct_withNonExistentId_returns404() throws Exception {
-    mockMvc.perform(delete("/base-products/" + UUID.randomUUID())).andExpect(status().isNotFound());
+    mockMvc
+        .perform(delete("/base-products/" + UUID.randomUUID()).with(TestAuth.admin()))
+        .andExpect(status().isNotFound());
   }
 
   /**

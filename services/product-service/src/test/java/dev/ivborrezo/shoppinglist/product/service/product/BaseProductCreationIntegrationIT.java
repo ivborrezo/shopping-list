@@ -10,6 +10,7 @@ import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRe
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -87,6 +88,7 @@ class BaseProductCreationIntegrationIT {
         mockMvc
             .perform(
                 post("/base-products")
+                    .with(TestAuth.admin())
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("Accept-Language", "eu")
                     .content(body))
@@ -128,7 +130,11 @@ class BaseProductCreationIntegrationIT {
             .formatted(categoryPublicId(1L));
 
     mockMvc
-        .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/base-products")
+                .with(TestAuth.admin())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest());
   }
 
@@ -157,7 +163,11 @@ class BaseProductCreationIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/base-products")
+                    .with(TestAuth.admin())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -196,7 +206,11 @@ class BaseProductCreationIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/base-products")
+                    .with(TestAuth.admin())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isConflict())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -229,7 +243,11 @@ class BaseProductCreationIntegrationIT {
             .formatted(categoryPublicId(1L));
 
     mockMvc
-        .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/base-products")
+                .with(TestAuth.admin())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest());
   }
 
@@ -249,7 +267,11 @@ class BaseProductCreationIntegrationIT {
             .formatted(categoryPublicId(1L));
 
     mockMvc
-        .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/base-products")
+                .with(TestAuth.admin())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest());
   }
 

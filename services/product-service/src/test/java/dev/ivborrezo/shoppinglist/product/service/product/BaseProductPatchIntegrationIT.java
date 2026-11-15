@@ -9,6 +9,7 @@ import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRe
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.BaseProductResponse;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -76,6 +77,7 @@ class BaseProductPatchIntegrationIT {
         mockMvc
             .perform(
                 patch("/base-products/" + productId)
+                    .with(TestAuth.admin())
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("Accept-Language", "es")
                     .content(body))
@@ -113,6 +115,7 @@ class BaseProductPatchIntegrationIT {
         mockMvc
             .perform(
                 patch("/base-products/" + productId)
+                    .with(TestAuth.admin())
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("Accept-Language", "eu")
                     .content(body))
@@ -143,6 +146,7 @@ class BaseProductPatchIntegrationIT {
         mockMvc
             .perform(
                 patch("/base-products/" + productId)
+                    .with(TestAuth.admin())
                     .contentType(MediaType.APPLICATION_JSON)
                     .header("Accept-Language", "es")
                     .content(body))
@@ -177,6 +181,7 @@ class BaseProductPatchIntegrationIT {
         mockMvc
             .perform(
                 patch("/base-products/" + baseProductPublicId(3L))
+                    .with(TestAuth.admin())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
             .andExpect(status().isConflict())
@@ -205,6 +210,7 @@ class BaseProductPatchIntegrationIT {
     mockMvc
         .perform(
             patch("/base-products/" + UUID.randomUUID())
+                .with(TestAuth.admin())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isNotFound());

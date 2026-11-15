@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import dev.ivborrezo.shoppinglist.product.service.common.ProductType;
 import dev.ivborrezo.shoppinglist.product.service.product.dto.ProductReference;
 import dev.ivborrezo.shoppinglist.product.service.product.repository.BaseProductRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -44,7 +46,7 @@ class UserRecentsListingIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
   private final MockMvc mockMvc;
 
@@ -90,6 +92,28 @@ class UserRecentsListingIntegrationIT {
   }
 
   /**
+   * Excluye del listado los recientes de otros usuarios, aunque el usuario autenticado tenga los
+   * suyos.
+   *
+   * @throws Exception si la petición MockMvc falla
+   */
+  @Test
+  void listRecents_withOtherUserRecents_returnsOnlyAuthenticatedUserRecents() throws Exception {
+    UUID otherProductId = baseProductPublicId(2L);
+    markFavoriteAsUser(TestUsers.USER_2, otherProductId);
+
+    UUID ownProductId = baseProductPublicId(1L);
+    markFavorite(ownProductId);
+
+    List<ProductReference> recents = getRecents(null);
+
+    assertThat(recents)
+        .extracting(ProductReference::productId)
+        .containsExactly(ownProductId)
+        .doesNotContain(otherProductId);
+  }
+
+  /**
    * Re-marcar un producto ya reciente (tras desmarcarlo del favorito) actualiza su última
    * interacción y lo desplaza al inicio del listado sin eliminar su fila de reciente.
    */
@@ -120,7 +144,7 @@ class UserRecentsListingIntegrationIT {
    * @throws Exception si la petición MockMvc o la deserialización fallan
    */
   private List<ProductReference> getRecents(String acceptLanguage) throws Exception {
-    var request = get("/user-products/recents").param("ownerId", OWNER_ID.toString());
+    var request = get("/user-products/recents").with(TestAuth.user1());
     if (acceptLanguage != null) {
       request = request.header("Accept-Language", acceptLanguage);
     }
@@ -139,10 +163,22 @@ class UserRecentsListingIntegrationIT {
    * @throws Exception si la petición MockMvc falla
    */
   private void markFavorite(UUID productId) throws Exception {
+    markFavoriteAsUser(TestUsers.USER_1, productId);
+  }
+
+  /**
+   * Marca como favorito el producto base indicado para el usuario indicado, registrando la
+   * interacción en los recientes de ese usuario.
+   *
+   * @param userId identificador del usuario que marca el producto
+   * @param productId identificador público del producto base a marcar
+   * @throws Exception si la petición MockMvc falla
+   */
+  private void markFavoriteAsUser(UUID userId, UUID productId) throws Exception {
     mockMvc
         .perform(
             post("/user-products/{id}/favorite", productId)
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user(userId))
                 .param("productType", "BASE"))
         .andExpect(status().isOk());
   }

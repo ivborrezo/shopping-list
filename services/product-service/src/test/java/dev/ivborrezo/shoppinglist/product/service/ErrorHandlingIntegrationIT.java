@@ -11,6 +11,8 @@ import dev.ivborrezo.shoppinglist.product.service.category.repository.CategoryRe
 import dev.ivborrezo.shoppinglist.product.service.common.CaloriesPerEnum;
 import dev.ivborrezo.shoppinglist.product.service.common.UnitEnum;
 import dev.ivborrezo.shoppinglist.product.service.product.entity.UserProduct;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.UUID;
@@ -57,10 +59,7 @@ class ErrorHandlingIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
-
-  private static final UUID OTHER_OWNER_ID =
-      UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeef");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
   private final MockMvc mockMvc;
 
@@ -96,7 +95,7 @@ class ErrorHandlingIntegrationIT {
   void getCategory_withNonExistentId_returnsProblemDetailWithCode() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/categories/" + UUID.randomUUID()))
+            .perform(get("/categories/" + UUID.randomUUID()).with(TestAuth.user1()))
             .andExpect(status().isNotFound())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -128,7 +127,11 @@ class ErrorHandlingIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/base-products")
+                    .with(TestAuth.admin())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -151,16 +154,15 @@ class ErrorHandlingIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Intruso"
         }
-        """
-            .formatted(OTHER_OWNER_ID);
+        """;
 
     MvcResult result =
         mockMvc
             .perform(
                 patch("/user-products/" + product.getPublicId())
+                    .with(TestAuth.user2())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
             .andExpect(status().isForbidden())
@@ -194,7 +196,11 @@ class ErrorHandlingIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/base-products")
+                    .with(TestAuth.admin())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isConflict())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -229,7 +235,11 @@ class ErrorHandlingIntegrationIT {
 
     MvcResult result =
         mockMvc
-            .perform(post("/base-products").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/base-products")
+                    .with(TestAuth.admin())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -252,7 +262,7 @@ class ErrorHandlingIntegrationIT {
   void nonUuidPathVariable_returnsValidationProblemDetail() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/categories/not-a-uuid"))
+            .perform(get("/categories/not-a-uuid").with(TestAuth.user1()))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -274,7 +284,7 @@ class ErrorHandlingIntegrationIT {
   void nonUuidRequestParam_returnsValidationProblemDetail() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/user-products").param("ownerId", "not-a-uuid"))
+            .perform(get("/user-products").param("categoryId", "not-a-uuid").with(TestAuth.user1()))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -286,7 +296,7 @@ class ErrorHandlingIntegrationIT {
     assertThat(response.code()).isEqualTo("VALIDATION_FAILED");
     assertThat(response.errors()).hasSize(1);
     assertThat(response.errors().get(0).code()).isEqualTo("typeMismatch");
-    assertThat(response.errors().get(0).field()).isEqualTo("ownerId");
+    assertThat(response.errors().get(0).field()).isEqualTo("categoryId");
   }
 
   /** Devuelve 400 con {@code VALIDATION_FAILED} cuando falta un parámetro obligatorio. */
@@ -294,7 +304,7 @@ class ErrorHandlingIntegrationIT {
   void missingRequestParam_returnsValidationProblemDetail() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/user-products"))
+            .perform(post("/user-products/{id}/favorite", UUID.randomUUID()).with(TestAuth.user1()))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -306,7 +316,7 @@ class ErrorHandlingIntegrationIT {
     assertThat(response.code()).isEqualTo("VALIDATION_FAILED");
     assertThat(response.errors()).hasSize(1);
     assertThat(response.errors().get(0).code()).isEqualTo("missing");
-    assertThat(response.errors().get(0).field()).isEqualTo("ownerId");
+    assertThat(response.errors().get(0).field()).isEqualTo("productType");
   }
 
   /** Devuelve 400 con {@code VALIDATION_FAILED} cuando el body JSON no es procesable. */
@@ -316,6 +326,7 @@ class ErrorHandlingIntegrationIT {
         mockMvc
             .perform(
                 post("/base-products")
+                    .with(TestAuth.admin())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{ not json"))
             .andExpect(status().isBadRequest())
@@ -336,7 +347,7 @@ class ErrorHandlingIntegrationIT {
   void methodValidationFailure_returnsValidationProblemDetail() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/probe/method-validation").param("name", " "))
+            .perform(get("/probe/method-validation").with(TestAuth.user1()).param("name", " "))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -356,7 +367,7 @@ class ErrorHandlingIntegrationIT {
   void errorProbe_withUnhandledException_returnsInternalErrorProblemDetail() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/error-probe"))
+            .perform(get("/error-probe").with(TestAuth.user1()))
             .andExpect(status().isInternalServerError())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();

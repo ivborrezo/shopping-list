@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import dev.ivborrezo.shoppinglist.product.service.category.dto.CategoryResponse;
 import dev.ivborrezo.shoppinglist.product.service.category.entity.Category;
 import dev.ivborrezo.shoppinglist.product.service.common.dto.PagedResponse;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -82,7 +83,11 @@ class CategoryIntegrationIT {
    */
   @Test
   void getCategories_returnsAllTenActiveSeededCategories() throws Exception {
-    MvcResult result = mockMvc.perform(get("/categories")).andExpect(status().isOk()).andReturn();
+    MvcResult result =
+        mockMvc
+            .perform(get("/categories").with(TestAuth.user1()))
+            .andExpect(status().isOk())
+            .andReturn();
 
     PagedResponse<CategoryResponse> page =
         objectMapper.readValue(
@@ -124,7 +129,11 @@ class CategoryIntegrationIT {
     adHocInactive.setIsActive(false);
     entityManager.persistAndFlush(adHocInactive);
 
-    MvcResult result = mockMvc.perform(get("/categories")).andExpect(status().isOk()).andReturn();
+    MvcResult result =
+        mockMvc
+            .perform(get("/categories").with(TestAuth.user1()))
+            .andExpect(status().isOk())
+            .andReturn();
 
     PagedResponse<CategoryResponse> page =
         objectMapper.readValue(
