@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -14,6 +15,8 @@ import dev.ivborrezo.shoppinglist.list.service.list.entity.ListItem;
 import dev.ivborrezo.shoppinglist.list.service.list.entity.ShoppingList;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ListItemRepository;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ShoppingListRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -34,12 +37,12 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Test de integración de la verificación de propiedad sobre las mutaciones de {@code /lists}.
+ * Test de integración de la verificación de propiedad sobre las operaciones de listas e ítems.
  *
- * <p>Ejercita vía MockMvc el contrato de {@code api-contract.yaml}: {@code PATCH} y {@code DELETE}
- * solo proceden cuando el {@code ownerId} solicitante coincide con el propietario almacenado y
- * responden {@code 403 OWNER_MISMATCH} en caso contrario; el recurso inexistente prevalece como
- * {@code 404 LIST_NOT_FOUND}. La lectura por identificador se mantiene abierta.
+ * <p>Ejercita vía MockMvc el contrato de {@code api-contract.yaml}: las operaciones sobre una lista
+ * existente solo proceden cuando el usuario autenticado es su propietario y responden {@code 403
+ * OWNER_MISMATCH} en caso contrario; el recurso inexistente prevalece como {@code 404
+ * LIST_NOT_FOUND} y las peticiones sin credenciales se rechazan con {@code 401 UNAUTHENTICATED}.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -52,10 +55,9 @@ class ListOwnershipIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
-  private static final UUID OTHER_OWNER_ID =
-      UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeef");
+  private static final UUID OTHER_OWNER_ID = TestUsers.USER_2;
 
   private final MockMvc mockMvc;
 
@@ -90,7 +92,7 @@ class ListOwnershipIntegrationIT {
     this.listItemRepository = listItemRepository;
   }
 
-  /** Rechaza con 403 y {@code OWNER_MISMATCH} el renombrado por un propietario distinto. */
+  /** Rechaza con 403 y {@code OWNER_MISMATCH} el renombrado por un usuario distinto. */
   @Test
   void patchList_withOtherOwner_returns403AndKeepsName() throws Exception {
     ShoppingList list = buildList(OWNER_ID, "Nombre antiguo");
@@ -99,15 +101,14 @@ class ListOwnershipIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Nombre nuevo"
         }
-        """
-            .formatted(OTHER_OWNER_ID);
+        """;
 
     mockMvc
         .perform(
             patch("/lists/" + list.getPublicId())
+                .with(TestAuth.user2())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isForbidden())
@@ -118,7 +119,7 @@ class ListOwnershipIntegrationIT {
     assertThat(list.getName()).isEqualTo("Nombre antiguo");
   }
 
-  /** Permite el renombrado cuando el {@code ownerId} coincide con el propietario almacenado. */
+  /** Permite el renombrado cuando el usuario autenticado es el propietario almacenado. */
   @Test
   void patchList_withMatchingOwner_returns200AndNewName() throws Exception {
     ShoppingList list = buildList(OWNER_ID, "Nombre antiguo");
@@ -127,16 +128,15 @@ class ListOwnershipIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Nombre nuevo"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     MvcResult result =
         mockMvc
             .perform(
                 patch("/lists/" + list.getPublicId())
+                    .with(TestAuth.user1())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
             .andExpect(status().isOk())
@@ -149,21 +149,20 @@ class ListOwnershipIntegrationIT {
     assertThat(updated.name()).isEqualTo("Nombre nuevo");
   }
 
-  /** Devuelve 404 antes que 403 cuando la lista a renombrar no existe, sea cual sea el owner. */
+  /** Devuelve 404 antes que 403 cuando la lista a renombrar no existe. */
   @Test
   void patchList_withNonExistentId_returns404RegardlessOfOwner() throws Exception {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Nombre nuevo"
         }
-        """
-            .formatted(OTHER_OWNER_ID);
+        """;
 
     mockMvc
         .perform(
             patch("/lists/" + UUID.randomUUID())
+                .with(TestAuth.user2())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isNotFound())
@@ -171,14 +170,14 @@ class ListOwnershipIntegrationIT {
         .andExpect(jsonPath("$.code").value("LIST_NOT_FOUND"));
   }
 
-  /** Rechaza con 403 el borrado por un propietario distinto y conserva la lista. */
+  /** Rechaza con 403 el borrado por un usuario distinto y conserva la lista. */
   @Test
   void deleteList_withOtherOwner_returns403AndKeepsList() throws Exception {
     ShoppingList list = buildList(OWNER_ID, "Ajena");
     persist(list);
 
     mockMvc
-        .perform(delete("/lists/" + list.getPublicId()).param("ownerId", OTHER_OWNER_ID.toString()))
+        .perform(delete("/lists/" + list.getPublicId()).with(TestAuth.user2()))
         .andExpect(status().isForbidden())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
@@ -186,7 +185,7 @@ class ListOwnershipIntegrationIT {
     assertThat(shoppingListRepository.findByPublicId(list.getPublicId())).isPresent();
   }
 
-  /** Elimina la lista y sus ítems con 204 cuando el {@code ownerId} coincide. */
+  /** Elimina la lista y sus ítems con 204 cuando el usuario autenticado es su propietario. */
   @Test
   void deleteList_withMatchingOwner_returns204AndRemovesList() throws Exception {
     ShoppingList list = buildList(OWNER_ID, "Para borrar");
@@ -195,77 +194,213 @@ class ListOwnershipIntegrationIT {
     persist(item);
 
     mockMvc
-        .perform(delete("/lists/" + list.getPublicId()).param("ownerId", OWNER_ID.toString()))
+        .perform(delete("/lists/" + list.getPublicId()).with(TestAuth.user1()))
         .andExpect(status().isNoContent());
 
     assertThat(shoppingListRepository.findByPublicId(list.getPublicId())).isEmpty();
     assertThat(listItemRepository.findByPublicId(item.getPublicId())).isEmpty();
   }
 
-  /** Devuelve 400 con ProblemDetail cuando falta el query param {@code ownerId} al borrar. */
-  @Test
-  void deleteList_withoutOwnerId_returnsValidationProblemDetail() throws Exception {
-    ShoppingList list = buildList(OWNER_ID, "Sin owner");
-    persist(list);
-
-    mockMvc
-        .perform(delete("/lists/" + list.getPublicId()))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
-  }
-
-  /** Devuelve 400 con ProblemDetail cuando {@code ownerId} no es un UUID válido al borrar. */
-  @Test
-  void deleteList_withMalformedOwnerId_returnsValidationProblemDetail() throws Exception {
-    ShoppingList list = buildList(OWNER_ID, "Owner inválido");
-    persist(list);
-
-    mockMvc
-        .perform(delete("/lists/" + list.getPublicId()).param("ownerId", "not-a-uuid"))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
-  }
-
-  /** Devuelve 404 antes que 403 cuando la lista a eliminar no existe, sea cual sea el owner. */
+  /** Devuelve 404 antes que 403 cuando la lista a eliminar no existe. */
   @Test
   void deleteList_withNonExistentId_returns404RegardlessOfOwner() throws Exception {
     mockMvc
-        .perform(delete("/lists/" + UUID.randomUUID()).param("ownerId", OTHER_OWNER_ID.toString()))
+        .perform(delete("/lists/" + UUID.randomUUID()).with(TestAuth.user2()))
         .andExpect(status().isNotFound())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.code").value("LIST_NOT_FOUND"));
   }
 
-  /** Mantiene la lectura por identificador abierta, sin exigir {@code ownerId}. */
+  /** Rechaza con 401 la lectura por identificador sin credenciales. */
   @Test
-  void getListById_withoutOwner_returns200() throws Exception {
-    ShoppingList list = buildList(OWNER_ID, "Lectura abierta");
+  void getListById_withoutCredentials_returns401Unauthenticated() throws Exception {
+    ShoppingList list = buildList(OWNER_ID, "Lista privada");
     persist(list);
 
-    mockMvc.perform(get("/lists/" + list.getPublicId())).andExpect(status().isOk());
+    mockMvc
+        .perform(get("/lists/" + list.getPublicId()))
+        .andExpect(status().isUnauthorized())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
   }
 
-  /**
-   * Devuelve el detalle de una lista de otro propietario al leerla sin {@code ownerId}, demostrando
-   * que la lectura es abierta entre propietarios.
-   */
+  /** Rechaza con 403 y {@code OWNER_MISMATCH} la lectura de una lista ajena. */
   @Test
-  void getListById_withoutOwner_returnsListOfAnyOwner() throws Exception {
-    ShoppingList list = buildList(OTHER_OWNER_ID, "Lista de otro propietario");
+  void getListById_withOtherOwner_returns403OwnerMismatch() throws Exception {
+    ShoppingList list = buildList(OWNER_ID, "Lista privada");
+    persist(list);
+
+    mockMvc
+        .perform(get("/lists/" + list.getPublicId()).with(TestAuth.user2()))
+        .andExpect(status().isForbidden())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
+  }
+
+  /** Devuelve el detalle de una lista propia y deja de aplicar la lectura abierta anterior. */
+  @Test
+  void getListById_withMatchingOwner_returns200() throws Exception {
+    ShoppingList list = buildList(OWNER_ID, "Mi lista");
     persist(list);
 
     MvcResult result =
-        mockMvc.perform(get("/lists/" + list.getPublicId())).andExpect(status().isOk()).andReturn();
+        mockMvc
+            .perform(get("/lists/" + list.getPublicId()).with(TestAuth.user1()))
+            .andExpect(status().isOk())
+            .andReturn();
 
     ShoppingListResponse response =
         objectMapper.readValue(
             result.getResponse().getContentAsByteArray(), ShoppingListResponse.class);
 
     assertThat(response.id()).isEqualTo(list.getPublicId());
-    assertThat(response.ownerId()).isEqualTo(OTHER_OWNER_ID);
-    assertThat(response.name()).isEqualTo("Lista de otro propietario");
+    assertThat(response.ownerId()).isEqualTo(OWNER_ID);
+    assertThat(response.name()).isEqualTo("Mi lista");
+  }
+
+  /** Devuelve 404 antes que 403 cuando la lista leída no existe. */
+  @Test
+  void getListById_withNonExistentId_returns404RegardlessOfOwner() throws Exception {
+    mockMvc
+        .perform(get("/lists/" + UUID.randomUUID()).with(TestAuth.user2()))
+        .andExpect(status().isNotFound())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("LIST_NOT_FOUND"));
+  }
+
+  /** Devuelve 404 antes que 403 al añadir un ítem a una lista inexistente. */
+  @Test
+  void addItem_withNonExistentList_returns404RegardlessOfOwner() throws Exception {
+    mockMvc
+        .perform(
+            post("/lists/" + UUID.randomUUID() + "/items")
+                .with(TestAuth.user2())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(addItemBody()))
+        .andExpect(status().isNotFound())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("LIST_NOT_FOUND"));
+  }
+
+  /** Rechaza con 403 al añadir un ítem a una lista ajena antes de consultar el catálogo. */
+  @Test
+  void addItem_withOtherOwner_returns403OwnerMismatch() throws Exception {
+    ShoppingList list = buildList(OWNER_ID, "Compra semanal");
+    persist(list);
+
+    mockMvc
+        .perform(
+            post("/lists/" + list.getPublicId() + "/items")
+                .with(TestAuth.user2())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(addItemBody()))
+        .andExpect(status().isForbidden())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
+  }
+
+  /** Devuelve 404 antes que 403 al modificar un ítem de una lista inexistente. */
+  @Test
+  void updateItemPurchased_withNonExistentList_returns404RegardlessOfOwner() throws Exception {
+    mockMvc
+        .perform(
+            patch("/lists/" + UUID.randomUUID() + "/items/" + UUID.randomUUID())
+                .with(TestAuth.user2())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"purchased\": true}"))
+        .andExpect(status().isNotFound())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("LIST_NOT_FOUND"));
+  }
+
+  /** Rechaza con 403 al modificar un ítem de una lista ajena. */
+  @Test
+  void updateItemPurchased_withOtherOwner_returns403OwnerMismatch() throws Exception {
+    ShoppingList list = buildList(OWNER_ID, "Compra semanal");
+    persist(list);
+    ListItem item = buildItem(list.getId(), UUID.randomUUID(), ProductType.BASE, "Leche", false);
+    persist(item);
+
+    mockMvc
+        .perform(
+            patch("/lists/" + list.getPublicId() + "/items/" + item.getPublicId())
+                .with(TestAuth.user2())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"purchased\": true}"))
+        .andExpect(status().isForbidden())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
+  }
+
+  /** Devuelve 404 cuando el ítem a modificar no existe en una lista propia. */
+  @Test
+  void updateItemPurchased_withNonExistentItem_returns404ListItemNotFound() throws Exception {
+    ShoppingList list = buildList(OWNER_ID, "Compra semanal");
+    persist(list);
+
+    mockMvc
+        .perform(
+            patch("/lists/" + list.getPublicId() + "/items/" + UUID.randomUUID())
+                .with(TestAuth.user1())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"purchased\": true}"))
+        .andExpect(status().isNotFound())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("LIST_ITEM_NOT_FOUND"));
+  }
+
+  /** Devuelve 404 antes que 403 al eliminar un ítem de una lista inexistente. */
+  @Test
+  void removeItem_withNonExistentList_returns404RegardlessOfOwner() throws Exception {
+    mockMvc
+        .perform(
+            delete("/lists/" + UUID.randomUUID() + "/items/" + UUID.randomUUID())
+                .with(TestAuth.user2()))
+        .andExpect(status().isNotFound())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("LIST_NOT_FOUND"));
+  }
+
+  /** Rechaza con 403 al eliminar un ítem de una lista ajena. */
+  @Test
+  void removeItem_withOtherOwner_returns403OwnerMismatch() throws Exception {
+    ShoppingList list = buildList(OWNER_ID, "Compra semanal");
+    persist(list);
+    ListItem item = buildItem(list.getId(), UUID.randomUUID(), ProductType.BASE, "Leche", false);
+    persist(item);
+
+    mockMvc
+        .perform(
+            delete("/lists/" + list.getPublicId() + "/items/" + item.getPublicId())
+                .with(TestAuth.user2()))
+        .andExpect(status().isForbidden())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
+  }
+
+  /** Devuelve 404 cuando el ítem a eliminar no existe en una lista propia. */
+  @Test
+  void removeItem_withNonExistentItem_returns404ListItemNotFound() throws Exception {
+    ShoppingList list = buildList(OWNER_ID, "Compra semanal");
+    persist(list);
+
+    mockMvc
+        .perform(
+            delete("/lists/" + list.getPublicId() + "/items/" + UUID.randomUUID())
+                .with(TestAuth.user1()))
+        .andExpect(status().isNotFound())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("LIST_ITEM_NOT_FOUND"));
+  }
+
+  private String addItemBody() {
+    return """
+        {
+          "productId": "%s",
+          "productType": "BASE"
+        }
+        """
+        .formatted(UUID.randomUUID());
   }
 
   /**

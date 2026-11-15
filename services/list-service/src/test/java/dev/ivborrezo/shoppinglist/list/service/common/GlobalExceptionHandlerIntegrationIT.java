@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
@@ -42,8 +43,8 @@ import tools.jackson.databind.ObjectMapper;
  * convertible, obligatorio ausente, body inválido o no procesable) y fallback de excepción no
  * controlada (500).
  *
- * <p>Al no existir aún los controllers de listas, el test registra controllers de prueba que
- * ejercitan el manejador global.
+ * <p>Los controllers de prueba se registran en el contexto de este test y las peticiones se
+ * autentican con {@link TestAuth}, igual que el resto de endpoints de negocio del servicio.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -76,7 +77,7 @@ class GlobalExceptionHandlerIntegrationIT {
   void businessProbe_withCatalogueError_returnsProblemDetailWithCode() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/probe/business"))
+            .perform(get("/probe/business").with(TestAuth.user1()))
             .andExpect(status().isNotFound())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -93,7 +94,7 @@ class GlobalExceptionHandlerIntegrationIT {
   void missingRequestParam_returnsValidationProblemDetail() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/probe/param"))
+            .perform(get("/probe/param").with(TestAuth.user1()))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -105,7 +106,7 @@ class GlobalExceptionHandlerIntegrationIT {
     assertThat(response.status()).isEqualTo(400);
     assertThat(response.errors()).hasSize(1);
     assertThat(response.errors().get(0).code()).isEqualTo("missing");
-    assertThat(response.errors().get(0).field()).isEqualTo("ownerId");
+    assertThat(response.errors().get(0).field()).isEqualTo("probeId");
   }
 
   /** Devuelve 400 con {@code VALIDATION_FAILED} cuando un query param no es convertible. */
@@ -113,7 +114,7 @@ class GlobalExceptionHandlerIntegrationIT {
   void nonUuidRequestParam_returnsValidationProblemDetail() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/probe/param").param("ownerId", "not-a-uuid"))
+            .perform(get("/probe/param").param("probeId", "not-a-uuid").with(TestAuth.user1()))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -123,7 +124,7 @@ class GlobalExceptionHandlerIntegrationIT {
     assertThat(response.code()).isEqualTo("VALIDATION_FAILED");
     assertThat(response.errors()).hasSize(1);
     assertThat(response.errors().get(0).code()).isEqualTo("typeMismatch");
-    assertThat(response.errors().get(0).field()).isEqualTo("ownerId");
+    assertThat(response.errors().get(0).field()).isEqualTo("probeId");
   }
 
   /** Devuelve 400 con {@code VALIDATION_FAILED} cuando un path variable no es convertible. */
@@ -131,7 +132,7 @@ class GlobalExceptionHandlerIntegrationIT {
   void nonUuidPathVariable_returnsValidationProblemDetail() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/probe/path/not-a-uuid"))
+            .perform(get("/probe/path/not-a-uuid").with(TestAuth.user1()))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -151,6 +152,7 @@ class GlobalExceptionHandlerIntegrationIT {
         mockMvc
             .perform(
                 post("/probe/body")
+                    .with(TestAuth.user1())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"name\":\"\"}"))
             .andExpect(status().isBadRequest())
@@ -172,7 +174,10 @@ class GlobalExceptionHandlerIntegrationIT {
     MvcResult result =
         mockMvc
             .perform(
-                post("/probe/body").contentType(MediaType.APPLICATION_JSON).content("{ not json"))
+                post("/probe/body")
+                    .with(TestAuth.user1())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{ not json"))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -189,7 +194,7 @@ class GlobalExceptionHandlerIntegrationIT {
   void methodValidationFailure_returnsValidationProblemDetail() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/probe/method-validation").param("name", " "))
+            .perform(get("/probe/method-validation").param("name", " ").with(TestAuth.user1()))
             .andExpect(status().isBadRequest())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -207,7 +212,7 @@ class GlobalExceptionHandlerIntegrationIT {
   void errorProbe_withUnhandledException_returnsInternalErrorProblemDetail() throws Exception {
     MvcResult result =
         mockMvc
-            .perform(get("/error-probe"))
+            .perform(get("/error-probe").with(TestAuth.user1()))
             .andExpect(status().isInternalServerError())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andReturn();
@@ -266,7 +271,7 @@ class GlobalExceptionHandlerIntegrationIT {
     static class ParamProbeController {
 
       @GetMapping("/probe/param")
-      void probe(@RequestParam UUID ownerId) {}
+      void probe(@RequestParam UUID probeId) {}
     }
 
     /** Controller de prueba con un path variable de tipo UUID. */

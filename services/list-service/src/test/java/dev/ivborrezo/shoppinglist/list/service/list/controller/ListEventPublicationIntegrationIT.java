@@ -12,6 +12,7 @@ import ch.qos.logback.core.read.ListAppender;
 import dev.ivborrezo.shoppinglist.list.service.common.event.LoggingDomainEventPublisher;
 import dev.ivborrezo.shoppinglist.list.service.list.entity.ShoppingList;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ShoppingListRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -39,10 +40,13 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * Test de integración de la publicación de eventos de dominio de listas.
  *
  * <p>Arranca el contexto completo contra PostgreSQL real (Testcontainers) y ejercita los endpoints
- * de creación, renombrado y borrado vía MockMvc. Captura el log del adaptador real {@link
- * LoggingDomainEventPublisher} para comprobar que el evento solo se entrega tras confirmar la
- * transacción ({@code after-commit}) y que el envelope lleva el {@code correlationId} propagado por
- * la cabecera {@code X-Correlation-Id}.
+ * de creación, renombrado y borrado vía MockMvc con el usuario autenticado. Captura el log del
+ * adaptador real {@link LoggingDomainEventPublisher} para comprobar que el evento solo se entrega
+ * tras confirmar la transacción ({@code after-commit}) y que el envelope lleva el {@code
+ * correlationId} propagado por la cabecera {@code X-Correlation-Id}.
+ *
+ * <p>Cada test usa un propietario propio para aislar las listas que confirman la transacción, sin
+ * asumir que la tabla está vacía.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -54,8 +58,6 @@ class ListEventPublicationIntegrationIT {
 
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
-
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
 
   private static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
 
@@ -113,20 +115,20 @@ class ListEventPublicationIntegrationIT {
    */
   @Test
   void createList_withCorrelationHeader_publishesEventOnlyAfterCommit() throws Exception {
+    UUID ownerId = UUID.randomUUID();
     String correlationId = "corr-created";
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Compra semanal"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     MvcResult result =
         mockMvc
             .perform(
                 post("/lists")
+                    .with(TestAuth.user(ownerId))
                     .header(CORRELATION_ID_HEADER, correlationId)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
@@ -147,7 +149,7 @@ class ListEventPublicationIntegrationIT {
             "\"eventType\":\"list.created\"",
             "\"correlationId\":\"" + correlationId + "\"",
             "\"listId\":\"" + listId + "\"",
-            "\"ownerId\":\"" + OWNER_ID + "\"",
+            "\"ownerId\":\"" + ownerId + "\"",
             "\"name\":\"Compra semanal\"");
   }
 
@@ -159,18 +161,21 @@ class ListEventPublicationIntegrationIT {
    */
   @Test
   void createList_withoutCorrelationHeader_usesGeneratedCorrelationId() throws Exception {
+    UUID ownerId = UUID.randomUUID();
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Compra sin correlación"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     MvcResult result =
         mockMvc
-            .perform(post("/lists").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/lists")
+                    .with(TestAuth.user(ownerId))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isCreated())
             .andReturn();
 
@@ -193,20 +198,20 @@ class ListEventPublicationIntegrationIT {
    */
   @Test
   void patchList_withCorrelationHeader_publishesRenamedEventAfterCommit() throws Exception {
+    UUID ownerId = UUID.randomUUID();
     String correlationId = "corr-renamed";
-    ShoppingList list = seedList("Nombre antiguo");
+    ShoppingList list = seedList(ownerId, "Nombre antiguo");
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Nombre nuevo"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     mockMvc
         .perform(
             patch("/lists/" + list.getPublicId())
+                .with(TestAuth.user(ownerId))
                 .header(CORRELATION_ID_HEADER, correlationId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
@@ -234,13 +239,14 @@ class ListEventPublicationIntegrationIT {
    */
   @Test
   void deleteList_withCorrelationHeader_publishesDeletedEventAfterCommit() throws Exception {
+    UUID ownerId = UUID.randomUUID();
     String correlationId = "corr-deleted";
-    ShoppingList list = seedList("Para borrar");
+    ShoppingList list = seedList(ownerId, "Para borrar");
 
     mockMvc
         .perform(
             delete("/lists/" + list.getPublicId())
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user(ownerId))
                 .header(CORRELATION_ID_HEADER, correlationId))
         .andExpect(status().isNoContent());
 
@@ -255,7 +261,7 @@ class ListEventPublicationIntegrationIT {
         .contains(
             "\"eventType\":\"list.deleted\"",
             "\"listId\":\"" + list.getPublicId() + "\"",
-            "\"ownerId\":\"" + OWNER_ID + "\"",
+            "\"ownerId\":\"" + ownerId + "\"",
             "\"name\":\"Para borrar\"");
   }
 
@@ -263,12 +269,13 @@ class ListEventPublicationIntegrationIT {
    * Siembra una lista en la transacción del test y limpia el contexto de persistencia para que las
    * peticiones posteriores la lean desde la base de datos.
    *
+   * @param ownerId propietario de la lista
    * @param name nombre de la lista a sembrar
    * @return entidad persistida con su identificador público asignado
    */
-  private ShoppingList seedList(String name) {
+  private ShoppingList seedList(UUID ownerId, String name) {
     ShoppingList list = new ShoppingList();
-    list.setOwnerId(OWNER_ID);
+    list.setOwnerId(ownerId);
     list.setName(name);
     shoppingListRepository.saveAndFlush(list);
     entityManager.clear();

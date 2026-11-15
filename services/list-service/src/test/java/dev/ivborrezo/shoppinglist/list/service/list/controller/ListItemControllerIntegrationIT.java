@@ -20,6 +20,8 @@ import dev.ivborrezo.shoppinglist.list.service.list.entity.ListItem;
 import dev.ivborrezo.shoppinglist.list.service.list.entity.ShoppingList;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ListItemRepository;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ShoppingListRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -47,8 +49,8 @@ import tools.jackson.databind.ObjectMapper;
  * <p>Arranca el contexto completo contra PostgreSQL real (Testcontainers), sustituye el catálogo de
  * productos por un mock y ejercita vía MockMvc el contrato de {@code api-contract.yaml}: alta con
  * snapshot y {@code Location}, validación de la referencia y del tipo de producto, unicidad,
- * propiedad, cambio de estado de compra y borrado. Comprueba además que cada mutación refresca la
- * actividad de la lista padre.
+ * propiedad derivada del JWT, cambio de estado de compra y borrado. Comprueba además que cada
+ * mutación refresca la actividad de la lista padre.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -61,10 +63,9 @@ class ListItemControllerIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
-  private static final UUID OTHER_OWNER_ID =
-      UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeef");
+  private static final UUID OTHER_OWNER_ID = TestUsers.USER_2;
 
   @MockitoBean private ProductCatalogClient productCatalogClient;
 
@@ -128,7 +129,7 @@ class ListItemControllerIntegrationIT {
         mockMvc
             .perform(
                 post("/lists/" + list.getPublicId() + "/items")
-                    .param("ownerId", OWNER_ID.toString())
+                    .with(TestAuth.user1())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
             .andExpect(status().isCreated())
@@ -170,7 +171,7 @@ class ListItemControllerIntegrationIT {
     mockMvc
         .perform(
             post("/lists/" + list.getPublicId() + "/items")
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user1())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isBadRequest())
@@ -193,7 +194,7 @@ class ListItemControllerIntegrationIT {
     mockMvc
         .perform(
             post("/lists/" + list.getPublicId() + "/items")
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user1())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isBadRequest())
@@ -218,7 +219,7 @@ class ListItemControllerIntegrationIT {
     mockMvc
         .perform(
             post("/lists/" + list.getPublicId() + "/items")
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user1())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isBadRequest())
@@ -247,7 +248,7 @@ class ListItemControllerIntegrationIT {
     mockMvc
         .perform(
             post("/lists/" + list.getPublicId() + "/items")
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user1())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isConflict())
@@ -270,7 +271,7 @@ class ListItemControllerIntegrationIT {
     mockMvc
         .perform(
             post("/lists/" + UUID.randomUUID() + "/items")
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user1())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isNotFound())
@@ -295,7 +296,7 @@ class ListItemControllerIntegrationIT {
     mockMvc
         .perform(
             post("/lists/" + list.getPublicId() + "/items")
-                .param("ownerId", OTHER_OWNER_ID.toString())
+                .with(TestAuth.user2())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isForbidden())
@@ -322,7 +323,7 @@ class ListItemControllerIntegrationIT {
     mockMvc
         .perform(
             post("/lists/" + list.getPublicId() + "/items")
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user1())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isBadRequest())
@@ -349,7 +350,7 @@ class ListItemControllerIntegrationIT {
     mockMvc
         .perform(
             post("/lists/" + list.getPublicId() + "/items")
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user1())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isServiceUnavailable())
@@ -381,7 +382,7 @@ class ListItemControllerIntegrationIT {
         mockMvc
             .perform(
                 patch("/lists/" + list.getPublicId() + "/items/" + item.getPublicId())
-                    .param("ownerId", OWNER_ID.toString())
+                    .with(TestAuth.user1())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
             .andExpect(status().isOk())
@@ -418,7 +419,7 @@ class ListItemControllerIntegrationIT {
     mockMvc
         .perform(
             patch("/lists/" + list.getPublicId() + "/items/" + UUID.randomUUID())
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user1())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isNotFound())
@@ -441,7 +442,7 @@ class ListItemControllerIntegrationIT {
     mockMvc
         .perform(
             delete("/lists/" + list.getPublicId() + "/items/" + item.getPublicId())
-                .param("ownerId", OWNER_ID.toString()))
+                .with(TestAuth.user1()))
         .andExpect(status().isNoContent());
 
     entityManager.flush();
@@ -459,7 +460,7 @@ class ListItemControllerIntegrationIT {
     mockMvc
         .perform(
             delete("/lists/" + list.getPublicId() + "/items/" + UUID.randomUUID())
-                .param("ownerId", OWNER_ID.toString()))
+                .with(TestAuth.user1()))
         .andExpect(status().isNotFound())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.code").value("LIST_ITEM_NOT_FOUND"));

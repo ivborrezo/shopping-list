@@ -17,6 +17,8 @@ import dev.ivborrezo.shoppinglist.list.service.list.entity.ListItem;
 import dev.ivborrezo.shoppinglist.list.service.list.entity.ShoppingList;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ListItemRepository;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ShoppingListRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jpa.test.autoconfigure.AutoConfigureTestEntityManager;
@@ -40,9 +42,9 @@ import tools.jackson.databind.ObjectMapper;
  * Test de integración de los endpoints REST de {@code /lists}.
  *
  * <p>Arranca el contexto completo contra PostgreSQL real (Testcontainers) y ejercita vía MockMvc el
- * contrato de {@code api-contract.yaml}: creación con {@code Location}, listado paginado por
- * propietario sin ítems, detalle con ítems ordenados, renombrado y borrado, además de los errores
- * de validación ({@code 400}) y recurso inexistente ({@code 404}).
+ * contrato de {@code api-contract.yaml}: creación con {@code Location} y propietario derivado del
+ * JWT, listado paginado del usuario autenticado sin ítems, detalle con ítems ordenados, renombrado
+ * y borrado, además de los errores de validación ({@code 400}) y recurso inexistente ({@code 404}).
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -55,10 +57,9 @@ class ListControllerIntegrationIT {
   @Container @ServiceConnection
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+  private static final UUID OWNER_ID = TestUsers.USER_1;
 
-  private static final UUID OTHER_OWNER_ID =
-      UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeef");
+  private static final UUID OTHER_OWNER_ID = TestUsers.USER_2;
 
   private final MockMvc mockMvc;
 
@@ -93,21 +94,26 @@ class ListControllerIntegrationIT {
     this.listItemRepository = listItemRepository;
   }
 
-  /** Crea una lista con body válido y devuelve 201 con la cabecera {@code Location}. */
+  /**
+   * Crea una lista con body válido, asigna el propietario del token y devuelve 201 con la cabecera
+   * {@code Location}.
+   */
   @Test
   void createList_withValidBody_returns201AndLocation() throws Exception {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Compra semanal"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     MvcResult result =
         mockMvc
-            .perform(post("/lists").contentType(MediaType.APPLICATION_JSON).content(body))
+            .perform(
+                post("/lists")
+                    .with(TestAuth.user1())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
             .andExpect(status().isCreated())
             .andExpect(header().exists("Location"))
             .andReturn();
@@ -129,14 +135,16 @@ class ListControllerIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": ""
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     mockMvc
-        .perform(post("/lists").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/lists")
+                .with(TestAuth.user1())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
@@ -145,37 +153,17 @@ class ListControllerIntegrationIT {
   /** Rechaza con 400 y ProblemDetail la creación de una lista sin nombre. */
   @Test
   void createList_withoutName_returnsValidationProblemDetail() throws Exception {
-    String body =
-        """
-        {
-          "ownerId": "%s"
-        }
-        """
-            .formatted(OWNER_ID);
+    String body = "{}";
 
     mockMvc
-        .perform(post("/lists").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/lists")
+                .with(TestAuth.user1())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
-  }
-
-  /** Rechaza con 400 y ProblemDetail la creación de una lista sin propietario. */
-  @Test
-  void createList_withoutOwnerId_returnsValidationProblemDetail() throws Exception {
-    String body =
-        """
-        {
-          "name": "X"
-        }
-        """;
-
-    mockMvc
-        .perform(post("/lists").contentType(MediaType.APPLICATION_JSON).content(body))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-        .andExpect(jsonPath("$.errors[0].field").value("ownerId"));
   }
 
   /** Rechaza con 400 y ProblemDetail la creación de una lista con un nombre demasiado largo. */
@@ -184,14 +172,17 @@ class ListControllerIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "%s"
         }
         """
-            .formatted(OWNER_ID, "a".repeat(129));
+            .formatted("a".repeat(129));
 
     mockMvc
-        .perform(post("/lists").contentType(MediaType.APPLICATION_JSON).content(body))
+        .perform(
+            post("/lists")
+                .with(TestAuth.user1())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
@@ -202,24 +193,28 @@ class ListControllerIntegrationIT {
   @Test
   void postList_withMalformedBody_returnsValidationProblemDetail() throws Exception {
     mockMvc
-        .perform(post("/lists").contentType(MediaType.APPLICATION_JSON).content("{ not json"))
+        .perform(
+            post("/lists")
+                .with(TestAuth.user1())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{ not json"))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
   }
 
   /**
-   * Lista las listas del propietario indicado con el shape de página del contrato, solo sus listas
-   * y resúmenes sin ítems.
+   * Lista solo las listas del usuario autenticado con el shape de página del contrato y resúmenes
+   * sin ítems, aislando las listas de otros usuarios.
    */
   @Test
-  void listLists_byOwner_returnsPageOfSummariesWithoutItems() throws Exception {
+  void listLists_byAuthenticatedUser_returnsOnlyOwnSummariesWithoutItems() throws Exception {
     persist(buildList(OWNER_ID, "Compra uno"));
     persist(buildList(OWNER_ID, "Compra dos"));
     persist(buildList(OTHER_OWNER_ID, "Ajena"));
 
     mockMvc
-        .perform(get("/lists").param("ownerId", OWNER_ID.toString()))
+        .perform(get("/lists").with(TestAuth.user1()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.page").value(0))
         .andExpect(jsonPath("$.size").value(20))
@@ -232,7 +227,7 @@ class ListControllerIntegrationIT {
 
   /** Ordena el listado por actividad descendente (la lista modificada más tarde primero). */
   @Test
-  void listLists_byOwner_ordersByUpdatedAtDesc() throws Exception {
+  void listLists_byAuthenticatedUser_ordersByUpdatedAtDesc() throws Exception {
     ShoppingList older = buildList(OWNER_ID, "Lista antigua");
     persist(older);
     Thread.sleep(10);
@@ -240,43 +235,33 @@ class ListControllerIntegrationIT {
     persist(newer);
 
     mockMvc
-        .perform(get("/lists").param("ownerId", OWNER_ID.toString()))
+        .perform(get("/lists").with(TestAuth.user1()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content[0].id").value(newer.getPublicId().toString()))
         .andExpect(jsonPath("$.content[1].id").value(older.getPublicId().toString()));
   }
 
-  /** Devuelve una página vacía cuando el {@code ownerId} no tiene ninguna lista. */
+  /** Devuelve una página vacía cuando el usuario autenticado no tiene ninguna lista. */
   @Test
-  void listLists_unknownOwner_returnsEmptyPage() throws Exception {
+  void listLists_withoutLists_returnsEmptyPage() throws Exception {
     mockMvc
-        .perform(get("/lists").param("ownerId", UUID.randomUUID().toString()))
+        .perform(get("/lists").with(TestAuth.user1()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.totalElements").value(0))
         .andExpect(jsonPath("$.content").isEmpty());
   }
 
-  /** Devuelve 400 con ProblemDetail cuando falta el query param {@code ownerId}. */
+  /** Rechaza con 401 UNAUTHENTICATED el listado sin credenciales. */
   @Test
-  void listLists_withoutOwnerId_returnsValidationProblemDetail() throws Exception {
+  void listLists_withoutCredentials_returns401Unauthenticated() throws Exception {
     mockMvc
         .perform(get("/lists"))
-        .andExpect(status().isBadRequest())
+        .andExpect(status().isUnauthorized())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
   }
 
-  /** Devuelve 400 con ProblemDetail cuando {@code ownerId} no es un UUID válido. */
-  @Test
-  void listLists_withMalformedOwnerId_returnsValidationProblemDetail() throws Exception {
-    mockMvc
-        .perform(get("/lists").param("ownerId", "not-a-uuid"))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
-  }
-
-  /** Recupera el detalle de una lista con sus ítems ordenados por estado y orden de inserción. */
+  /** Recupera el detalle de una lista propia con sus ítems ordenados por estado y orden de alta. */
   @Test
   void getListById_withItems_returnsItemsInlineInOrder() throws Exception {
     ShoppingList list = buildList(OWNER_ID, "Compra con items");
@@ -288,7 +273,10 @@ class ListControllerIntegrationIT {
     persist(purchased, pending);
 
     MvcResult result =
-        mockMvc.perform(get("/lists/" + list.getPublicId())).andExpect(status().isOk()).andReturn();
+        mockMvc
+            .perform(get("/lists/" + list.getPublicId()).with(TestAuth.user1()))
+            .andExpect(status().isOk())
+            .andReturn();
 
     ShoppingListResponse response =
         objectMapper.readValue(
@@ -314,7 +302,7 @@ class ListControllerIntegrationIT {
   @Test
   void getListById_withNonExistentId_returnsListNotFound() throws Exception {
     mockMvc
-        .perform(get("/lists/" + UUID.randomUUID()))
+        .perform(get("/lists/" + UUID.randomUUID()).with(TestAuth.user1()))
         .andExpect(status().isNotFound())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.code").value("LIST_NOT_FOUND"));
@@ -324,13 +312,13 @@ class ListControllerIntegrationIT {
   @Test
   void getListById_withMalformedId_returnsValidationProblemDetail() throws Exception {
     mockMvc
-        .perform(get("/lists/not-a-uuid"))
+        .perform(get("/lists/not-a-uuid").with(TestAuth.user1()))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
   }
 
-  /** Renombra una lista existente y devuelve el nombre actualizado. */
+  /** Renombra una lista propia y devuelve el nombre actualizado. */
   @Test
   void patchList_withNewName_returnsUpdatedList() throws Exception {
     ShoppingList list = buildList(OWNER_ID, "Nombre antiguo");
@@ -339,16 +327,15 @@ class ListControllerIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Nombre nuevo"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     MvcResult result =
         mockMvc
             .perform(
                 patch("/lists/" + list.getPublicId())
+                    .with(TestAuth.user1())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body))
             .andExpect(status().isOk())
@@ -361,31 +348,27 @@ class ListControllerIntegrationIT {
     assertThat(updated.name()).isEqualTo("Nombre nuevo");
   }
 
-  /**
-   * Devuelve 400 con ProblemDetail cuando el renombrado no incluye {@code ownerId}, señalando el
-   * campo ausente en los errores de validación.
-   */
+  /** Un body vacío en el renombrado conserva el nombre actual y devuelve 200. */
   @Test
-  void patchList_withMissingOwnerId_returnsValidationProblemDetail() throws Exception {
-    ShoppingList list = buildList(OWNER_ID, "Nombre antiguo");
+  void patchList_withEmptyBody_keepsExistingName() throws Exception {
+    ShoppingList list = buildList(OWNER_ID, "Nombre original");
     persist(list);
 
-    String body =
-        """
-        {
-          "name": "x"
-        }
-        """;
+    MvcResult result =
+        mockMvc
+            .perform(
+                patch("/lists/" + list.getPublicId())
+                    .with(TestAuth.user1())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"))
+            .andExpect(status().isOk())
+            .andReturn();
 
-    mockMvc
-        .perform(
-            patch("/lists/" + list.getPublicId())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(body))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-        .andExpect(jsonPath("$.errors[0].field").value("ownerId"));
+    ShoppingListResponse updated =
+        objectMapper.readValue(
+            result.getResponse().getContentAsByteArray(), ShoppingListResponse.class);
+
+    assertThat(updated.name()).isEqualTo("Nombre original");
   }
 
   /** Rechaza con 400 y ProblemDetail el renombrado con un nombre demasiado largo. */
@@ -397,15 +380,15 @@ class ListControllerIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "%s"
         }
         """
-            .formatted(OWNER_ID, "a".repeat(129));
+            .formatted("a".repeat(129));
 
     mockMvc
         .perform(
             patch("/lists/" + list.getPublicId())
+                .with(TestAuth.user1())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isBadRequest())
@@ -420,30 +403,29 @@ class ListControllerIntegrationIT {
     String body =
         """
         {
-          "ownerId": "%s",
           "name": "Nombre nuevo"
         }
-        """
-            .formatted(OWNER_ID);
+        """;
 
     mockMvc
         .perform(
             patch("/lists/" + UUID.randomUUID())
+                .with(TestAuth.user1())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isNotFound());
   }
 
-  /** Elimina una lista existente y devuelve 204, dejando de existir ella y sus ítems. */
+  /** Elimina una lista propia y devuelve 204, dejando de existir ella y sus ítems. */
   @Test
-  void deleteList_withOwnerId_returns204AndRemovesList() throws Exception {
+  void deleteList_withOwner_returns204AndRemovesList() throws Exception {
     ShoppingList list = buildList(OWNER_ID, "Para borrar");
     persist(list);
     ListItem item = buildItem(list.getId(), UUID.randomUUID(), ProductType.BASE, "Leche", false);
     persist(item);
 
     mockMvc
-        .perform(delete("/lists/" + list.getPublicId()).param("ownerId", OWNER_ID.toString()))
+        .perform(delete("/lists/" + list.getPublicId()).with(TestAuth.user1()))
         .andExpect(status().isNoContent());
 
     assertThat(shoppingListRepository.findByPublicId(list.getPublicId())).isEmpty();
@@ -454,7 +436,7 @@ class ListControllerIntegrationIT {
   @Test
   void deleteList_withNonExistentId_returns404() throws Exception {
     mockMvc
-        .perform(delete("/lists/" + UUID.randomUUID()).param("ownerId", OWNER_ID.toString()))
+        .perform(delete("/lists/" + UUID.randomUUID()).with(TestAuth.user1()))
         .andExpect(status().isNotFound());
   }
 
