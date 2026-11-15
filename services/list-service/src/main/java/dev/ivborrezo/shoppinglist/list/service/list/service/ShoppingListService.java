@@ -31,10 +31,11 @@ import org.springframework.transaction.annotation.Transactional;
  * Servicio de aplicación de listas de la compra.
  *
  * <p>Orquesta la persistencia del agregado lista y sus ítems para las operaciones de crear, listar,
- * obtener, renombrar y eliminar. La propiedad se verifica en las mutaciones (renombrar y eliminar),
- * que exigen que {@code ownerId} coincida con el propietario almacenado; las lecturas siguen siendo
- * abiertas. Cada mutación publica el evento de dominio correspondiente a través de {@link
- * DomainEventPublisher}, con el instante del hecho capturado en el propio servicio.
+ * obtener, renombrar y eliminar. El propietario se recibe ya verificado desde el token del usuario
+ * autenticado y todas las operaciones sobre una lista existente comprueban que coincide con el
+ * propietario almacenado, de modo que cada usuario solo accede a sus propias listas. Cada mutación
+ * publica el evento de dominio correspondiente a través de {@link DomainEventPublisher}, con el
+ * instante del hecho capturado en el propio servicio.
  */
 @Service
 @Transactional(readOnly = true)
@@ -68,28 +69,29 @@ public class ShoppingListService {
   }
 
   /**
-   * Devuelve las listas de un propietario paginadas, como resúmenes sin ítems.
+   * Devuelve las listas de un usuario paginadas, como resúmenes sin ítems.
    *
-   * @param ownerId identificador del propietario del que se listan las listas
+   * @param userId identificador del usuario autenticado del que se listan las listas
    * @param pageable parámetros de paginación (número de página, tamaño)
    * @return página de resúmenes de listas ordenadas por actividad descendente; vacía si no hay
    */
-  public PagedResponse<ShoppingListSummaryResponse> findPage(UUID ownerId, Pageable pageable) {
+  public PagedResponse<ShoppingListSummaryResponse> findPage(UUID userId, Pageable pageable) {
     Page<ShoppingList> page =
-        shoppingListRepository.findByOwnerIdOrderByUpdatedAtDescIdDesc(ownerId, pageable);
+        shoppingListRepository.findByOwnerIdOrderByUpdatedAtDescIdDesc(userId, pageable);
     return PagedResponse.from(page.map(ShoppingListSummaryResponse::from));
   }
 
   /**
-   * Crea una lista de la compra vacía.
+   * Crea una lista de la compra vacía para el usuario autenticado.
    *
-   * @param request petición con el propietario y el nombre de la lista
+   * @param userId identificador del usuario autenticado, que queda como propietario de la lista
+   * @param request petición con el nombre de la lista
    * @return detalle de la lista recién creada, sin ítems
    */
   @Transactional
-  public ShoppingListResponse create(CreateListRequest request) {
+  public ShoppingListResponse create(UUID userId, CreateListRequest request) {
     ShoppingList list = new ShoppingList();
-    list.setOwnerId(request.ownerId());
+    list.setOwnerId(userId);
     list.setName(request.name());
     ShoppingList saved = shoppingListRepository.save(list);
     publish(
@@ -100,14 +102,22 @@ public class ShoppingListService {
   }
 
   /**
-   * Obtiene el detalle de una lista por su identificador público, con sus ítems existentes.
+   * Obtiene el detalle de una lista propia por su identificador público, con sus ítems existentes.
+   *
+   * <p>La existencia de la lista se comprueba antes que la propiedad, de modo que un recurso
+   * inexistente devuelve {@code LIST_NOT_FOUND} con independencia del usuario autenticado.
    *
    * @param publicId identificador público de la lista
+   * @param userId identificador del usuario autenticado
    * @return detalle de la lista con sus ítems
-   * @throws BusinessException con ErrorCode.LIST_NOT_FOUND si la lista no existe
+   * @throws BusinessException con ErrorCode.LIST_NOT_FOUND si la lista no existe, o con ErrorCode
+   *     OWNER_MISMATCH si {@code userId} no es su propietario
    */
-  public ShoppingListResponse findById(UUID publicId) {
+  public ShoppingListResponse findById(UUID publicId, UUID userId) {
     ShoppingList list = findListOrThrow(publicId);
+    if (!list.getOwnerId().equals(userId)) {
+      throw new BusinessException(ErrorCode.OWNER_MISMATCH);
+    }
     List<ListItem> items =
         listItemRepository.findByListIdOrderByPurchasedAscIdAsc(
             Objects.requireNonNull(list.getId()));
@@ -115,22 +125,22 @@ public class ShoppingListService {
   }
 
   /**
-   * Renombra una lista si el solicitante es su propietario y la petición incluye un nombre nuevo.
+   * Renombra una lista propia si la petición incluye un nombre nuevo.
    *
    * <p>La existencia de la lista se comprueba antes que la propiedad, de modo que un recurso
-   * inexistente devuelve {@code LIST_NOT_FOUND} con independencia del {@code ownerId} recibido.
+   * inexistente devuelve {@code LIST_NOT_FOUND} con independencia del usuario autenticado.
    *
    * @param publicId identificador público de la lista a actualizar
-   * @param request petición de renombrado con el solicitante; {@code name} nulo conserva el nombre
-   *     actual
+   * @param userId identificador del usuario autenticado
+   * @param request petición de renombrado; {@code name} nulo conserva el nombre actual
    * @return detalle de la lista actualizada, con sus ítems
    * @throws BusinessException con ErrorCode.LIST_NOT_FOUND si la lista no existe, o con ErrorCode
-   *     OWNER_MISMATCH si {@code ownerId} no es el propietario de la lista
+   *     OWNER_MISMATCH si {@code userId} no es el propietario de la lista
    */
   @Transactional
-  public ShoppingListResponse update(UUID publicId, UpdateListRequest request) {
+  public ShoppingListResponse update(UUID publicId, UUID userId, UpdateListRequest request) {
     ShoppingList list = findListOrThrow(publicId);
-    if (!list.getOwnerId().equals(request.ownerId())) {
+    if (!list.getOwnerId().equals(userId)) {
       throw new BusinessException(ErrorCode.OWNER_MISMATCH);
     }
     String oldName = list.getName();
@@ -154,20 +164,20 @@ public class ShoppingListService {
   }
 
   /**
-   * Elimina una lista por su identificador público si el solicitante es su propietario.
+   * Elimina una lista propia por su identificador público.
    *
    * <p>La existencia de la lista se comprueba antes que la propiedad, de modo que un recurso
-   * inexistente devuelve {@code LIST_NOT_FOUND} con independencia del {@code ownerId} recibido.
+   * inexistente devuelve {@code LIST_NOT_FOUND} con independencia del usuario autenticado.
    *
    * @param publicId identificador público de la lista a eliminar
-   * @param ownerId propietario que solicita la eliminación
+   * @param userId identificador del usuario autenticado que solicita la eliminación
    * @throws BusinessException con ErrorCode.LIST_NOT_FOUND si la lista no existe, o con ErrorCode
-   *     OWNER_MISMATCH si {@code ownerId} no es el propietario de la lista
+   *     OWNER_MISMATCH si {@code userId} no es el propietario de la lista
    */
   @Transactional
-  public void delete(UUID publicId, UUID ownerId) {
+  public void delete(UUID publicId, UUID userId) {
     ShoppingList list = findListOrThrow(publicId);
-    if (!list.getOwnerId().equals(ownerId)) {
+    if (!list.getOwnerId().equals(userId)) {
       throw new BusinessException(ErrorCode.OWNER_MISMATCH);
     }
     UUID listId = Objects.requireNonNull(list.getPublicId());

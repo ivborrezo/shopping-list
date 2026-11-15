@@ -1,11 +1,14 @@
 package dev.ivborrezo.shoppinglist.list.service.list.controller;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.forbidden;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notFound;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.serverError;
+import static com.github.tomakehurst.wiremock.client.WireMock.unauthorized;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +30,7 @@ import dev.ivborrezo.shoppinglist.list.service.list.entity.ListItem;
 import dev.ivborrezo.shoppinglist.list.service.list.entity.ShoppingList;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ListItemRepository;
 import dev.ivborrezo.shoppinglist.list.service.list.repository.ShoppingListRepository;
+import dev.ivborrezo.shoppinglist.testsupport.TestAuth;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
@@ -58,9 +62,12 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  *
  * <p>Arranca el contexto completo contra PostgreSQL real (Testcontainers) y un servidor WireMock en
  * proceso como stub de {@code product-service}, sin sustituir {@code ProductCatalogClient}: el
- * flujo real de resolución de nombres, la propagación de cabeceras y la traducción de errores se
- * ejercitan de extremo a extremo. Comprueba además que las mutaciones de ítems publican su evento
- * de dominio solo tras confirmar la transacción.
+ * flujo real de resolución de nombres, la propagación del token del usuario y de las cabeceras
+ * transversales, y la traducción de errores se ejercitan de extremo a extremo. Comprueba además que
+ * las mutaciones de ítems publican su evento de dominio solo tras confirmar la transacción.
+ *
+ * <p>Cada test usa un propietario propio para aislar las listas que confirman la transacción al
+ * probar los eventos {@code after-commit}, sin asumir que la tabla está vacía.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -74,8 +81,6 @@ class ListItemIntegrationIT {
   static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine");
 
   static final WireMockServer WIRE_MOCK = new WireMockServer(options().dynamicPort());
-
-  private static final UUID OWNER_ID = UUID.fromString("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
 
   private static final String CORRELATION = "corr-it";
 
@@ -159,15 +164,17 @@ class ListItemIntegrationIT {
   }
 
   /**
-   * Añade un producto base resolviendo su nombre contra WireMock, propaga solo las cabeceras de la
-   * lista blanca y publica el evento {@code list.item.added} tras el commit.
+   * Añade un producto base resolviendo su nombre contra WireMock, propaga el token del usuario y
+   * solo las cabeceras de la lista blanca, y publica el evento {@code list.item.added} tras el
+   * commit.
    *
    * @throws Exception si la petición HTTP simulada falla
    */
   @Test
   void addBaseItem_withValidProduct_publishesEventAfterCommitAndPropagatesWhitelist()
       throws Exception {
-    ShoppingList list = seedList(OWNER_ID, "Compra semanal");
+    UUID ownerId = UUID.randomUUID();
+    ShoppingList list = seedList(ownerId, "Compra semanal");
     UUID productId = UUID.randomUUID();
     WIRE_MOCK.stubFor(
         get(urlEqualTo("/base-products/" + productId))
@@ -186,7 +193,7 @@ class ListItemIntegrationIT {
         mockMvc
             .perform(
                 post("/lists/" + list.getPublicId() + "/items")
-                    .param("ownerId", OWNER_ID.toString())
+                    .with(TestAuth.user(ownerId))
                     .header(CORRELATION_ID_HEADER, CORRELATION)
                     .header("Accept-Language", "es-ES,es;q=0.9")
                     .header("X-Custom-Header", "nope")
@@ -206,6 +213,7 @@ class ListItemIntegrationIT {
 
     WIRE_MOCK.verify(
         getRequestedFor(urlEqualTo("/base-products/" + productId))
+            .withHeader("Authorization", matching("Bearer .+"))
             .withHeader(CORRELATION_ID_HEADER, equalTo(CORRELATION))
             .withHeader("Accept-Language", equalTo("es-ES,es;q=0.9"))
             .withoutHeader("X-Custom-Header"));
@@ -235,7 +243,8 @@ class ListItemIntegrationIT {
    */
   @Test
   void addUserItem_withValidProduct_resolvesFromUserProductPath() throws Exception {
-    ShoppingList list = seedList(OWNER_ID, "Compra semanal");
+    UUID ownerId = UUID.randomUUID();
+    ShoppingList list = seedList(ownerId, "Compra semanal");
     UUID productId = UUID.randomUUID();
     WIRE_MOCK.stubFor(
         get(urlEqualTo("/user-products/" + productId)).willReturn(okJson("{\"name\":\"Pan\"}")));
@@ -252,7 +261,7 @@ class ListItemIntegrationIT {
     mockMvc
         .perform(
             post("/lists/" + list.getPublicId() + "/items")
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user(ownerId))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isCreated())
@@ -269,16 +278,41 @@ class ListItemIntegrationIT {
    */
   @Test
   void addItem_whenProductNotFound_returnsInvalidProductReference() throws Exception {
-    ShoppingList list = seedList(OWNER_ID, "Compra semanal");
+    UUID ownerId = UUID.randomUUID();
+    ShoppingList list = seedList(ownerId, "Compra semanal");
     UUID productId = UUID.randomUUID();
     WIRE_MOCK.stubFor(get(urlEqualTo("/base-products/" + productId)).willReturn(notFound()));
 
     mockMvc
         .perform(
             post("/lists/" + list.getPublicId() + "/items")
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user(ownerId))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(addItemBody(productId, "BASE")))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("INVALID_PRODUCT_REFERENCE"));
+  }
+
+  /**
+   * Traduce el 403 del catálogo, producto de otro usuario, a un 400 con el código {@code
+   * INVALID_PRODUCT_REFERENCE}.
+   *
+   * @throws Exception si la petición HTTP simulada falla
+   */
+  @Test
+  void addItem_whenProductBelongsToAnotherUser_returnsInvalidProductReference() throws Exception {
+    UUID ownerId = UUID.randomUUID();
+    ShoppingList list = seedList(ownerId, "Compra semanal");
+    UUID productId = UUID.randomUUID();
+    WIRE_MOCK.stubFor(get(urlEqualTo("/user-products/" + productId)).willReturn(forbidden()));
+
+    mockMvc
+        .perform(
+            post("/lists/" + list.getPublicId() + "/items")
+                .with(TestAuth.user(ownerId))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(addItemBody(productId, "USER")))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
         .andExpect(jsonPath("$.code").value("INVALID_PRODUCT_REFERENCE"));
@@ -291,14 +325,39 @@ class ListItemIntegrationIT {
    */
   @Test
   void addItem_whenProductServiceFails_returnsProductServiceUnavailable() throws Exception {
-    ShoppingList list = seedList(OWNER_ID, "Compra semanal");
+    UUID ownerId = UUID.randomUUID();
+    ShoppingList list = seedList(ownerId, "Compra semanal");
     UUID productId = UUID.randomUUID();
     WIRE_MOCK.stubFor(get(urlEqualTo("/base-products/" + productId)).willReturn(serverError()));
 
     mockMvc
         .perform(
             post("/lists/" + list.getPublicId() + "/items")
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user(ownerId))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(addItemBody(productId, "BASE")))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.code").value("PRODUCT_SERVICE_UNAVAILABLE"));
+  }
+
+  /**
+   * Traduce el 401 del catálogo a un 503 con el código {@code PRODUCT_SERVICE_UNAVAILABLE}.
+   *
+   * @throws Exception si la petición HTTP simulada falla
+   */
+  @Test
+  void addItem_whenProductServiceReturnsUnauthorized_returnsProductServiceUnavailable()
+      throws Exception {
+    UUID ownerId = UUID.randomUUID();
+    ShoppingList list = seedList(ownerId, "Compra semanal");
+    UUID productId = UUID.randomUUID();
+    WIRE_MOCK.stubFor(get(urlEqualTo("/base-products/" + productId)).willReturn(unauthorized()));
+
+    mockMvc
+        .perform(
+            post("/lists/" + list.getPublicId() + "/items")
+                .with(TestAuth.user(ownerId))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(addItemBody(productId, "BASE")))
         .andExpect(status().isServiceUnavailable())
@@ -314,7 +373,8 @@ class ListItemIntegrationIT {
    */
   @Test
   void addItem_whenProductServiceTimesOut_returnsProductServiceUnavailable() throws Exception {
-    ShoppingList list = seedList(OWNER_ID, "Compra semanal");
+    UUID ownerId = UUID.randomUUID();
+    ShoppingList list = seedList(ownerId, "Compra semanal");
     UUID productId = UUID.randomUUID();
     WIRE_MOCK.stubFor(
         get(urlEqualTo("/base-products/" + productId))
@@ -323,7 +383,7 @@ class ListItemIntegrationIT {
     mockMvc
         .perform(
             post("/lists/" + list.getPublicId() + "/items")
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user(ownerId))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(addItemBody(productId, "BASE")))
         .andExpect(status().isServiceUnavailable())
@@ -339,7 +399,8 @@ class ListItemIntegrationIT {
    */
   @Test
   void updateItemPurchased_publishesPurchasedEventAfterCommit() throws Exception {
-    ShoppingList list = seedList(OWNER_ID, "Compra semanal");
+    UUID ownerId = UUID.randomUUID();
+    ShoppingList list = seedList(ownerId, "Compra semanal");
     UUID productId = UUID.randomUUID();
     ListItem item = seedItem(list.getId(), productId, ProductType.BASE, "Leche", false);
 
@@ -353,7 +414,7 @@ class ListItemIntegrationIT {
     mockMvc
         .perform(
             patch("/lists/" + list.getPublicId() + "/items/" + item.getPublicId())
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user(ownerId))
                 .header(CORRELATION_ID_HEADER, CORRELATION)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
@@ -387,14 +448,15 @@ class ListItemIntegrationIT {
    */
   @Test
   void removeItem_publishesRemovedEventAfterCommit() throws Exception {
-    ShoppingList list = seedList(OWNER_ID, "Compra semanal");
+    UUID ownerId = UUID.randomUUID();
+    ShoppingList list = seedList(ownerId, "Compra semanal");
     UUID productId = UUID.randomUUID();
     ListItem item = seedItem(list.getId(), productId, ProductType.BASE, "Leche", false);
 
     mockMvc
         .perform(
             delete("/lists/" + list.getPublicId() + "/items/" + item.getPublicId())
-                .param("ownerId", OWNER_ID.toString())
+                .with(TestAuth.user(ownerId))
                 .header(CORRELATION_ID_HEADER, CORRELATION))
         .andExpect(status().isNoContent());
 

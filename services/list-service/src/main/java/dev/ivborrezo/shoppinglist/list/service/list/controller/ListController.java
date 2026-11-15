@@ -1,6 +1,7 @@
 package dev.ivborrezo.shoppinglist.list.service.list.controller;
 
 import dev.ivborrezo.shoppinglist.list.service.common.dto.PagedResponse;
+import dev.ivborrezo.shoppinglist.list.service.common.security.CurrentUserId;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.CreateListRequest;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.ShoppingListResponse;
 import dev.ivborrezo.shoppinglist.list.service.list.dto.ShoppingListSummaryResponse;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Controller REST para la gestión de listas de la compra. */
@@ -39,67 +39,72 @@ public class ListController {
   }
 
   /**
-   * Lista las listas de un propietario paginadas, como resúmenes sin ítems.
+   * Lista las listas del usuario autenticado paginadas, como resúmenes sin ítems.
    *
-   * @param ownerId identificador del propietario del que se listan las listas
+   * @param userId identificador del usuario autenticado
    * @param pageable parámetros de paginación inyectados por Spring a partir de {@code page} y
    *     {@code size}
-   * @return página de resúmenes de listas del propietario
+   * @return página de resúmenes de listas del usuario
    */
   @GetMapping
   public PagedResponse<ShoppingListSummaryResponse> list(
-      @RequestParam UUID ownerId, @PageableDefault(size = 20) Pageable pageable) {
-    return shoppingListService.findPage(ownerId, pageable);
+      @CurrentUserId UUID userId, @PageableDefault(size = 20) Pageable pageable) {
+    return shoppingListService.findPage(userId, pageable);
   }
 
   /**
-   * Crea una lista de la compra vacía.
+   * Crea una lista de la compra vacía para el usuario autenticado.
    *
-   * @param request petición con el propietario y el nombre de la lista
+   * @param userId identificador del usuario autenticado
+   * @param request petición con el nombre de la lista
    * @return {@code 201 Created} con el detalle de la lista creada y la cabecera {@code Location}
    */
   @PostMapping
   public ResponseEntity<ShoppingListResponse> create(
-      @Valid @RequestBody CreateListRequest request) {
-    ShoppingListResponse created = shoppingListService.create(request);
+      @CurrentUserId UUID userId, @Valid @RequestBody CreateListRequest request) {
+    ShoppingListResponse created = shoppingListService.create(userId, request);
     URI location = URI.create("/lists/" + created.id());
     return ResponseEntity.created(location).body(created);
   }
 
   /**
-   * Recupera el detalle de una lista por su identificador, con sus ítems.
+   * Recupera el detalle de una lista propia por su identificador, con sus ítems.
    *
    * @param id identificador público de la lista
+   * @param userId identificador del usuario autenticado
    * @return detalle de la lista encontrada
    */
   @GetMapping("/{id}")
-  public ShoppingListResponse getById(@PathVariable UUID id) {
-    return shoppingListService.findById(id);
+  public ShoppingListResponse getById(@PathVariable UUID id, @CurrentUserId UUID userId) {
+    return shoppingListService.findById(id, userId);
   }
 
   /**
-   * Renombra una lista si la petición incluye un nombre nuevo.
+   * Renombra una lista propia si la petición incluye un nombre nuevo.
    *
    * @param id identificador público de la lista a actualizar
+   * @param userId identificador del usuario autenticado
    * @param request petición con el nombre nuevo, validada con Bean Validation
    * @return detalle de la lista actualizada, con sus ítems
    */
   @PatchMapping("/{id}")
   public ShoppingListResponse update(
-      @PathVariable UUID id, @Valid @RequestBody UpdateListRequest request) {
-    return shoppingListService.update(id, request);
+      @PathVariable UUID id,
+      @CurrentUserId UUID userId,
+      @Valid @RequestBody UpdateListRequest request) {
+    return shoppingListService.update(id, userId, request);
   }
 
   /**
-   * Elimina una lista por su identificador.
+   * Elimina una lista propia por su identificador.
    *
    * @param id identificador público de la lista a eliminar
-   * @param ownerId identificador del propietario que solicita el borrado
+   * @param userId identificador del usuario autenticado
    * @return {@code 204 No Content} si el borrado fue exitoso
    */
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable UUID id, @RequestParam UUID ownerId) {
-    shoppingListService.delete(id, ownerId);
+  public ResponseEntity<Void> delete(@PathVariable UUID id, @CurrentUserId UUID userId) {
+    shoppingListService.delete(id, userId);
     return ResponseEntity.noContent().build();
   }
 }

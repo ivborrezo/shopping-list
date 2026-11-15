@@ -18,6 +18,8 @@ public enum ErrorCode {
   INVALID_PRODUCT_REFERENCE(400, "Invalid product reference"),
   PRODUCT_SERVICE_UNAVAILABLE(503, "Product service unavailable"),
   INVALID_PRODUCT_TYPE(400, "Invalid product type"),
+  UNAUTHENTICATED(401, "Unauthenticated"),
+  ACCESS_DENIED(403, "Access denied"),
   VALIDATION_FAILED(400, "Validation failed");
 
   private final int httpStatus;

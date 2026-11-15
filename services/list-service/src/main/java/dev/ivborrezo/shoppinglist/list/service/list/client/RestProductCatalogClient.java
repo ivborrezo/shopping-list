@@ -14,8 +14,8 @@ import org.springframework.web.client.RestClientResponseException;
  * Adaptador HTTP de {@link ProductCatalogClient} contra {@code product-service}.
  *
  * <p>Traduce los fallos del servicio remoto a los códigos de error del contrato: el producto
- * inexistente o sin nombre es una referencia inválida, y cualquier indisponibilidad del servicio
- * remoto se reporta como servicio no disponible.
+ * inexistente o sin nombre y el producto ajeno son una referencia inválida, y cualquier
+ * indisponibilidad del servicio remoto se reporta como servicio no disponible.
  */
 @Component
 public class RestProductCatalogClient implements ProductCatalogClient {
@@ -38,8 +38,8 @@ public class RestProductCatalogClient implements ProductCatalogClient {
    * @param productId identificador del producto en {@code product-service}
    * @return nombre del producto listo para guardarse como snapshot
    * @throws BusinessException con {@link ErrorCode#INVALID_PRODUCT_REFERENCE} si el producto no
-   *     existe o no tiene nombre, y {@link ErrorCode#PRODUCT_SERVICE_UNAVAILABLE} si el servicio no
-   *     responde
+   *     existe, no tiene nombre o pertenece a otro usuario, y {@link
+   *     ErrorCode#PRODUCT_SERVICE_UNAVAILABLE} si el servicio no responde
    */
   @Override
   public String resolveDisplayName(ProductType productType, UUID productId) {
@@ -64,7 +64,8 @@ public class RestProductCatalogClient implements ProductCatalogClient {
 
       return name;
     } catch (RestClientResponseException ex) {
-      if (ex.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)) {
+      if (ex.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)
+          || ex.getStatusCode().isSameCodeAs(HttpStatus.FORBIDDEN)) {
         throw new BusinessException(ErrorCode.INVALID_PRODUCT_REFERENCE);
       }
       throw new BusinessException(ErrorCode.PRODUCT_SERVICE_UNAVAILABLE);

@@ -11,6 +11,7 @@ on:
   push:
     paths:
       - services/list-service/**
+      - scripts/check-test-support.sh
       - config/checkstyle/**
       - docs/cicd/**
       - .github/workflows/list-service.yml
@@ -24,6 +25,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
+      # Control de deriva del soporte de tests compartido entre servicios:
+      # barato y previo a Maven en el orden fail-fast (ADR-009 §4).
+      - name: Shell syntax (check-test-support.sh)
+        run: bash -n scripts/check-test-support.sh
+
+      - name: Check shared test support
+        run: bash scripts/check-test-support.sh
 
       # Caching Maven vía setup-java (ADR-009, Decisión 7): invalidación
       # por hash del pom.xml, salta el download de dependencias desde
