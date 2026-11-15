@@ -33,26 +33,21 @@ tags:
   - name: list-items
     description: Ítems dentro de una lista.
 
+security:
+  - bearerAuth: []
+
 paths:
   /lists:
     parameters:
       - $ref: '#/components/parameters/XCorrelationId'
     get:
       tags: [lists]
-      summary: Listar listas de un propietario
+      summary: Listar las listas del usuario autenticado
       description: >
-        Devuelve las listas del propietario ordenadas por `updatedAt`
-        descendente (las más recientes primero).
+        Devuelve las listas del usuario autenticado ordenadas por `updatedAt`
+        descendente (las más recientes primero). El propietario se deriva del
+        token `Bearer` JWT (ADR-019).
       parameters:
-        - name: ownerId
-          in: query
-          required: true
-          description: >
-            Placeholder hasta que exista autenticación real
-            (ver ADR-006-identificacion-propietario-sin-autenticacion).
-          schema:
-            type: string
-            format: uuid
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
@@ -64,6 +59,8 @@ paths:
                 $ref: '#/components/schemas/ListPage'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/RateLimited'
         '503':
@@ -72,7 +69,10 @@ paths:
     post:
       tags: [lists]
       summary: Crear una lista
-      description: Publica el evento de dominio `list.created`.
+      description: >
+        Crea una lista cuyo propietario es el usuario autenticado, derivado del
+        token `Bearer` JWT (ADR-019). Publica el evento de dominio
+        `list.created`.
       requestBody:
         required: true
         content:
@@ -93,6 +93,8 @@ paths:
                 $ref: '#/components/schemas/ShoppingList'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/RateLimited'
         '503':
@@ -104,6 +106,11 @@ paths:
     get:
       tags: [lists]
       summary: Obtener una lista por id
+      description: >
+        Solo el propietario autenticado puede consultarla. Si la lista no
+        existe responde `404 LIST_NOT_FOUND`; si pertenece a otro usuario
+        responde `403 OWNER_MISMATCH`. El propietario se deriva del token
+        `Bearer` JWT (ADR-019).
       parameters:
         - name: id
           in: path
@@ -118,6 +125,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShoppingList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -129,8 +140,10 @@ paths:
       tags: [lists]
       summary: Renombrar una lista
       description: >
-        Edición parcial de la lista: actualiza `name` si se envía. Publica el
-        evento de dominio `list.renamed`.
+        Edición parcial de la lista: actualiza `name` si se envía. Solo el
+        propietario autenticado puede renombrarla: si la lista no existe
+        responde `404 LIST_NOT_FOUND` y si pertenece a otro usuario responde
+        `403 OWNER_MISMATCH`. Publica el evento de dominio `list.renamed`.
       parameters:
         - name: id
           in: path
@@ -153,6 +166,8 @@ paths:
                 $ref: '#/components/schemas/ShoppingList'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -165,20 +180,14 @@ paths:
     delete:
       tags: [lists]
       summary: Eliminar una lista
-      description: Publica el evento de dominio `list.deleted`.
+      description: >
+        Solo el propietario autenticado puede eliminarla: si la lista no existe
+        responde `404 LIST_NOT_FOUND` y si pertenece a otro usuario responde
+        `403 OWNER_MISMATCH`. Publica el evento de dominio `list.deleted`.
       parameters:
         - name: id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
-        - name: ownerId
-          in: query
-          required: true
-          description: >
-            Placeholder hasta que exista autenticación real
-            (ver ADR-006-identificacion-propietario-sin-autenticacion).
           schema:
             type: string
             format: uuid
@@ -187,6 +196,8 @@ paths:
           description: Lista eliminada.
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -203,24 +214,21 @@ paths:
       tags: [list-items]
       summary: Añadir un producto a la lista
       description: >
-        Publica el evento de dominio `list.item.added`. Guarda un snapshot
+        Añade un producto a una lista propia y guarda un snapshot
         (`displayName`) del nombre del producto en el momento de añadirlo
-        (Snapshot pattern), resuelto contra product-service en el momento de
-        la petición.
+        (Snapshot pattern), resuelto contra product-service en el momento de la
+        petición. El propietario se deriva del token `Bearer` JWT (ADR-019) y
+        se propaga a product-service junto con `X-Correlation-Id` y
+        `Accept-Language`. Si la lista no existe responde `404 LIST_NOT_FOUND`;
+        si pertenece a otro usuario, `403 OWNER_MISMATCH`; si el producto
+        referenciado no existe o pertenece a otro usuario, `400
+        INVALID_PRODUCT_REFERENCE`. Publica el evento de dominio
+        `list.item.added`.
       parameters:
         - $ref: '#/components/parameters/AcceptLanguage'
         - name: id
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
-        - name: ownerId
-          in: query
-          required: true
-          description: >
-            Placeholder hasta que exista autenticación real
-            (ver ADR-006-identificacion-propietario-sin-autenticacion).
           schema:
             type: string
             format: uuid
@@ -244,6 +252,8 @@ paths:
                 $ref: '#/components/schemas/ListItem'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -278,7 +288,11 @@ paths:
     delete:
       tags: [list-items]
       summary: Eliminar un producto de la lista
-      description: Publica el evento de dominio `list.item.removed`.
+      description: >
+        Elimina un ítem de una lista propia. Si la lista no existe responde
+        `404 LIST_NOT_FOUND`; si pertenece a otro usuario, `403 OWNER_MISMATCH`;
+        si el ítem no existe o no pertenece a la lista, `404
+        LIST_ITEM_NOT_FOUND`. Publica el evento de dominio `list.item.removed`.
       parameters:
         - name: id
           in: path
@@ -292,20 +306,13 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: ownerId
-          in: query
-          required: true
-          description: >
-            Placeholder hasta que exista autenticación real
-            (ver ADR-006-identificacion-propietario-sin-autenticacion).
-          schema:
-            type: string
-            format: uuid
       responses:
         '204':
           description: Ítem eliminado.
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -319,9 +326,12 @@ paths:
       tags: [list-items]
       summary: Marcar un ítem como comprado o pendiente
       description: >
-        Publica el evento de dominio `list.item.purchased`, con el campo
-        `purchased` reflejando el nuevo estado (cubre tanto marcar como
-        desmarcar).
+        Marca o desmarca como comprado un ítem de una lista propia. Si la lista
+        no existe responde `404 LIST_NOT_FOUND`; si pertenece a otro usuario,
+        `403 OWNER_MISMATCH`; si el ítem no existe o no pertenece a la lista,
+        `404 LIST_ITEM_NOT_FOUND`. Publica el evento de dominio
+        `list.item.purchased`, con el campo `purchased` reflejando el nuevo
+        estado (cubre tanto marcar como desmarcar).
       parameters:
         - name: id
           in: path
@@ -332,15 +342,6 @@ paths:
         - name: itemId
           in: path
           required: true
-          schema:
-            type: string
-            format: uuid
-        - name: ownerId
-          in: query
-          required: true
-          description: >
-            Placeholder hasta que exista autenticación real
-            (ver ADR-006-identificacion-propietario-sin-autenticacion).
           schema:
             type: string
             format: uuid
@@ -359,6 +360,8 @@ paths:
                 $ref: '#/components/schemas/ListItem'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -369,6 +372,16 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Token JWT de acceso emitido por el proveedor OIDC. El servicio valida
+        firma, expiración, emisor y el claim de identificador de usuario
+        (UUID) antes de atender la petición.
+
   parameters:
     AcceptLanguage:
       name: Accept-Language
@@ -410,6 +423,19 @@ components:
         format: uuid
 
   responses:
+    Unauthorized:
+      description: >
+        Credenciales ausentes o inválidas: no se ha enviado la cabecera
+        `Authorization: Bearer`, el token está expirado o malformado, su firma
+        no es válida, el emisor no está reconocido o el claim de identificador
+        de usuario no es un UUID válido.
+      headers:
+        X-CorrelationId:
+          $ref: '#/components/headers/XCorrelationId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
     NotFound:
       description: El recurso solicitado no existe.
       headers:
@@ -436,7 +462,11 @@ components:
           schema:
             $ref: '#/components/schemas/ValidationProblemDetail'
     Forbidden:
-      description: El `ownerId` no coincide con el propietario del recurso.
+      description: >
+        El usuario autenticado no tiene permiso para ejecutar la operación: la
+        lista o el ítem referenciado pertenece a otro propietario (`code:
+        OWNER_MISMATCH`). El propietario se deriva del token `Bearer` JWT
+        (ADR-019).
       headers:
         X-CorrelationId:
           $ref: '#/components/headers/XCorrelationId'
@@ -536,14 +566,8 @@ components:
 
     CreateListRequest:
       type: object
-      required: [ownerId, name]
+      required: [name]
       properties:
-        ownerId:
-          type: string
-          format: uuid
-          description: >
-            Placeholder hasta que exista autenticación real
-            (ver ADR-006-identificacion-propietario-sin-autenticacion).
         name:
           type: string
           minLength: 1
@@ -551,14 +575,7 @@ components:
 
     UpdateListRequest:
       type: object
-      required: [ownerId]
       properties:
-        ownerId:
-          type: string
-          format: uuid
-          description: >
-            Placeholder hasta que exista autenticación real
-            (ver ADR-006-identificacion-propietario-sin-autenticacion).
         name:
           type: string
           nullable: true
@@ -632,7 +649,7 @@ components:
           description: URI del recurso de la petición que produjo el error.
         code:
           type: string
-          enum: [LIST_NOT_FOUND, LIST_ITEM_NOT_FOUND, OWNER_MISMATCH, DUPLICATE_LIST_ITEM, INVALID_PRODUCT_REFERENCE, PRODUCT_SERVICE_UNAVAILABLE, INVALID_PRODUCT_TYPE, RATE_LIMIT_EXCEEDED, SERVICE_UNAVAILABLE, VALIDATION_FAILED]
+          enum: [LIST_NOT_FOUND, LIST_ITEM_NOT_FOUND, OWNER_MISMATCH, DUPLICATE_LIST_ITEM, INVALID_PRODUCT_REFERENCE, PRODUCT_SERVICE_UNAVAILABLE, INVALID_PRODUCT_TYPE, UNAUTHENTICATED, ACCESS_DENIED, RATE_LIMIT_EXCEEDED, SERVICE_UNAVAILABLE, VALIDATION_FAILED]
           description: Identificador machine-readable del error; el contrato entre el backend y el frontend.
 
     FieldError:
