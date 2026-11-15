@@ -79,6 +79,28 @@ class RestProductCatalogClientTest {
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_PRODUCT_REFERENCE));
   }
 
+  /** Traduce el 403 del servicio remoto a una referencia de producto inválida. */
+  @Test
+  void resolveDisplayName_forbidden_throwsInvalidProductReference() {
+    stubFailure(new HttpClientErrorException(HttpStatus.FORBIDDEN));
+
+    assertThatThrownBy(() -> productCatalogClient.resolveDisplayName(ProductType.USER, PRODUCT_ID))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_PRODUCT_REFERENCE));
+  }
+
+  /** Traduce el 401 del servicio remoto a servicio no disponible. */
+  @Test
+  void resolveDisplayName_unauthorized_throwsProductServiceUnavailable() {
+    stubFailure(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+
+    assertThatThrownBy(() -> productCatalogClient.resolveDisplayName(ProductType.USER, PRODUCT_ID))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_SERVICE_UNAVAILABLE));
+  }
+
   /** Traduce el error 5xx del servicio remoto a servicio no disponible. */
   @Test
   void resolveDisplayName_serverError_throwsProductServiceUnavailable() {

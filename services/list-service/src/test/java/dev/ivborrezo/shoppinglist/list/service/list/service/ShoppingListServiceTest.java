@@ -89,7 +89,7 @@ class ShoppingListServiceTest {
   @Test
   void create_persistsOwnerAndName_andReturnsResponse() {
     UUID publicId = UUID.randomUUID();
-    CreateListRequest request = new CreateListRequest(OWNER_ID, "Compra semanal");
+    CreateListRequest request = new CreateListRequest("Compra semanal");
     when(shoppingListRepository.save(any(ShoppingList.class)))
         .thenAnswer(
             invocation -> {
@@ -99,7 +99,7 @@ class ShoppingListServiceTest {
               return saved;
             });
 
-    ShoppingListResponse response = shoppingListService.create(request);
+    ShoppingListResponse response = shoppingListService.create(OWNER_ID, request);
 
     ArgumentCaptor<ShoppingList> captor = ArgumentCaptor.forClass(ShoppingList.class);
     verify(shoppingListRepository).save(captor.capture());
@@ -118,7 +118,7 @@ class ShoppingListServiceTest {
   @Test
   void create_publishesListCreatedEvent() {
     UUID publicId = UUID.randomUUID();
-    CreateListRequest request = new CreateListRequest(OWNER_ID, "Compra semanal");
+    CreateListRequest request = new CreateListRequest("Compra semanal");
     when(shoppingListRepository.save(any(ShoppingList.class)))
         .thenAnswer(
             invocation -> {
@@ -128,7 +128,7 @@ class ShoppingListServiceTest {
               return saved;
             });
 
-    shoppingListService.create(request);
+    shoppingListService.create(OWNER_ID, request);
 
     ArgumentCaptor<DomainEvent<?>> captor = domainEventCaptor();
     verify(domainEventPublisher).publish(captor.capture());
@@ -198,7 +198,7 @@ class ShoppingListServiceTest {
     when(listItemRepository.findByListIdOrderByPurchasedAscIdAsc(1L))
         .thenReturn(List.of(pending, purchased));
 
-    ShoppingListResponse response = shoppingListService.findById(publicId);
+    ShoppingListResponse response = shoppingListService.findById(publicId, OWNER_ID);
 
     assertThat(response.id()).isEqualTo(publicId);
     assertThat(response.ownerId()).isEqualTo(OWNER_ID);
@@ -218,7 +218,36 @@ class ShoppingListServiceTest {
     UUID publicId = UUID.randomUUID();
     when(shoppingListRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> shoppingListService.findById(publicId))
+    assertThatThrownBy(() -> shoppingListService.findById(publicId, OWNER_ID))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIST_NOT_FOUND));
+  }
+
+  /**
+   * Rechaza la consulta de una lista ajena con {@code OWNER_MISMATCH} antes de cargar sus ítems.
+   */
+  @Test
+  void findById_withOtherOwner_throwsOwnerMismatchAndDoesNotLoadItems() {
+    UUID publicId = UUID.randomUUID();
+    ShoppingList shoppingList = list(1L, publicId, OWNER_ID, "Ajena");
+    when(shoppingListRepository.findByPublicId(publicId)).thenReturn(Optional.of(shoppingList));
+
+    assertThatThrownBy(() -> shoppingListService.findById(publicId, OTHER_OWNER_ID))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OWNER_MISMATCH));
+
+    verify(listItemRepository, never()).findByListIdOrderByPurchasedAscIdAsc(any());
+  }
+
+  /** Devuelve {@code LIST_NOT_FOUND} antes que {@code OWNER_MISMATCH} cuando la lista no existe. */
+  @Test
+  void findById_missingWithOtherOwner_throwsNotFoundBeforeOwnerCheck() {
+    UUID publicId = UUID.randomUUID();
+    when(shoppingListRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> shoppingListService.findById(publicId, OTHER_OWNER_ID))
         .isInstanceOfSatisfying(
             BusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIST_NOT_FOUND));
@@ -235,7 +264,7 @@ class ShoppingListServiceTest {
     when(listItemRepository.findByListIdOrderByPurchasedAscIdAsc(1L)).thenReturn(List.of());
 
     ShoppingListResponse response =
-        shoppingListService.update(publicId, new UpdateListRequest(OWNER_ID, "Nombre nuevo"));
+        shoppingListService.update(publicId, OWNER_ID, new UpdateListRequest("Nombre nuevo"));
 
     assertThat(shoppingList.getName()).isEqualTo("Nombre nuevo");
     assertThat(response.name()).isEqualTo("Nombre nuevo");
@@ -254,7 +283,7 @@ class ShoppingListServiceTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
     when(listItemRepository.findByListIdOrderByPurchasedAscIdAsc(1L)).thenReturn(List.of());
 
-    shoppingListService.update(publicId, new UpdateListRequest(OWNER_ID, "Nombre nuevo"));
+    shoppingListService.update(publicId, OWNER_ID, new UpdateListRequest("Nombre nuevo"));
 
     ArgumentCaptor<DomainEvent<?>> captor = domainEventCaptor();
     verify(domainEventPublisher).publish(captor.capture());
@@ -284,7 +313,7 @@ class ShoppingListServiceTest {
     when(listItemRepository.findByListIdOrderByPurchasedAscIdAsc(1L)).thenReturn(List.of());
 
     ShoppingListResponse response =
-        shoppingListService.update(publicId, new UpdateListRequest(OWNER_ID, null));
+        shoppingListService.update(publicId, OWNER_ID, new UpdateListRequest(null));
 
     assertThat(response.name()).isEqualTo("Nombre original");
   }
@@ -299,7 +328,7 @@ class ShoppingListServiceTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
     when(listItemRepository.findByListIdOrderByPurchasedAscIdAsc(1L)).thenReturn(List.of());
 
-    shoppingListService.update(publicId, new UpdateListRequest(OWNER_ID, null));
+    shoppingListService.update(publicId, OWNER_ID, new UpdateListRequest(null));
 
     verify(domainEventPublisher, never()).publish(any(DomainEvent.class));
   }
@@ -311,7 +340,7 @@ class ShoppingListServiceTest {
     when(shoppingListRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
 
     assertThatThrownBy(
-            () -> shoppingListService.update(publicId, new UpdateListRequest(OWNER_ID, "Nuevo")))
+            () -> shoppingListService.update(publicId, OWNER_ID, new UpdateListRequest("Nuevo")))
         .isInstanceOfSatisfying(
             BusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.LIST_NOT_FOUND));
@@ -378,7 +407,7 @@ class ShoppingListServiceTest {
     assertThatThrownBy(
             () ->
                 shoppingListService.update(
-                    publicId, new UpdateListRequest(OTHER_OWNER_ID, "Nombre nuevo")))
+                    publicId, OTHER_OWNER_ID, new UpdateListRequest("Nombre nuevo")))
         .isInstanceOfSatisfying(
             BusinessException.class,
             e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.OWNER_MISMATCH));

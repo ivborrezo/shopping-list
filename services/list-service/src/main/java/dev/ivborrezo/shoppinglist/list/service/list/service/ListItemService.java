@@ -80,18 +80,18 @@ public class ListItemService {
    * unicidad de la base de datos.
    *
    * @param listPublicId identificador público de la lista
-   * @param ownerId propietario que solicita el alta
+   * @param userId identificador del usuario autenticado que solicita el alta
    * @param request petición con la referencia al producto
    * @return el ítem creado, con el snapshot del nombre resuelto
    * @throws BusinessException con ErrorCode.LIST_NOT_FOUND si la lista no existe, ErrorCode
-   *     OWNER_MISMATCH si {@code ownerId} no es su propietario, ErrorCode INVALID_PRODUCT_TYPE si
-   *     el tipo no es válido, ErrorCode DUPLICATE_LIST_ITEM si el producto ya está en la lista, o
-   *     los códigos del catálogo al resolver el producto
+   *     OWNER_MISMATCH si {@code userId} no es su propietario, ErrorCode INVALID_PRODUCT_TYPE si el
+   *     tipo no es válido, ErrorCode DUPLICATE_LIST_ITEM si el producto ya está en la lista, o los
+   *     códigos del catálogo al resolver el producto
    */
   @Transactional
-  public ListItemResponse add(UUID listPublicId, UUID ownerId, AddListItemRequest request) {
+  public ListItemResponse add(UUID listPublicId, UUID userId, AddListItemRequest request) {
     ShoppingList list = findListOrThrow(listPublicId);
-    if (!list.getOwnerId().equals(ownerId)) {
+    if (!list.getOwnerId().equals(userId)) {
       throw new BusinessException(ErrorCode.OWNER_MISMATCH);
     }
     ProductType productType = parseProductType(request.productType());
@@ -131,18 +131,18 @@ public class ListItemService {
    *
    * @param listPublicId identificador público de la lista
    * @param itemPublicId identificador público del ítem
-   * @param ownerId propietario que solicita el cambio
+   * @param userId identificador del usuario autenticado que solicita el cambio
    * @param request petición con el nuevo estado de compra
    * @return el ítem actualizado
    * @throws BusinessException con ErrorCode.LIST_NOT_FOUND si la lista no existe, ErrorCode
-   *     OWNER_MISMATCH si {@code ownerId} no es su propietario, o ErrorCode LIST_ITEM_NOT_FOUND si
+   *     OWNER_MISMATCH si {@code userId} no es su propietario, o ErrorCode LIST_ITEM_NOT_FOUND si
    *     el ítem no existe o no pertenece a la lista
    */
   @Transactional
   public ListItemResponse updatePurchased(
-      UUID listPublicId, UUID itemPublicId, UUID ownerId, UpdateListItemPurchasedRequest request) {
+      UUID listPublicId, UUID itemPublicId, UUID userId, UpdateListItemPurchasedRequest request) {
     ShoppingList list = findListOrThrow(listPublicId);
-    if (!list.getOwnerId().equals(ownerId)) {
+    if (!list.getOwnerId().equals(userId)) {
       throw new BusinessException(ErrorCode.OWNER_MISMATCH);
     }
     ListItem item = findItemOrThrow(list, itemPublicId);
@@ -170,15 +170,15 @@ public class ListItemService {
    *
    * @param listPublicId identificador público de la lista
    * @param itemPublicId identificador público del ítem
-   * @param ownerId propietario que solicita el borrado
+   * @param userId identificador del usuario autenticado que solicita el borrado
    * @throws BusinessException con ErrorCode.LIST_NOT_FOUND si la lista no existe, ErrorCode
-   *     OWNER_MISMATCH si {@code ownerId} no es su propietario, o ErrorCode LIST_ITEM_NOT_FOUND si
+   *     OWNER_MISMATCH si {@code userId} no es su propietario, o ErrorCode LIST_ITEM_NOT_FOUND si
    *     el ítem no existe o no pertenece a la lista
    */
   @Transactional
-  public void remove(UUID listPublicId, UUID itemPublicId, UUID ownerId) {
+  public void remove(UUID listPublicId, UUID itemPublicId, UUID userId) {
     ShoppingList list = findListOrThrow(listPublicId);
-    if (!list.getOwnerId().equals(ownerId)) {
+    if (!list.getOwnerId().equals(userId)) {
       throw new BusinessException(ErrorCode.OWNER_MISMATCH);
     }
     ListItem item = findItemOrThrow(list, itemPublicId);
