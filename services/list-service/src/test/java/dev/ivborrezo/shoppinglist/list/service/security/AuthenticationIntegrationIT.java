@@ -2,6 +2,7 @@ package dev.ivborrezo.shoppinglist.list.service.security;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -128,6 +129,7 @@ class AuthenticationIntegrationIT {
     result
         .andExpect(status().isUnauthorized())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(header().exists("X-Correlation-Id"))
         .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
   }
 }

@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -113,6 +114,7 @@ class ListOwnershipIntegrationIT {
                 .content(body))
         .andExpect(status().isForbidden())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(header().exists("X-Correlation-Id"))
         .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
 
     entityManager.refresh(list);
@@ -180,6 +182,7 @@ class ListOwnershipIntegrationIT {
         .perform(delete("/lists/" + list.getPublicId()).with(TestAuth.user2()))
         .andExpect(status().isForbidden())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(header().exists("X-Correlation-Id"))
         .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
 
     assertThat(shoppingListRepository.findByPublicId(list.getPublicId())).isPresent();
@@ -234,6 +237,7 @@ class ListOwnershipIntegrationIT {
         .perform(get("/lists/" + list.getPublicId()).with(TestAuth.user2()))
         .andExpect(status().isForbidden())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(header().exists("X-Correlation-Id"))
         .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
   }
 
@@ -296,6 +300,7 @@ class ListOwnershipIntegrationIT {
                 .content(addItemBody()))
         .andExpect(status().isForbidden())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(header().exists("X-Correlation-Id"))
         .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
   }
 
@@ -329,6 +334,7 @@ class ListOwnershipIntegrationIT {
                 .content("{\"purchased\": true}"))
         .andExpect(status().isForbidden())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(header().exists("X-Correlation-Id"))
         .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
   }
 
@@ -375,6 +381,7 @@ class ListOwnershipIntegrationIT {
                 .with(TestAuth.user2()))
         .andExpect(status().isForbidden())
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(header().exists("X-Correlation-Id"))
         .andExpect(jsonPath("$.code").value("OWNER_MISMATCH"));
   }
 
