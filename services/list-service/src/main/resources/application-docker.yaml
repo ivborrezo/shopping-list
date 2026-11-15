@@ -3,6 +3,12 @@ spring:
     url: jdbc:postgresql://list-db:5432/${LIST_DB_NAME:list_service_db}
     username: ${LIST_DB_USER:list_user}
     password: ${LIST_DB_PASSWORD:list_pass}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8083/realms/shopping-list}
+          jwk-set-uri: ${OIDC_JWK_SET_URI:http://auth-service:8080/realms/shopping-list/protocol/openid-connect/certs}
 
 product-service:
   client:
