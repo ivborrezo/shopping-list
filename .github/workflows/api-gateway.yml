@@ -35,6 +35,14 @@ jobs:
       - name: Shell syntax (verify-compose.sh)
         run: bash -n scripts/verify-compose.sh
 
+      - name: Shell syntax (check-test-support.sh)
+        run: bash -n scripts/check-test-support.sh
+
+      # Deriva del soporte de tests compartido entre servicios; no
+      # necesita toolchain de Java.
+      - name: Check shared test support
+        run: bash scripts/check-test-support.sh
+
       # Caching Maven vía setup-java (ADR-009, Decisión 7): invalidación
       # por hash del pom.xml, salta el download de dependencias desde
       # Maven Central en cada run.
