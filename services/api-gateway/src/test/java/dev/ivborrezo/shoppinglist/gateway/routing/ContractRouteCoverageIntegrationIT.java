@@ -197,7 +197,8 @@ class ContractRouteCoverageIntegrationIT {
   private void assertSharedErrorHeaders(Map<String, Object> contract) {
     Map<String, Object> responses = map(map(contract.get("components")).get("responses"));
     for (String name :
-        List.of("NotFound", "ValidationError", "RateLimited", "ServiceUnavailable")) {
+        List.of(
+            "NotFound", "ValidationError", "RateLimited", "ServiceUnavailable", "Unauthorized")) {
       assertHeader(responses.get(name), name);
     }
     if (responses.containsKey("Forbidden")) {
