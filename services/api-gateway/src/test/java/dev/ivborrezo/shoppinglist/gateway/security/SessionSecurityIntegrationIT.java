@@ -10,12 +10,14 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.ivborrezo.shoppinglist.gateway.support.GatewayTestDestinations;
+import dev.ivborrezo.shoppinglist.gateway.support.MutableClock;
 import dev.ivborrezo.shoppinglist.gateway.support.OidcLoginTestClient;
 import dev.ivborrezo.shoppinglist.gateway.support.OidcLoginTestClient.LoginSession;
 import dev.ivborrezo.shoppinglist.gateway.support.TestOidcProvider;
 import dev.ivborrezo.shoppinglist.testsupport.TestJwtFactory;
 import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.time.Duration;
+import java.time.Instant;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +35,9 @@ import org.springframework.test.context.TestConstructor;
 import org.springframework.test.context.TestConstructor.AutowireMode;
 import org.springframework.test.web.reactive.server.ExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.server.session.DefaultWebSessionManager;
+import org.springframework.web.server.session.InMemoryWebSessionStore;
+import org.springframework.web.server.session.WebSessionManager;
 
 /**
  * Test de integración del canal de sesión OAuth2 BFF del borde.
@@ -59,14 +64,20 @@ class SessionSecurityIntegrationIT {
 
   private final OidcLoginTestClient loginClient;
 
+  private final WebSessionManager sessionManager;
+
+  private MutableClock sessionClock;
+
   /**
-   * Inyecta el cliente HTTP y prepara el flujo de login contra el proveedor de test.
+   * Inyecta el cliente HTTP, el gestor de sesiones y prepara el flujo de login.
    *
    * @param webTestClient cliente contra el servidor real en puerto aleatorio
+   * @param sessionManager gestor de sesiones del contexto
    */
   @Autowired
-  SessionSecurityIntegrationIT(WebTestClient webTestClient) {
+  SessionSecurityIntegrationIT(WebTestClient webTestClient, WebSessionManager sessionManager) {
     this.webTestClient = webTestClient;
+    this.sessionManager = sessionManager;
     this.loginClient = new OidcLoginTestClient(webTestClient, DESTINATIONS.oidcProvider());
   }
 
@@ -83,6 +94,8 @@ class SessionSecurityIntegrationIT {
 
   @BeforeEach
   void stubDestinations() {
+    sessionClock = new MutableClock(Instant.parse("2026-01-01T00:00:00Z"));
+    sessionStore().setClock(sessionClock);
     DESTINATIONS.productService().resetAll();
     DESTINATIONS.listService().resetAll();
     DESTINATIONS.listService().stubFor(get(urlPathEqualTo("/lists")).willReturn(okJson("{}")));
@@ -216,10 +229,10 @@ class SessionSecurityIntegrationIT {
   }
 
   @Test
-  void expiredSession_returns401() throws InterruptedException {
+  void expiredSession_returns401() {
     LoginSession session = loginClient.login();
 
-    Thread.sleep(2_500);
+    sessionClock.advance(Duration.ofSeconds(3));
 
     webTestClient
         .get()
@@ -232,6 +245,10 @@ class SessionSecurityIntegrationIT {
         .jsonPath("$.code")
         .isEqualTo("UNAUTHENTICATED");
     assertThat(DESTINATIONS.listService().getAllServeEvents()).isEmpty();
+  }
+
+  private InMemoryWebSessionStore sessionStore() {
+    return (InMemoryWebSessionStore) ((DefaultWebSessionManager) sessionManager).getSessionStore();
   }
 
   @Test
