@@ -7,6 +7,7 @@ import java.time.Instant;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import reactor.core.publisher.Mono;
 
 /**
  * Configuración de test del rate limiting.
@@ -56,7 +57,7 @@ public class RateLimitTestConfiguration {
   RateLimitKeyResolver testRateLimitKeyResolver() {
     return exchange -> {
       String clientId = exchange.getRequest().getHeaders().getFirst(TEST_CLIENT_HEADER);
-      return clientId != null ? clientId : "missing-client-id";
+      return Mono.just(clientId != null ? clientId : "missing-client-id");
     };
   }
 }

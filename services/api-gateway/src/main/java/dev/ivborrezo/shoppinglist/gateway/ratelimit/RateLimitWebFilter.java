@@ -2,29 +2,29 @@ package dev.ivborrezo.shoppinglist.gateway.ratelimit;
 
 import java.time.Duration;
 import java.util.Optional;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 /**
- * Aplica el rate limiting a todas las peticiones de API que entran por el borde.
+ * Aplica el rate limiting a las peticiones que atraviesan las cadenas de seguridad.
  *
- * <p>Se ejecuta después de la correlación, del access log y del guard de cuerpo: el rechazo puede
- * ecoar el identificador y un cuerpo sobredimensionado no consume cupo. Va antes del enrutado para
- * que el límite cubra también los paths no expuestos. El preflight CORS y la superficie de actuator
- * no consumen cupo. Cuando el cubo de la clave no tiene tokens, lanza {@link
- * RateLimitExceededException} y deja la respuesta al escritor único de errores.
+ * <p>Se ejecuta dentro de cada cadena de seguridad, inmediatamente después de la autenticación y
+ * del filtro que publica el usuario, de modo que la clave sea {@code user:<uuid>} cuando hay
+ * identidad verificada y {@code ip:<dirección>} en el tráfico anónimo. El preflight CORS y la
+ * superficie de actuator no consumen cupo. Cuando el cubo de la clave no tiene tokens, lanza {@link
+ * RateLimitExceededException} y deja la respuesta al escritor único de errores. Cuando evalúa una
+ * petición marca un atributo en el intercambio para que el rechazo posterior por credenciales
+ * inválidas no vuelva a descontar del cubo de IP.
  */
-@Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 20)
 public class RateLimitWebFilter implements WebFilter {
+
+  /** Atributo del intercambio que indica que el filtro ya evaluó la petición. */
+  public static final String RATE_LIMIT_CHECKED_ATTRIBUTE = "shoppinglist.rateLimitChecked";
 
   private static final String ACTUATOR_PATH = "/actuator";
 
@@ -49,11 +49,19 @@ public class RateLimitWebFilter implements WebFilter {
     if (isExcluded(request)) {
       return chain.filter(exchange);
     }
-    Optional<Duration> retryAfter = rateLimiter.consume(keyResolver.resolve(exchange));
+    return keyResolver
+        .resolve(exchange)
+        .flatMap(key -> consume(exchange, key))
+        .then(chain.filter(exchange));
+  }
+
+  private Mono<Void> consume(ServerWebExchange exchange, String key) {
+    Optional<Duration> retryAfter = rateLimiter.consume(key);
+    exchange.getAttributes().put(RATE_LIMIT_CHECKED_ATTRIBUTE, Boolean.TRUE);
     if (retryAfter.isPresent()) {
       return Mono.error(new RateLimitExceededException(retryAfter.get()));
     }
-    return chain.filter(exchange);
+    return Mono.empty();
   }
 
   private boolean isExcluded(ServerHttpRequest request) {
