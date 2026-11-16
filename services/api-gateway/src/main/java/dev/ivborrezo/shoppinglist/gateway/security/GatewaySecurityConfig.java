@@ -51,6 +51,7 @@ import org.springframework.security.web.server.util.matcher.ServerWebExchangeMat
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
 import org.springframework.web.server.session.CookieWebSessionIdResolver;
 import org.springframework.web.server.session.DefaultWebSessionManager;
 import org.springframework.web.server.session.InMemoryWebSessionStore;
@@ -150,7 +151,7 @@ public class GatewaySecurityConfig {
   }
 
   @Bean
-  ServerSecurityContextRepository securityContextRepository() {
+  static ServerSecurityContextRepository securityContextRepository() {
     return new WebSessionServerSecurityContextRepository();
   }
 
@@ -199,8 +200,11 @@ public class GatewaySecurityConfig {
                     .authenticationEntryPoint(this::writeAuthenticationFailure)
                     .accessDeniedHandler(this::writeAccessDenied)
                     .jwt(jwt -> jwt.jwtDecoder(jwtDecoder)))
-        .addFilterAfter(userIdMdcWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
-        .addFilterAfter(rateLimitWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+        .addFilterBefore(this::rateLimitOAuthRoute, SecurityWebFiltersOrder.HTTP_HEADERS_WRITER)
+        .addFilterAfter(
+            userIdMdcWebFilter, SecurityWebFiltersOrder.SECURITY_CONTEXT_SERVER_WEB_EXCHANGE)
+        .addFilterAfter(
+            rateLimitWebFilter, SecurityWebFiltersOrder.SECURITY_CONTEXT_SERVER_WEB_EXCHANGE)
         .build();
   }
 
@@ -250,6 +254,7 @@ public class GatewaySecurityConfig {
                     .logoutSuccessHandler(
                         new HttpStatusReturningServerLogoutSuccessHandler(HttpStatus.NO_CONTENT)))
         .addFilterAfter(CSRF_TOKEN_EMISSION_FILTER, SecurityWebFiltersOrder.CSRF)
+        .addFilterBefore(this::rateLimitOAuthRoute, SecurityWebFiltersOrder.HTTP_HEADERS_WRITER)
         .addFilterAfter(
             userIdMdcWebFilter, SecurityWebFiltersOrder.SECURITY_CONTEXT_SERVER_WEB_EXCHANGE)
         .addFilterAfter(
@@ -276,6 +281,22 @@ public class GatewaySecurityConfig {
             new OidcReactiveOAuth2UserService());
     authenticationManager.setJwtDecoderFactory(idTokenDecoderFactory);
     return authenticationManager;
+  }
+
+  private Mono<Void> rateLimitOAuthRoute(ServerWebExchange exchange, WebFilterChain chain) {
+    if (!isOAuthRoute(exchange)) {
+      return chain.filter(exchange);
+    }
+    exchange.getAttributes().put(RateLimitWebFilter.RATE_LIMIT_CHECKED_ATTRIBUTE, Boolean.TRUE);
+    Optional<Duration> retryAfter = rateLimiter.consume(ipKeyResolver.resolveIpKey(exchange));
+    return retryAfter.isPresent()
+        ? Mono.error(new RateLimitExceededException(retryAfter.get()))
+        : chain.filter(exchange);
+  }
+
+  private boolean isOAuthRoute(ServerWebExchange exchange) {
+    String path = exchange.getRequest().getPath().value();
+    return path.startsWith("/oauth2/authorization/") || path.startsWith("/login/oauth2/code/");
   }
 
   private Mono<ServerWebExchangeMatcher.MatchResult> isBearerRequest(ServerWebExchange exchange) {

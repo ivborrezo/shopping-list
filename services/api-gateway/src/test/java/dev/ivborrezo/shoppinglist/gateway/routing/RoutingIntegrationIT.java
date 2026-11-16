@@ -13,6 +13,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.ivborrezo.shoppinglist.gateway.support.GatewayTestDestinations;
+import dev.ivborrezo.shoppinglist.testsupport.TestJwtFactory;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.cloud.gateway.route.RouteDefinitionLocator;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestConstructor;
@@ -40,6 +43,9 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 @AutoConfigureWebTestClient
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class RoutingIntegrationIT {
+
+  private static final String BEARER_TOKEN =
+      TestJwtFactory.token().subject(TestUsers.ADMIN).roles("ADMIN").build();
 
   private static final GatewayTestDestinations DESTINATIONS = GatewayTestDestinations.start();
 
@@ -61,7 +67,11 @@ class RoutingIntegrationIT {
    */
   @Autowired
   RoutingIntegrationIT(WebTestClient webTestClient, RouteDefinitionLocator routeDefinitionLocator) {
-    this.webTestClient = webTestClient;
+    this.webTestClient =
+        webTestClient
+            .mutate()
+            .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + BEARER_TOKEN)
+            .build();
     this.routeDefinitionLocator = routeDefinitionLocator;
   }
 

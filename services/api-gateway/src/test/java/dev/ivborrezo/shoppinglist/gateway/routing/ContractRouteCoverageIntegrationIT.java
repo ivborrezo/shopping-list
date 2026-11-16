@@ -8,6 +8,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import dev.ivborrezo.shoppinglist.gateway.support.GatewayTestDestinations;
+import dev.ivborrezo.shoppinglist.testsupport.TestJwtFactory;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -23,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -47,6 +50,9 @@ class ContractRouteCoverageIntegrationIT {
 
   private static final String CORRELATION_HEADER_REF = "#/components/headers/XCorrelationId";
 
+  private static final String BEARER_TOKEN =
+      TestJwtFactory.token().subject(TestUsers.ADMIN).roles("ADMIN").build();
+
   private static final UUID ID = UUID.fromString("1b4e28ba-2fa1-11d2-883f-0016d3cca427");
 
   private static final UUID ITEM_ID = UUID.fromString("3f2504e0-4f89-41d3-9a0c-0305e82c3301");
@@ -64,7 +70,11 @@ class ContractRouteCoverageIntegrationIT {
    */
   @Autowired
   ContractRouteCoverageIntegrationIT(WebTestClient webTestClient) {
-    this.webTestClient = webTestClient;
+    this.webTestClient =
+        webTestClient
+            .mutate()
+            .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + BEARER_TOKEN)
+            .build();
   }
 
   @DynamicPropertySource
@@ -139,8 +149,12 @@ class ContractRouteCoverageIntegrationIT {
       assertCorrelationParameter(contract.document());
       assertCorrelationHeader(contract.document());
       assertSharedErrorHeaders(contract.document());
+      assertSecurityScheme(contract.document());
+      assertOperationSecurity(contract);
       assertOperationCoverage(contract);
       assertErrorCodes(contract.document());
+      assertNoOwnerIdInput(contract.document());
+      assertOwnerIdOutput(contract.document());
       assertEdgeNotes(contract.document());
     }
   }
@@ -231,13 +245,117 @@ class ContractRouteCoverageIntegrationIT {
     }
   }
 
+  private void assertSecurityScheme(Map<String, Object> contract) {
+    Map<String, Object> securitySchemes =
+        map(map(contract.get("components")).get("securitySchemes"));
+    Map<String, Object> bearerAuth = map(securitySchemes.get("bearerAuth"));
+    assertThat(bearerAuth.get("type")).as("tipo del esquema bearerAuth").isEqualTo("http");
+    assertThat(bearerAuth.get("scheme")).as("esquema bearerAuth").isEqualTo("bearer");
+
+    List<Object> security = list(contract.get("security"));
+    assertThat(security).as("seguridad global del contrato").hasSize(1);
+    assertThat(map(security.getFirst())).containsKey("bearerAuth");
+  }
+
+  private void assertOperationSecurity(ContractSource contract) {
+    int operations = 0;
+    int forbidden = 0;
+    for (Map.Entry<String, Object> path : map(contract.document().get("paths")).entrySet()) {
+      for (String method : METHODS) {
+        Object operation = map(path.getValue()).get(method);
+        if (operation == null) {
+          continue;
+        }
+        operations++;
+        Map<String, Object> responses = map(map(operation).get("responses"));
+        assertThat(map(responses.get("401")).get("$ref"))
+            .as("401 en %s %s", method, path.getKey())
+            .isEqualTo("#/components/responses/Unauthorized");
+        Object forbiddenResponse = responses.get("403");
+        if (forbiddenResponse != null) {
+          assertThat(map(forbiddenResponse).get("$ref"))
+              .as("403 en %s %s", method, path.getKey())
+              .isEqualTo("#/components/responses/Forbidden");
+          forbidden++;
+        }
+      }
+    }
+
+    assertThat(operations)
+        .as("operaciones aseguradas de %s", contract.kind())
+        .isEqualTo(contract.kind() == ContractKind.PRODUCT_SERVICE ? 16 : 8);
+    assertThat(forbidden)
+        .as("operaciones con 403 de %s", contract.kind())
+        .isEqualTo(contract.kind() == ContractKind.PRODUCT_SERVICE ? 8 : 6);
+  }
+
+  private void assertNoOwnerIdInput(Map<String, Object> contract) {
+    for (Map.Entry<String, Object> path : map(contract.get("paths")).entrySet()) {
+      assertNoOwnerIdParameter(list(map(path.getValue()).get("parameters")), path.getKey());
+      for (String method : METHODS) {
+        Object operation = map(path.getValue()).get(method);
+        if (operation != null) {
+          assertNoOwnerIdParameter(
+              list(map(operation).get("parameters")), method + " " + path.getKey());
+        }
+      }
+    }
+
+    Map<String, Object> schemas = schemas(contract);
+    for (String schemaName :
+        List.of(
+            "CreateUserProductRequest",
+            "UpdateUserProductRequest",
+            "CreateListRequest",
+            "UpdateListRequest")) {
+      Object schema = schemas.get(schemaName);
+      if (schema != null) {
+        assertThat(map(map(schema).get("properties")))
+            .as("propiedad ownerId de entrada en %s", schemaName)
+            .doesNotContainKey("ownerId");
+      }
+    }
+  }
+
+  private void assertOwnerIdOutput(Map<String, Object> contract) {
+    assertOwnerIdProperty(contract, "UserProduct");
+    assertOwnerIdProperty(contract, "ShoppingList");
+    assertOwnerIdProperty(contract, "ShoppingListSummary");
+  }
+
+  private void assertOwnerIdProperty(Map<String, Object> contract, String schemaName) {
+    Object schema = schemas(contract).get(schemaName);
+    if (schema != null) {
+      assertThat(map(map(schema).get("properties")))
+          .as("propiedad ownerId de salida en %s", schemaName)
+          .containsKey("ownerId");
+    }
+  }
+
+  private void assertNoOwnerIdParameter(List<Object> parameters, String context) {
+    if (parameters == null) {
+      return;
+    }
+    for (Object parameter : parameters) {
+      Map<String, Object> definition = map(parameter);
+      assertThat(definition.get("name"))
+          .as("parámetro ownerId en %s", context)
+          .isNotEqualTo("ownerId");
+    }
+  }
+
+  private Map<String, Object> schemas(Map<String, Object> contract) {
+    return map(map(contract.get("components")).get("schemas"));
+  }
+
   private void assertErrorCodes(Map<String, Object> contract) {
     Map<String, Object> problemDetail =
         map(map(map(contract.get("components")).get("schemas")).get("ProblemDetail"));
     Map<String, Object> properties = map(problemDetail.get("properties"));
     Map<String, Object> code = map(properties.get("code"));
     List<Object> catalog = list(code.get("enum"));
-    assertThat(catalog).contains("RATE_LIMIT_EXCEEDED", "SERVICE_UNAVAILABLE");
+    assertThat(catalog)
+        .contains("RATE_LIMIT_EXCEEDED", "SERVICE_UNAVAILABLE", "UNAUTHENTICATED", "ACCESS_DENIED");
     assertThat(catalog).doesNotContain("INTERNAL_ERROR");
   }
 

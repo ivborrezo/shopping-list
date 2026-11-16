@@ -7,6 +7,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
 import dev.ivborrezo.shoppinglist.gateway.support.GatewayTestDestinations;
+import dev.ivborrezo.shoppinglist.testsupport.TestJwtFactory;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestConstructor;
@@ -31,6 +34,9 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class AcceptLanguageIntegrationIT {
 
+  private static final String BEARER_TOKEN =
+      TestJwtFactory.token().subject(TestUsers.ADMIN).roles("ADMIN").build();
+
   private static final GatewayTestDestinations DESTINATIONS = GatewayTestDestinations.start();
 
   private final WebTestClient webTestClient;
@@ -42,7 +48,11 @@ class AcceptLanguageIntegrationIT {
    */
   @Autowired
   AcceptLanguageIntegrationIT(WebTestClient webTestClient) {
-    this.webTestClient = webTestClient;
+    this.webTestClient =
+        webTestClient
+            .mutate()
+            .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + BEARER_TOKEN)
+            .build();
   }
 
   @DynamicPropertySource

@@ -23,8 +23,9 @@ import reactor.core.publisher.Mono;
  * Publica el identificador del usuario autenticado en el intercambio y en el contexto reactivo.
  *
  * <p>Se ejecuta tras la fase de autenticación de cada cadena. Extrae el UUID del claim configurado
- * según el tipo de autenticación, lo guarda en los atributos del intercambio para que el log de
- * acceso lo vea al cerrar la petición y lo añade al {@code Reactor Context} para que los filtros
+ * según el tipo de autenticación, leyendo el contexto reactivo del canal {@code Bearer} o el
+ * repositorio de contexto de la sesión, lo guarda en los atributos del intercambio para que el log
+ * de acceso lo vea al cerrar la petición y lo añade al {@code Reactor Context} para que los filtros
  * posteriores y el {@code MDC} lo reciban. Una identidad sin UUID válido se rechaza con {@code 401
  * UNAUTHENTICATED} a través del escritor único de errores.
  */
@@ -47,13 +48,17 @@ public class UserIdMdcWebFilter implements WebFilter {
 
   @Override
   public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-    return ReactiveSecurityContextHolder.getContext()
-        .map(SecurityContext::getAuthentication)
-        .filter(Authentication::isAuthenticated)
+    return authentication(exchange)
         .flatMap(authentication -> Mono.justOrEmpty(principalValue(authentication)))
         .map(Optional::of)
         .defaultIfEmpty(Optional.empty())
-        .flatMap(userId -> continueWith(exchange, chain, userId));
+        .flatMap(principal -> continueWith(exchange, chain, principal));
+  }
+
+  private Mono<Authentication> authentication(ServerWebExchange exchange) {
+    return ReactiveSecurityContextHolder.getContext()
+        .map(SecurityContext::getAuthentication)
+        .filter(Authentication::isAuthenticated);
   }
 
   private Mono<Void> continueWith(

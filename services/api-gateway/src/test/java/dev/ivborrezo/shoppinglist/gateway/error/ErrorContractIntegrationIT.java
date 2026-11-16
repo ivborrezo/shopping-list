@@ -8,6 +8,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.ivborrezo.shoppinglist.gateway.support.GatewayTestDestinations;
 import dev.ivborrezo.shoppinglist.gateway.support.InternalErrorTestConfiguration;
+import dev.ivborrezo.shoppinglist.gateway.support.OidcLoginTestClient;
+import dev.ivborrezo.shoppinglist.testsupport.TestJwtFactory;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
@@ -43,6 +46,9 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class ErrorContractIntegrationIT {
 
+  private static final String BEARER_TOKEN =
+      TestJwtFactory.token().subject(TestUsers.ADMIN).roles("ADMIN").build();
+
   private static final String HEADER = "X-Correlation-Id";
 
   private static final String GATEWAY_ID = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
@@ -62,6 +68,10 @@ class ErrorContractIntegrationIT {
 
   private final WebTestClient webTestClient;
 
+  private final WebTestClient anonymousClient;
+
+  private final OidcLoginTestClient loginClient;
+
   /**
    * Inyecta el cliente HTTP por constructor.
    *
@@ -69,7 +79,13 @@ class ErrorContractIntegrationIT {
    */
   @Autowired
   ErrorContractIntegrationIT(WebTestClient webTestClient) {
-    this.webTestClient = webTestClient;
+    this.anonymousClient = webTestClient;
+    this.webTestClient =
+        webTestClient
+            .mutate()
+            .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + BEARER_TOKEN)
+            .build();
+    this.loginClient = new OidcLoginTestClient(webTestClient, DESTINATIONS.oidcProvider());
   }
 
   @DynamicPropertySource
@@ -217,6 +233,51 @@ class ErrorContractIntegrationIT {
   }
 
   @Test
+  void missingCredentials_returns401ProblemDetail() {
+    ExchangeResult result =
+        anonymousClient
+            .get()
+            .uri("/lists")
+            .exchange()
+            .expectStatus()
+            .isUnauthorized()
+            .returnResult();
+
+    assertThat(result.getResponseHeaders().getLocation()).isNull();
+    assertThat(result.getResponseHeaders().getContentType())
+        .isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
+    assertThat(new String(result.getResponseBodyContent()))
+        .contains("\"title\":\"Unauthenticated\"")
+        .contains("\"status\":401")
+        .contains("\"code\":\"UNAUTHENTICATED\"");
+    assertCorrelationHeader(result);
+  }
+
+  @Test
+  void sessionMutationWithoutCsrf_returns403ProblemDetail() {
+    OidcLoginTestClient.LoginSession session = loginClient.login();
+
+    ExchangeResult result =
+        anonymousClient
+            .post()
+            .uri("/lists")
+            .cookie(OidcLoginTestClient.SESSION_COOKIE, session.sessionCookie())
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .bodyValue("{\"name\":\"Compra\"}")
+            .exchange()
+            .expectStatus()
+            .isForbidden()
+            .returnResult();
+
+    assertThat(result.getResponseHeaders().getContentType())
+        .isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
+    assertThat(new String(result.getResponseBodyContent()))
+        .contains("\"title\":\"Access denied\"")
+        .contains("\"status\":403")
+        .contains("\"code\":\"ACCESS_DENIED\"");
+  }
+
+  @Test
   void ownErrors_carryCorrelationId() {
     ExchangeResult notFound =
         webTestClient.get().uri("/dataviz").exchange().expectStatus().isNotFound().returnResult();
@@ -284,7 +345,7 @@ class ErrorContractIntegrationIT {
     assertThat(headers.getAccessControlAllowOrigin()).isEqualTo(ALLOWED_ORIGIN);
     assertThat(headers.getAccessControlExposeHeaders()).containsExactly(HEADER);
     assertThat(headers.getVary()).contains(HttpHeaders.ORIGIN);
-    assertThat(headers.getAccessControlAllowCredentials()).isFalse();
+    assertThat(headers.getAccessControlAllowCredentials()).isTrue();
   }
 
   private static int findClosedPort() {

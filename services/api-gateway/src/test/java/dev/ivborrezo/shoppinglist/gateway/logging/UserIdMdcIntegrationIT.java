@@ -166,7 +166,7 @@ class UserIdMdcIntegrationIT {
   }
 
   @Test
-  void logs_neverExposeTokensCookiesOrClientSecret() {
+  void logs_neverExposeTokensCookiesOrClientSecret() throws InterruptedException {
     String token = TestJwtFactory.token().subject(TestUsers.USER_2).build();
     webTestClient
         .get()
@@ -185,6 +185,8 @@ class UserIdMdcIntegrationIT {
         .expectStatus()
         .isOk();
 
+    awaitAccessLog("/lists");
+    rootAppender.stop();
     List<String> loggedValues = rootAppender.list.stream().map(this::rendered).toList();
 
     assertThat(loggedValues)

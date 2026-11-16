@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,9 @@ import reactor.core.publisher.Mono;
  * Resuelve la clave de rate limiting por usuario autenticado y, en su defecto, por IP de socket.
  *
  * <p>Con una identidad verificada, el cubo es {@code user:<uuid>}, de modo que dos usuarios tras la
- * misma IP no comparten cupo y cambiar de IP no evade el límite. Sin identidad válida el cubo es
+ * misma IP no comparten cupo y cambiar de IP no evade el límite. La identidad se toma del contexto
+ * reactivo del canal {@code Bearer} o del repositorio de contexto de la sesión, porque el límite se
+ * aplica antes de que el borde restaure el contexto de sesión. Sin identidad válida el cubo es
  * {@code ip:<dirección>}. No interpreta cabeceras de proxy: sin una política de confianza, {@code
  * X-Forwarded-For} haría el límite evitable. Si el intercambio no expone dirección remota, todas
  * las peticiones anónimas comparten un único cubo.
@@ -45,8 +48,7 @@ public class RemoteAddressKeyResolver implements RateLimitKeyResolver {
 
   @Override
   public Mono<String> resolve(ServerWebExchange exchange) {
-    return ReactiveSecurityContextHolder.getContext()
-        .map(securityContext -> securityContext.getAuthentication())
+    return authentication(exchange)
         .flatMap(this::userId)
         .map(userId -> USER_PREFIX + userId)
         .defaultIfEmpty(resolveIpKey(exchange));
@@ -61,6 +63,12 @@ public class RemoteAddressKeyResolver implements RateLimitKeyResolver {
   public String resolveIpKey(ServerWebExchange exchange) {
     InetSocketAddress remoteAddress = exchange.getRequest().getRemoteAddress();
     return IP_PREFIX + (remoteAddress != null ? remoteAddress.getHostString() : UNKNOWN_CLIENT_KEY);
+  }
+
+  private Mono<Authentication> authentication(ServerWebExchange exchange) {
+    return ReactiveSecurityContextHolder.getContext()
+        .map(SecurityContext::getAuthentication)
+        .filter(Authentication::isAuthenticated);
   }
 
   private Mono<String> userId(@Nullable Authentication authentication) {

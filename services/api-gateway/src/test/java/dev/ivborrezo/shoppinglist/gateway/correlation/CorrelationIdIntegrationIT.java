@@ -12,6 +12,8 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.ivborrezo.shoppinglist.gateway.logging.AccessLogWebFilter;
 import dev.ivborrezo.shoppinglist.gateway.support.GatewayTestDestinations;
+import dev.ivborrezo.shoppinglist.testsupport.TestJwtFactory;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -23,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestConstructor;
@@ -42,6 +45,9 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class CorrelationIdIntegrationIT {
 
+  private static final String BEARER_TOKEN =
+      TestJwtFactory.token().subject(TestUsers.ADMIN).roles("ADMIN").build();
+
   private static final String HEADER = "X-Correlation-Id";
 
   private static final String DESTINATION_ECHO = "11111111-1111-4111-8111-111111111111";
@@ -57,7 +63,11 @@ class CorrelationIdIntegrationIT {
    */
   @Autowired
   CorrelationIdIntegrationIT(WebTestClient webTestClient) {
-    this.webTestClient = webTestClient;
+    this.webTestClient =
+        webTestClient
+            .mutate()
+            .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + BEARER_TOKEN)
+            .build();
   }
 
   @DynamicPropertySource
