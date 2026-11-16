@@ -9,32 +9,41 @@ import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
 /**
- * Clave y utilidades del contexto reactivo para el identificador de correlación.
+ * Claves y utilidades del contexto reactivo para la trazabilidad de la petición.
  *
- * <p>El {@code Reactor Context} transporta el valor normalizado entre operadores; el puente a
- * {@code MDC} se registra sobre esta misma clave.
+ * <p>El {@code Reactor Context} transporta el identificador de correlación y el identificador del
+ * usuario autenticado entre operadores; el puente a {@code MDC} se registra sobre ambas claves.
  */
 public final class CorrelationContext {
 
   /** Cabecera HTTP de correlación. */
   public static final String HEADER_NAME = "X-Correlation-Id";
 
-  /** Clave del {@code Reactor Context} y del {@code MDC}. */
+  /** Clave del {@code Reactor Context} y del {@code MDC} para el identificador de correlación. */
   public static final String CONTEXT_KEY = "correlationId";
+
+  /** Clave del {@code Reactor Context} y del {@code MDC} para el identificador del usuario. */
+  public static final String USER_ID_CONTEXT_KEY = "userId";
+
+  /** Atributo de {@code ServerWebExchange} que conserva el identificador del usuario. */
+  public static final String USER_ID_EXCHANGE_ATTRIBUTE = "shoppinglist.userId";
 
   private static final AtomicBoolean MDC_ACCESSOR_REGISTERED = new AtomicBoolean();
 
   private CorrelationContext() {}
 
   /**
-   * Registra el puente que renderiza el identificador del contexto reactivo en {@code MDC}.
+   * Registra los puentes que renderizan el contexto reactivo en {@code MDC}.
    *
-   * <p>La operación es idempotente: solo el primer registro añade el adaptador al registro global
-   * de {@code context-propagation}.
+   * <p>La operación es idempotente: solo el primer registro añade los adaptadores al registro
+   * global de {@code context-propagation}, uno por cada clave sincronizada.
    */
   public static void registerMdcAccessor() {
     if (MDC_ACCESSOR_REGISTERED.compareAndSet(false, true)) {
-      ContextRegistry.getInstance().registerThreadLocalAccessor(new MdcThreadLocalAccessor());
+      ContextRegistry.getInstance()
+          .registerThreadLocalAccessor(new MdcThreadLocalAccessor(CONTEXT_KEY));
+      ContextRegistry.getInstance()
+          .registerThreadLocalAccessor(new MdcThreadLocalAccessor(USER_ID_CONTEXT_KEY));
     }
   }
 
@@ -59,26 +68,53 @@ public final class CorrelationContext {
     return context.getOrDefault(CONTEXT_KEY, null);
   }
 
+  /**
+   * Añade el identificador del usuario autenticado al contexto reactivo.
+   *
+   * @param context contexto de Reactor en el que se publica el identificador
+   * @param userId identificador del usuario autenticado
+   * @return contexto con el identificador publicado
+   */
+  public static Context withUserId(Context context, String userId) {
+    return context.put(USER_ID_CONTEXT_KEY, userId);
+  }
+
+  /**
+   * Lee el identificador del usuario autenticado del contexto reactivo.
+   *
+   * @param context contexto de Reactor de la petición
+   * @return identificador del usuario, o {@code null} si la petición no está autenticada
+   */
+  public static @Nullable String userId(ContextView context) {
+    return context.getOrDefault(USER_ID_CONTEXT_KEY, null);
+  }
+
   private static final class MdcThreadLocalAccessor implements ThreadLocalAccessor<String> {
+
+    private final String key;
+
+    private MdcThreadLocalAccessor(String key) {
+      this.key = key;
+    }
 
     @Override
     public Object key() {
-      return CONTEXT_KEY;
+      return key;
     }
 
     @Override
     public @Nullable String getValue() {
-      return MDC.get(CONTEXT_KEY);
+      return MDC.get(key);
     }
 
     @Override
     public void setValue(String value) {
-      MDC.put(CONTEXT_KEY, value);
+      MDC.put(key, value);
     }
 
     @Override
     public void setValue() {
-      MDC.remove(CONTEXT_KEY);
+      MDC.remove(key);
     }
   }
 }

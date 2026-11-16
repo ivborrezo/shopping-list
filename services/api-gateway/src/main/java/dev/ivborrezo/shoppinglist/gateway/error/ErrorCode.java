@@ -11,6 +11,8 @@ public enum ErrorCode {
   SERVICE_UNAVAILABLE(
       503, "Service temporarily unavailable", "The upstream service is currently unavailable"),
   RATE_LIMIT_EXCEEDED(429, "Too many requests", "The request rate limit has been exceeded"),
+  UNAUTHENTICATED(401, "Unauthenticated", "Authentication is required to access this resource"),
+  ACCESS_DENIED(403, "Access denied", "Access to this resource is denied"),
   INTERNAL_ERROR(500, "Internal Server Error", "An unexpected error occurred");
 
   private final int httpStatus;

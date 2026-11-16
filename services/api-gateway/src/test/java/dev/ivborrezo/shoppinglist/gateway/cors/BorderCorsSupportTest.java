@@ -32,6 +32,30 @@ class BorderCorsSupportTest {
   }
 
   @Test
+  void allowedOriginWithCredentials_enablesAllowCredentials() {
+    BorderCorsSupport support = new BorderCorsSupport(credentialedCorsProperties(ALLOWED_ORIGIN));
+    MockServerWebExchange exchange = exchangeWithOrigin(ALLOWED_ORIGIN);
+
+    support.apply(exchange);
+
+    HttpHeaders headers = exchange.getResponse().getHeaders();
+    assertThat(headers.getAccessControlAllowOrigin()).isEqualTo(ALLOWED_ORIGIN);
+    assertThat(headers.getAccessControlAllowCredentials()).isTrue();
+  }
+
+  @Test
+  void notAllowedOriginWithCredentials_addsNoCorsHeaders() {
+    BorderCorsSupport support = new BorderCorsSupport(credentialedCorsProperties(ALLOWED_ORIGIN));
+    MockServerWebExchange exchange = exchangeWithOrigin("http://unknown.test");
+
+    support.apply(exchange);
+
+    HttpHeaders headers = exchange.getResponse().getHeaders();
+    assertThat(headers.getAccessControlAllowOrigin()).isNull();
+    assertThat(headers.getAccessControlAllowCredentials()).isFalse();
+  }
+
+  @Test
   void notAllowedOrigin_addsNoCorsHeaders() {
     BorderCorsSupport support = new BorderCorsSupport(corsProperties(ALLOWED_ORIGIN));
     MockServerWebExchange exchange = exchangeWithOrigin("http://unknown.test");
@@ -88,6 +112,12 @@ class BorderCorsSupportTest {
     configuration.setExposedHeaders(List.of(CorrelationContext.HEADER_NAME));
     GlobalCorsProperties properties = new GlobalCorsProperties();
     properties.getCorsConfigurations().put("/**", configuration);
+    return properties;
+  }
+
+  private static GlobalCorsProperties credentialedCorsProperties(String... origins) {
+    GlobalCorsProperties properties = corsProperties(origins);
+    properties.getCorsConfigurations().get("/**").setAllowCredentials(Boolean.TRUE);
     return properties;
   }
 
