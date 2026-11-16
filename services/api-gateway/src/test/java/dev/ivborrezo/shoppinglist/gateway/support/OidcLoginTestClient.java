@@ -109,6 +109,7 @@ public final class OidcLoginTestClient {
         .post()
         .uri("/logout")
         .cookie(SESSION_COOKIE, session.sessionCookie())
+        .cookie(CSRF_COOKIE, session.csrfToken())
         .header(CSRF_HEADER, session.csrfToken())
         .exchange()
         .returnResult();

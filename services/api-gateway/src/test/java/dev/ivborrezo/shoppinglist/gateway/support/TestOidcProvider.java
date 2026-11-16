@@ -140,8 +140,7 @@ public final class TestOidcProvider {
    * @param idTokenFactory fábrica del {@code id_token} con el sujeto y el emisor deseados
    */
   public void stubTokenExchange(String nonce, UUID subject, TestJwtFactory idTokenFactory) {
-    String idToken =
-        idTokenFactory.nonce(nonce).audience(CLIENT_ID).issuer(TestUsers.TEST_ISSUER).build();
+    String idToken = idTokenFactory.nonce(nonce).audience(CLIENT_ID).build();
     server.stubFor(
         post(urlPathEqualTo(TOKEN_PATH))
             .willReturn(
