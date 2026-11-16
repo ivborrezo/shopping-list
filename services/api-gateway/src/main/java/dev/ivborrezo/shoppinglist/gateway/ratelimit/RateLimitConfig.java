@@ -40,17 +40,4 @@ public class RateLimitConfig {
   TokenBucketRateLimiter rateLimiter(RateLimitProperties properties, Clock clock) {
     return new TokenBucketRateLimiter(properties, clock);
   }
-
-  /**
-   * Crea el filtro del límite para insertarlo en las cadenas de seguridad.
-   *
-   * @param rateLimiter limitador compartido del borde
-   * @param keyResolver resolución de la identidad de rate limiting
-   * @return filtro del límite
-   */
-  @Bean
-  RateLimitWebFilter rateLimitWebFilter(
-      TokenBucketRateLimiter rateLimiter, RateLimitKeyResolver keyResolver) {
-    return new RateLimitWebFilter(rateLimiter, keyResolver);
-  }
 }

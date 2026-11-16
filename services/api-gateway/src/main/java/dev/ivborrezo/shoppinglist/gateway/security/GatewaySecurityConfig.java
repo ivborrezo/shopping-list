@@ -24,7 +24,6 @@ import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.client.endpoint.WebClientReactiveAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcAuthorizationCodeReactiveAuthenticationManager;
@@ -41,14 +40,17 @@ import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoderFactory;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.logout.HttpStatusReturningServerLogoutSuccessHandler;
-import org.springframework.security.web.server.authentication.logout.SecurityContextServerLogoutHandler;
 import org.springframework.security.web.server.authentication.logout.WebSessionServerLogoutHandler;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
+import org.springframework.security.web.server.context.ServerSecurityContextRepository;
+import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository;
 import org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository;
+import org.springframework.security.web.server.csrf.CsrfToken;
 import org.springframework.security.web.server.csrf.ServerCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.session.CookieWebSessionIdResolver;
 import org.springframework.web.server.session.DefaultWebSessionManager;
 import org.springframework.web.server.session.InMemoryWebSessionStore;
@@ -72,6 +74,15 @@ public class GatewaySecurityConfig {
   private static final String BEARER_PREFIX = "Bearer ";
 
   private static final String SESSION_COOKIE = "SESSION";
+
+  private static final WebFilter CSRF_TOKEN_EMISSION_FILTER =
+      (exchange, chain) -> {
+        Object attribute = exchange.getAttribute(CsrfToken.class.getName());
+        if (attribute instanceof Mono<?> token) {
+          return token.then(chain.filter(exchange));
+        }
+        return chain.filter(exchange);
+      };
 
   private final GatewaySecurityProperties properties;
 
@@ -139,6 +150,11 @@ public class GatewaySecurityConfig {
   }
 
   @Bean
+  ServerSecurityContextRepository securityContextRepository() {
+    return new WebSessionServerSecurityContextRepository();
+  }
+
+  @Bean
   WebSessionManager webSessionManager(Clock clock) {
     return createWebSessionManager(properties, clock);
   }
@@ -192,13 +208,16 @@ public class GatewaySecurityConfig {
   @Order(2)
   SecurityWebFilterChain sessionSecurityWebFilterChain(
       ServerHttpSecurity http,
-      ReactiveJwtDecoderFactory<ClientRegistration> idTokenDecoderFactory) {
+      ReactiveJwtDecoderFactory<ClientRegistration> idTokenDecoderFactory,
+      ServerSecurityContextRepository securityContextRepository) {
     return http.csrf(
             csrf ->
                 csrf.csrfTokenRepository(CookieServerCsrfTokenRepository.withHttpOnlyFalse())
                     .csrfTokenRequestHandler(new ServerCsrfTokenRequestAttributeHandler())
-                    .requireCsrfProtectionMatcher(this::requiresCsrfProtection)
+                    .requireCsrfProtectionMatcher(
+                        exchange -> requiresCsrfProtection(exchange, securityContextRepository))
                     .accessDeniedHandler(this::writeAccessDenied))
+        .securityContextRepository(securityContextRepository)
         .authorizeExchange(
             exchanges ->
                 exchanges
@@ -228,11 +247,13 @@ public class GatewaySecurityConfig {
                     .requiresLogout(
                         ServerWebExchangeMatchers.pathMatchers(HttpMethod.POST, "/logout"))
                     .logoutHandler(new WebSessionServerLogoutHandler())
-                    .logoutHandler(new SecurityContextServerLogoutHandler())
                     .logoutSuccessHandler(
                         new HttpStatusReturningServerLogoutSuccessHandler(HttpStatus.NO_CONTENT)))
-        .addFilterAfter(userIdMdcWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
-        .addFilterAfter(rateLimitWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+        .addFilterAfter(CSRF_TOKEN_EMISSION_FILTER, SecurityWebFiltersOrder.CSRF)
+        .addFilterAfter(
+            userIdMdcWebFilter, SecurityWebFiltersOrder.SECURITY_CONTEXT_SERVER_WEB_EXCHANGE)
+        .addFilterAfter(
+            rateLimitWebFilter, SecurityWebFiltersOrder.SECURITY_CONTEXT_SERVER_WEB_EXCHANGE)
         .build();
   }
 
@@ -267,12 +288,13 @@ public class GatewaySecurityConfig {
   }
 
   private Mono<ServerWebExchangeMatcher.MatchResult> requiresCsrfProtection(
-      ServerWebExchange exchange) {
+      ServerWebExchange exchange, ServerSecurityContextRepository securityContextRepository) {
     HttpMethod method = exchange.getRequest().getMethod();
     if (method != HttpMethod.POST && method != HttpMethod.PATCH && method != HttpMethod.DELETE) {
       return ServerWebExchangeMatcher.MatchResult.notMatch();
     }
-    return ReactiveSecurityContextHolder.getContext()
+    return securityContextRepository
+        .load(exchange)
         .map(SecurityContext::getAuthentication)
         .filter(Authentication::isAuthenticated)
         .hasElement()
