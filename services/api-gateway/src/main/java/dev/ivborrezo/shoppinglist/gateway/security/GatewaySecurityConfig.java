@@ -200,7 +200,7 @@ public class GatewaySecurityConfig {
                     .authenticationEntryPoint(this::writeAuthenticationFailure)
                     .accessDeniedHandler(this::writeAccessDenied)
                     .jwt(jwt -> jwt.jwtDecoder(jwtDecoder)))
-        .addFilterBefore(this::rateLimitOAuthRoute, SecurityWebFiltersOrder.HTTP_HEADERS_WRITER)
+        .addFilterBefore(this::rateLimitOauthRoute, SecurityWebFiltersOrder.HTTP_HEADERS_WRITER)
         .addFilterAfter(
             userIdMdcWebFilter, SecurityWebFiltersOrder.SECURITY_CONTEXT_SERVER_WEB_EXCHANGE)
         .addFilterAfter(
@@ -254,7 +254,7 @@ public class GatewaySecurityConfig {
                     .logoutSuccessHandler(
                         new HttpStatusReturningServerLogoutSuccessHandler(HttpStatus.NO_CONTENT)))
         .addFilterAfter(CSRF_TOKEN_EMISSION_FILTER, SecurityWebFiltersOrder.CSRF)
-        .addFilterBefore(this::rateLimitOAuthRoute, SecurityWebFiltersOrder.HTTP_HEADERS_WRITER)
+        .addFilterBefore(this::rateLimitOauthRoute, SecurityWebFiltersOrder.HTTP_HEADERS_WRITER)
         .addFilterAfter(
             userIdMdcWebFilter, SecurityWebFiltersOrder.SECURITY_CONTEXT_SERVER_WEB_EXCHANGE)
         .addFilterAfter(
@@ -283,8 +283,8 @@ public class GatewaySecurityConfig {
     return authenticationManager;
   }
 
-  private Mono<Void> rateLimitOAuthRoute(ServerWebExchange exchange, WebFilterChain chain) {
-    if (!isOAuthRoute(exchange)) {
+  private Mono<Void> rateLimitOauthRoute(ServerWebExchange exchange, WebFilterChain chain) {
+    if (!isOauthRoute(exchange)) {
       return chain.filter(exchange);
     }
     exchange.getAttributes().put(RateLimitWebFilter.RATE_LIMIT_CHECKED_ATTRIBUTE, Boolean.TRUE);
@@ -294,7 +294,7 @@ public class GatewaySecurityConfig {
         : chain.filter(exchange);
   }
 
-  private boolean isOAuthRoute(ServerWebExchange exchange) {
+  private boolean isOauthRoute(ServerWebExchange exchange) {
     String path = exchange.getRequest().getPath().value();
     return path.startsWith("/oauth2/authorization/") || path.startsWith("/login/oauth2/code/");
   }
