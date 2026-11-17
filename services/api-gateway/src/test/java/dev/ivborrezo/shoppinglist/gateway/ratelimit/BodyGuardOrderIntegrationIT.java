@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.ivborrezo.shoppinglist.gateway.correlation.CorrelationContext;
 import dev.ivborrezo.shoppinglist.gateway.support.GatewayTestDestinations;
 import dev.ivborrezo.shoppinglist.gateway.support.RateLimitTestConfiguration;
+import dev.ivborrezo.shoppinglist.testsupport.TestJwtFactory;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,9 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 @TestConstructor(autowireMode = AutowireMode.ALL)
 class BodyGuardOrderIntegrationIT {
 
+  private static final String BEARER_TOKEN =
+      TestJwtFactory.token().subject(TestUsers.ADMIN).roles("ADMIN").build();
+
   private static final int LIMIT = 4;
 
   private static final String TEST_CLIENT_HEADER = RateLimitTestConfiguration.TEST_CLIENT_HEADER;
@@ -63,7 +68,11 @@ class BodyGuardOrderIntegrationIT {
    */
   @Autowired
   BodyGuardOrderIntegrationIT(WebTestClient webTestClient) {
-    this.webTestClient = webTestClient;
+    this.webTestClient =
+        webTestClient
+            .mutate()
+            .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + BEARER_TOKEN)
+            .build();
   }
 
   @DynamicPropertySource

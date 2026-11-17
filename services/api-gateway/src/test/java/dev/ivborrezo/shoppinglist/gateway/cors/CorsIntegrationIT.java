@@ -8,6 +8,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.ivborrezo.shoppinglist.gateway.correlation.CorrelationContext;
 import dev.ivborrezo.shoppinglist.gateway.support.GatewayTestDestinations;
+import dev.ivborrezo.shoppinglist.gateway.support.OidcLoginTestClient;
+import dev.ivborrezo.shoppinglist.gateway.support.OidcLoginTestClient.LoginSession;
+import dev.ivborrezo.shoppinglist.testsupport.TestJwtFactory;
+import dev.ivborrezo.shoppinglist.testsupport.TestUsers;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -51,11 +55,18 @@ class CorsIntegrationIT {
 
   private static final String DENIED_ORIGIN = "http://unknown.test";
 
+  private static final String BEARER_TOKEN =
+      TestJwtFactory.token().subject(TestUsers.USER_1).build();
+
   private static final GatewayTestDestinations DESTINATIONS = GatewayTestDestinations.start();
 
   private final WebTestClient webTestClient;
 
   private final GlobalCorsProperties globalCorsProperties;
+
+  private final WebTestClient anonymousClient;
+
+  private final OidcLoginTestClient loginClient;
 
   /**
    * Inyecta el cliente HTTP y las propiedades CORS del contexto real.
@@ -66,7 +77,9 @@ class CorsIntegrationIT {
   @Autowired
   CorsIntegrationIT(WebTestClient webTestClient, GlobalCorsProperties globalCorsProperties) {
     this.webTestClient = webTestClient;
+    this.anonymousClient = webTestClient;
     this.globalCorsProperties = globalCorsProperties;
+    this.loginClient = new OidcLoginTestClient(webTestClient, DESTINATIONS.oidcProvider());
   }
 
   @DynamicPropertySource
@@ -98,7 +111,7 @@ class CorsIntegrationIT {
             .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
             .header(
                 HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS,
-                "Content-Type, Accept-Language, X-Correlation-Id")
+                "Authorization, Content-Type, Accept-Language, X-Correlation-Id, X-XSRF-TOKEN")
             .exchange()
             .expectStatus()
             .isOk()
@@ -138,6 +151,27 @@ class CorsIntegrationIT {
             .get()
             .uri("/lists")
             .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + BEARER_TOKEN)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .returnResult();
+
+    assertAllowedCors(result);
+    assertCorrelationHeader(result);
+    assertThat(DESTINATIONS.listService().getAllServeEvents()).hasSize(1);
+  }
+
+  @Test
+  void sessionRequestFromAllowedOrigin_receivesCredentialsAndExposedCorrelationId() {
+    LoginSession session = loginClient.login();
+
+    ExchangeResult result =
+        anonymousClient
+            .get()
+            .uri("/lists")
+            .cookie(OidcLoginTestClient.SESSION_COOKIE, session.sessionCookie())
+            .header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN)
             .exchange()
             .expectStatus()
             .isOk()
@@ -172,6 +206,7 @@ class CorsIntegrationIT {
             .get()
             .uri("/lists")
             .header(HttpHeaders.ORIGIN, DENIED_ORIGIN)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + BEARER_TOKEN)
             .exchange()
             .expectStatus()
             .isForbidden()
@@ -214,6 +249,7 @@ class CorsIntegrationIT {
             .get()
             .uri("/lists")
             .header(HttpHeaders.ORIGIN, SECOND_ALLOWED_ORIGIN)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + BEARER_TOKEN)
             .exchange()
             .expectStatus()
             .isOk()
@@ -230,7 +266,7 @@ class CorsIntegrationIT {
     assertThat(headers.getAccessControlAllowOrigin()).isEqualTo(ALLOWED_ORIGIN);
     assertThat(headers.getAccessControlExposeHeaders())
         .containsExactly(CorrelationContext.HEADER_NAME);
-    assertThat(headers.getAccessControlAllowCredentials()).isFalse();
+    assertThat(headers.getAccessControlAllowCredentials()).isTrue();
   }
 
   private void assertAllowedMethods(ExchangeResult result) {
@@ -240,7 +276,12 @@ class CorsIntegrationIT {
 
   private void assertAllowedHeaders(ExchangeResult result) {
     assertThat(result.getResponseHeaders().getFirst(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS))
-        .contains("Content-Type", "Accept-Language", CorrelationContext.HEADER_NAME);
+        .contains(
+            HttpHeaders.AUTHORIZATION,
+            "Content-Type",
+            "Accept-Language",
+            CorrelationContext.HEADER_NAME,
+            "X-XSRF-TOKEN");
   }
 
   private void assertMaxAge(ExchangeResult result) {

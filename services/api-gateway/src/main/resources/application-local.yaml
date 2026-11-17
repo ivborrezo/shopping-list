@@ -1,3 +1,18 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8083/realms/shopping-list}
+          jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8083/realms/shopping-list/protocol/openid-connect/certs}
+      client:
+        provider:
+          keycloak:
+            authorization-uri: ${OIDC_AUTH_URI:http://localhost:8083/realms/shopping-list/protocol/openid-connect/auth}
+            token-uri: ${OIDC_TOKEN_URI:http://localhost:8083/realms/shopping-list/protocol/openid-connect/token}
+            jwk-set-uri: ${OIDC_JWK_SET_URI:http://localhost:8083/realms/shopping-list/protocol/openid-connect/certs}
+            user-info-uri: ${OIDC_USER_INFO_URI:http://localhost:8083/realms/shopping-list/protocol/openid-connect/userinfo}
+
 management:
   endpoints:
     web:

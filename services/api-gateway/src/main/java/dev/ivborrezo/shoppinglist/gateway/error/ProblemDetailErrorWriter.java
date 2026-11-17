@@ -101,6 +101,10 @@ public class ProblemDetailErrorWriter implements ErrorWebExceptionHandler {
         log.debug("No route matched {}", exchange.getRequest().getPath());
       } else if (code == ErrorCode.RATE_LIMIT_EXCEEDED) {
         log.debug("Rate limit exceeded for {}", exchange.getRequest().getPath());
+      } else if (code == ErrorCode.UNAUTHENTICATED) {
+        log.debug("Request not authenticated for {}", exchange.getRequest().getPath());
+      } else if (code == ErrorCode.ACCESS_DENIED) {
+        log.debug("Request denied for {}", exchange.getRequest().getPath());
       } else if (code == ErrorCode.SERVICE_UNAVAILABLE) {
         log.warn("Upstream service unavailable", ex);
       } else {

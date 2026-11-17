@@ -56,6 +56,9 @@ public class BorderCorsSupport {
 
     HttpHeaders headers = exchange.getResponse().getHeaders();
     headers.setAccessControlAllowOrigin(allowedOrigin);
+    if (Boolean.TRUE.equals(configuration.getAllowCredentials())) {
+      headers.setAccessControlAllowCredentials(true);
+    }
     if (!CollectionUtils.isEmpty(configuration.getExposedHeaders())) {
       headers.setAccessControlExposeHeaders(configuration.getExposedHeaders());
     }

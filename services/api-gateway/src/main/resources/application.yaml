@@ -5,6 +5,19 @@ spring:
     active: local
   reactor:
     context-propagation: auto
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: ${OIDC_CLIENT_ID:gateway-client}
+            client-secret: ${OIDC_CLIENT_SECRET:gateway-secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid,profile,email
+        provider:
+          keycloak:
+            user-name-attribute: sub
   cloud:
     gateway:
       server:
@@ -22,13 +35,17 @@ spring:
                   - PATCH
                   - DELETE
                 allowed-headers:
+                  - Authorization
                   - Content-Type
                   - Accept-Language
                   - X-Correlation-Id
+                  - X-XSRF-TOKEN
                 exposed-headers:
                   - X-Correlation-Id
                 max-age: 1800
-                allow-credentials: false
+                allow-credentials: true
+          default-filters:
+            - TokenRelay=
           httpclient:
             connect-timeout: 1000
             response-timeout: 5s
@@ -52,6 +69,12 @@ api-gateway:
   rate-limit:
     requests: 600
     window: 60s
+  security:
+    issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8083/realms/shopping-list}
+    principal-claim: ${SECURITY_JWT_PRINCIPAL_CLAIM:sub}
+    roles-claim: ${SECURITY_JWT_ROLES_CLAIM:roles}
+    session-ttl: 30m
+    max-sessions: 10000
 
 management:
   endpoints:
