@@ -128,6 +128,13 @@ read_location() {
   sed -n 's/^[Ll]ocation: *//p' "$HEADERS_FILE" | tr -d '\r' | head -n 1
 }
 
+assert_relative_location() {
+  local location="$1"
+  local context="$2"
+  [[ "$location" == /* ]] ||
+    fail "$context devolvió un Location no relativo: '$location'"
+}
+
 location_id() {
   read_location | sed 's#.*/##'
 }
@@ -273,6 +280,7 @@ main() {
   local user_list_location user_list_id
   user_list_location="$(read_location)"
   [[ -n "$user_list_location" ]] || fail "POST /lists no devolvió Location"
+  assert_relative_location "$user_list_location" "POST /lists"
   user_list_id="$(location_id)"
   assert_body_contains "\"ownerId\":\"${USER_ID}\"" "POST /lists"
 
@@ -282,6 +290,7 @@ main() {
   local user_product_location user_product_id
   user_product_location="$(read_location)"
   [[ -n "$user_product_location" ]] || fail "POST /user-products no devolvió Location"
+  assert_relative_location "$user_product_location" "POST /user-products"
   user_product_id="$(location_id)"
   assert_body_contains "\"ownerId\":\"${USER_ID}\"" "POST /user-products"
 
@@ -296,6 +305,10 @@ main() {
   status="$(request POST "/lists/${user_list_id}/items" "$user_jwt" \
     "{\"productId\":\"${user_product_id}\",\"productType\":\"USER\"}")"
   assert_status 201 "$status" "POST /lists/${user_list_id}/items"
+  local item_location
+  item_location="$(read_location)"
+  [[ -n "$item_location" ]] || fail "POST /lists/${user_list_id}/items no devolvió Location"
+  assert_relative_location "$item_location" "POST /lists/${user_list_id}/items"
 
   printf 'verify-compose: aislamiento entre usuarios\n'
   status="$(request GET "$user_list_location" "$admin_jwt")"
@@ -308,9 +321,11 @@ main() {
 
   create_resource "/lists" "$admin_jwt" '{"name":"verificacion compose admin"}' \
     "POST /lists con otro usuario"
-  local admin_list_id
+  local admin_list_location admin_list_id
+  admin_list_location="$(read_location)"
+  [[ -n "$admin_list_location" ]] || fail "POST /lists con otro usuario no devolvió Location"
+  assert_relative_location "$admin_list_location" "POST /lists con otro usuario"
   admin_list_id="$(location_id)"
-  [[ -n "$admin_list_id" ]] || fail "POST /lists con otro usuario no devolvió Location"
   assert_body_contains "\"ownerId\":\"${ADMIN_ID}\"" "POST /lists con otro usuario"
 
   status="$(request POST "/lists/${admin_list_id}/items" "$admin_jwt" \
