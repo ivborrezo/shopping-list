@@ -1,5 +1,61 @@
 services:
 
+  # ── auth-service database ─────────────────────────────────────────
+  auth-db:
+    image: postgres:16-alpine
+    container_name: shopping-list-auth-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${AUTH_DB_NAME:-auth_service_db}
+      POSTGRES_USER: ${AUTH_DB_USER:-auth_user}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:-auth_pass}
+    ports:
+      - "127.0.0.1:5436:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER:-auth_user} -d ${AUTH_DB_NAME:-auth_service_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shopping-list-net
+
+  # ── auth-service ──────────────────────────────────────────────────
+  auth-service:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: shopping-list-auth-service
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://auth-db:5432/${AUTH_DB_NAME:-auth_service_db}
+      KC_DB_USERNAME: ${AUTH_DB_USER:-auth_user}
+      KC_DB_PASSWORD: ${AUTH_DB_PASSWORD:-auth_pass}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_pass}
+      KC_HOSTNAME: http://localhost:8083
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "127.0.0.1:8083:8080"
+    volumes:
+      - ./services/auth-service/realm:/opt/keycloak/data/import:ro
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    healthcheck:
+      # La imagen UBI9 micro no incluye wget ni curl: la sonda usa /dev/tcp
+      # sobre el puerto de management, que expone /health/ready. Todo el
+      # intercambio ocurre dentro del mismo grupo para no perder el descriptor.
+      test: ["CMD-SHELL", "(exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q 'UP' <&3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - shopping-list-net
+
   # ── product-service database ──────────────────────────────────────
   product-db:
     image: postgres:16-alpine
@@ -29,6 +85,8 @@ services:
       - .env
     depends_on:
       product-db:
+        condition: service_healthy
+      auth-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health"]
@@ -69,6 +127,8 @@ services:
     depends_on:
       list-db:
         condition: service_healthy
+      auth-service:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health"]
       interval: 5s
@@ -82,12 +142,16 @@ services:
   api-gateway:
     build: ./services/api-gateway
     container_name: shopping-list-api-gateway
+    env_file:
+      - .env
     ports:
       - "8080:8080"
     depends_on:
       product-service:
         condition: service_healthy
       list-service:
+        condition: service_healthy
+      auth-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health"]
@@ -103,5 +167,6 @@ networks:
     driver: bridge
 
 volumes:
+  auth-db-data:
   product-db-data:
   list-db-data:
